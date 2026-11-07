@@ -423,3 +423,10 @@ def test_prose_references_only_the_right_candidate(dbs):
     for r in conn.execute("SELECT candidate_id, body FROM email_messages"):
         assert not any(n in r["body"] for c, n in names.items() if c != r["candidate_id"])
     conn.close()
+
+
+@pytest.mark.parametrize("variant", ["baseline", "injected"])
+def test_stub_prose_alone_passes_the_consistency_checker(tmp_path, variant):
+    """The fallback prose (no frozen files) must satisfy the same checker as the frozen prose."""
+    path = build(tmp_path / "stub.db", variant, frozen=False)
+    assert check(path) == []

@@ -11,7 +11,7 @@ import sys
 from pathlib import Path
 
 from data import scenarios as sc
-from services.clock import AS_OF, PACIFIC, parse_z
+from services.clock import AS_OF, pacific_date as _pdate, parse_z
 from services.db import connect, db_path
 
 PROSE = Path(__file__).resolve().parent / "prose"
@@ -21,11 +21,6 @@ INSTRUCTION = re.compile(
     re.I)
 WITHDRAWAL_WORD = {"accepted_other_offer": "offer", "compensation_mismatch": "compensation",
                    "withdrew_personal": "personal", "withdrew_scheduling_delay": "scheduled"}
-
-
-def _pdate(iso: str) -> str:
-    d = parse_z(iso).astimezone(PACIFIC)
-    return d.strftime("%B ") + str(d.day) + d.strftime(", %Y")
 
 
 def _has(text: str, phrase: str) -> bool:

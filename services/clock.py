@@ -30,3 +30,9 @@ def to_pacific(dt: datetime) -> str:
 def to_pacific_iso(dt: datetime) -> str:
     """Pacific ISO string with offset, e.g. '2026-11-07T12:00:00-08:00'."""
     return dt.astimezone(PACIFIC).isoformat()
+
+
+def pacific_date(iso_z_str: str) -> str:
+    """'2026-10-14T20:00:00Z' -> 'October 14, 2026' (Pacific calendar date), used in prose."""
+    d = parse_z(iso_z_str).astimezone(PACIFIC)
+    return f"{d.strftime('%B')} {d.day}, {d.year}"

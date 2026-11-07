@@ -31,12 +31,12 @@ def _insert(conn, table: str, row: dict) -> None:
     conn.execute(f"INSERT INTO {table} ({cols}) VALUES ({', '.join('?' * len(row))})", list(row.values()))
 
 
-def build(path: str | Path | None = None, variant: str = "injected") -> Path:
+def build(path: str | Path | None = None, variant: str = "injected", frozen: bool = True) -> Path:
     assert variant in ("baseline", "injected"), variant
     target = Path(path) if path else db_path()
     target.parent.mkdir(parents=True, exist_ok=True)
     target.unlink(missing_ok=True)
-    cv_p, em_p, fb_p, er_p = _frozen("cv"), _frozen("emails"), _frozen("feedback"), _frozen("exit_reasons")
+    cv_p, em_p, fb_p, er_p = (_frozen(n) if frozen else {} for n in ("cv", "emails", "feedback", "exit_reasons"))
     name_of = {c["candidate_id"]: c["name"] for c in sc.CANDIDATES}
     conn = connect(target)
     with conn:
@@ -55,7 +55,7 @@ def build(path: str | Path | None = None, variant: str = "injected") -> Path:
             _insert(conn, "candidates", {**c, "cv_text": cv})
         for e in sc.STAGE_EVENTS:
             row = {k: v for k, v in e.items() if k != "seq"}
-            row["exit_reason"] = er_p.get(e["event_id"]) or stub.exit_reason(e["reason_code"])
+            row["exit_reason"] = er_p.get(e["event_id"]) or stub.exit_reason(e)
             _insert(conn, "stage_events", row)
         for f in sc.FEEDBACK:
             row = {k: v for k, v in f.items() if k != "criteria"}
