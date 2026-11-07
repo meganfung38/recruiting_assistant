@@ -223,8 +223,8 @@ def test_search_defaults_and_shape(conn):
     assert {c["status"] for c in r["candidates"]} == {"active"}
     for c in r["candidates"]:
         assert set(c) == {"candidate_id", "name", "current_stage", "status", "waiting_state", "waiting_days",
-                          "days_in_current_stage", "fit_signals"}
-        assert "cv_text" not in json.dumps(c) and "@" not in json.dumps(c)
+                          "days_in_current_stage", "fit_signals", "content_flags"}
+        assert "Skills:" not in json.dumps(c) and "@" not in json.dumps(c)  # no CV text, no addresses
     assert candidates.search_candidates("ROLE-BE", stage=TI, conn=conn)["returned"] == 5
     assert candidates.search_candidates("ROLE-BE", status="withdrawn", conn=conn)["total_matching"] == 6
     assert candidates.search_candidates("ROLE-BE", limit=3, conn=conn)["returned"] == 3
@@ -283,7 +283,8 @@ def test_injection_payload_cannot_move_signals(conn, db_file, tmp_path):
     c2 = connect(base)
     def sig(c):
         return next(r for r in candidates.search_candidates("ROLE-BE", conn=c)["candidates"] if r["candidate_id"] == "C117")
-    assert sig(conn) == sig(c2)
+    assert sig(conn)["fit_signals"] == sig(c2)["fit_signals"]  # signals identical; only content_flags differ
+    assert sig(conn)["content_flags"] and not sig(c2)["content_flags"]
     c2.close()
 
 
@@ -436,3 +437,21 @@ def test_a_stage_missing_one_target_omits_only_that_block(db_file, tmp_path, mis
         row = next(r for r in sig["candidates"] if r["candidate_id"] == "C148")
         assert row["fit_signals"]["over_duration_target"] is None
     c.close()
+
+
+def test_search_flags_only_the_injected_cv_and_never_returns_matched_text(conn, db_file, tmp_path):
+    flagged = {}
+    for role in ROLES:
+        for status in ("active", "rejected", "withdrawn"):
+            for r in candidates.search_candidates(role, status=status, conn=conn)["candidates"]:
+                if r["content_flags"]:
+                    flagged[r["candidate_id"]] = r["content_flags"]
+    assert list(flagged) == ["C117"]
+    assert {f["field"] for f in flagged["C117"]} == {"cv_text"}
+    assert {f["pattern_id"] for f in flagged["C117"]} >= {"system_override", "ignore_instructions", "rank_candidate", "concealment"}
+    assert "SYSTEM" not in json.dumps(flagged) and "Ignore all" not in json.dumps(flagged)
+    base = connect(build(tmp_path / "b.db", "baseline"))  # same data without the payload: zero flags anywhere
+    for role in ROLES:
+        for status in ("active", "rejected", "withdrawn"):
+            assert all(not r["content_flags"] for r in candidates.search_candidates(role, status=status, conn=base)["candidates"])
+    base.close()

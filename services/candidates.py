@@ -10,6 +10,7 @@ from datetime import datetime
 
 from services.analytics import days_between, waiting_state
 from services.clock import AS_OF, parse_z
+from services.content_flags import flags_for
 from services.db import NotFound, load_role, rows, use
 from services.tasks import task_view
 
@@ -96,7 +97,10 @@ def search_candidates(role_id: str, status: str = "active", stage: str | None = 
         out.append({"candidate_id": x["candidate_id"], "name": x["name"], "current_stage": x["current_stage"],
                     "status": x["application_status"], "waiting_state": sig["waiting_state"],
                     "waiting_days": sig["waiting_days"], "days_in_current_stage": sig["days_in_current_stage"],
-                    "fit_signals": sig})
+                    "fit_signals": sig,
+                    "content_flags": flags_for(x["candidate_id"], {
+                        "cv_text": x["cv_text"],
+                        **{f"feedback_summary:{f['feedback_id']}": f["summary_text"] for f in fbs[x["candidate_id"]]}})})
     return {"role_id": role_id, "candidates": out, "total_matching": len(cands), "returned": len(out)}
 
 
@@ -112,7 +116,6 @@ def get_candidates(candidate_ids: list[str], as_of: datetime = AS_OF, conn=None)
                 out.append({"candidate_id": cid, "not_found": True})
                 continue
             x = r[0]
-            role = load_role(c, x["role_id"])
             events = rows(c, "SELECT * FROM stage_events WHERE candidate_id = ? ORDER BY entered_at, event_id", cid)
             fb = _feedback_by_candidate(c, [cid])[cid]
             tasks = rows(c, "SELECT * FROM tasks WHERE candidate_id = ? AND status = 'pending' ORDER BY due_at", cid)

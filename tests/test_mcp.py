@@ -144,7 +144,7 @@ def test_no_contact_addresses_are_ever_returned(session):
 
 
 def test_search_rows_exclude_cv_text_and_analytics_are_aggregates_only(session):
-    assert "cv_text" not in json.dumps(body(session, "search"))
+    assert "Skills:" not in json.dumps(body(session, "search"))  # no CV text (flags name the field only)
     a = json.dumps(body(session, "analytics")["data"])
     assert "candidate_id" not in a and "C1" not in a  # aggregates and counts only, no raw applicant records
 
