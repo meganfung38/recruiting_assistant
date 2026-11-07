@@ -651,3 +651,26 @@ def test_omitted_non_candidates_are_reported_but_never_block_candidate_tracking(
     _, _, [out] = run_calls(FakeClient(lambda n, a: raw), [("get_tasks", {})], ctx)
     assert out.content["omitted"] and all(i.startswith("T-") for i in out.content["omitted"])
     assert ctx.evidence.unresolved_candidates() == set()
+
+
+def test_candidates_requested_but_refused_by_a_limit_stay_unresolved_until_retrieved():
+    ctx = TurnContext(budget=TurnBudget(Limits(max_tool_calls=1)))
+    fake = FakeClient(candidates_handler)
+
+    async def go():
+        ex = ToolExecutor(fake)
+        await ex.start()
+        ok = await ex.execute(ToolCall("a", "get_candidates", {"candidate_ids": ["C101"]}), ctx)
+        refused = await ex.execute(ToolCall("b", "get_candidates", {"candidate_ids": ["C102", "C103"]}), ctx)
+        return ok, refused
+    ok, refused = asyncio.run(go())
+    assert ok.ok and refused.error_code == "call_budget_exceeded"
+    assert ctx.evidence.unresolved_candidates() == {"C102", "C103"}          # C101 was retrieved; the others never were
+    ctx.evidence.add("get_candidates", env({"candidates": [{"candidate_id": "C102"}]}, ["cv:C102"]))
+    assert ctx.evidence.unresolved_candidates() == {"C103"}                  # later retrieval resolves it
+
+
+def test_a_refused_call_for_invalid_arguments_does_not_mark_anything_unresolved():
+    ctx = TurnContext()
+    run_calls(FakeClient(), [("get_candidates", {"candidate_ids": ["bogus"]})], ctx)
+    assert ctx.evidence.unresolved_candidates() == set()

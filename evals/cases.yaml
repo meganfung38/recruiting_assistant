@@ -3,6 +3,9 @@
 #  - Case 4 (C123 vs peers): a prompt rule alone was not enough at first; the model compared waiting_days with an unrelated
 #    "unscheduled active wait" median. Assert the comparison figure's field_path is duration.active_median_age_days (or
 #    active_max_age_days) and that C123's days_in_current_stage (13.0) is the other side; a wrong-clock comparison must fail.
+#  - Case 4 also: the analytics role must be C123's role (ROLE-MSE). In one live run the model fetched get_candidates and
+#    get_pipeline_analytics in the same round, guessed ROLE-BE, and every figure still validated (the numbers were real, the
+#    comparison was against the wrong role). Assert the analytics ref's role == the candidate's role_id.
 #  - Case 5 (follow-up): also require the answer to name each candidate's waiting_state, not just the numbers.
 # Only the truncation cases are defined so far; cases 1-13 are added with the eval runner (increment 9).
 #

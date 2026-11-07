@@ -20,6 +20,9 @@ def analyze(events: list[dict]) -> dict:
         if e.get("error_code") in ("call_budget_exceeded", "turn_timeout"):
             budget_hit = True
         if e["status"] != "success":
+            if e["tool_name"] == "get_candidates" and e.get("error_code") in (
+                    "call_budget_exceeded", "turn_timeout", "tool_timeout", "upstream_error"):
+                omitted |= {i for i in e["safe_arguments"].get("candidate_ids", []) if CAND.fullmatch(i)}  # asked for, refused
             continue
         if e["tool_name"] == "get_candidates":
             asked = [i for i in e["safe_arguments"].get("candidate_ids", [])]

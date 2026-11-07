@@ -7,7 +7,9 @@ import json
 from contextlib import AsyncExitStack
 from dataclasses import dataclass, field
 
-from agent.evidence import EvidenceRegistry
+from agent.answer_schema import SubmittedAnswer, submit_answer_definition
+from agent.evidence import EvidenceRegistry, ValidationReport, render_markdown, validate_plain
+from agent.finalizer import Finalizer
 from agent.limits import LimitExceeded, Limits, TurnBudget
 from agent.llm import LLMUnavailable
 from agent.mcp_client import McpSession
@@ -53,6 +55,9 @@ class TurnResult:
     limit_code: str | None = None
     content_flags: list[dict] = field(default_factory=list)
     messages: list[dict] = field(default_factory=list)   # this turn's messages, for history
+    submitted: SubmittedAnswer | None = None     # structured answer (None for plain-text / limit / error answers)
+    report: ValidationReport | None = None       # citation / candidate / figure validation of the final answer
+    repaired: list[str] = field(default_factory=list)   # problem categories found on the first submission
     usage: dict = field(default_factory=lambda: {"prompt_tokens": 0, "completion_tokens": 0})
 
     @property
@@ -103,15 +108,16 @@ class Orchestrator:
 
     async def _loop(self, executor, ctx, state, user) -> TurnResult:
         messages = [{"role": "system", "content": self.system_prompt}, *state.context_messages(), user]
-        turn_msgs, tools, flags = [user], executor.tool_definitions(), []
+        turn_msgs, flags = [user], []
+        tools = executor.tool_definitions() + [submit_answer_definition()]   # submit_answer is local, never sent to MCP
         usage = {"prompt_tokens": 0, "completion_tokens": 0}
-        final, limit = None, None
+        fin, accepted, answer_text, limit = Finalizer(ctx.evidence), None, None, None
 
         def tally(resp):
             for k in usage:
                 usage[k] += resp.usage.get(k, 0)
 
-        while final is None and limit is None:
+        while accepted is None and answer_text is None and limit is None:
             try:
                 ctx.budget.begin_round()
                 if ctx.budget.remaining_s() <= 0:
@@ -128,27 +134,53 @@ class Orchestrator:
             tally(resp)
             messages.append(resp.message)
             turn_msgs.append(resp.message)
-            if not resp.tool_calls:
-                final = resp.content or ""
+            if not resp.tool_calls:                                   # plain-text answer: validated by regex only
+                if not (resp.content or "").strip():
+                    return self._failed("empty_answer", ctx, turn_msgs, usage)
+                decision, nudge = fin.plain_text(resp.content)
+                if nudge:
+                    messages.append({"role": "system", "content": nudge})
+                    continue
+                accepted, answer_text = decision, decision.rendered
                 break
-            outcomes = await asyncio.gather(*(executor.execute(tc, ctx) for tc in resp.tool_calls))
-            for tc, out in zip(resp.tool_calls, outcomes):
-                msg = {"role": "tool", "tool_call_id": tc.id, "content": json.dumps(out.content, ensure_ascii=False)}
-                messages.append(msg)
-                turn_msgs.append(msg)
+            submits = [tc for tc in resp.tool_calls if tc.name == "submit_answer"]
+            data_calls = [tc for tc in resp.tool_calls if tc.name != "submit_answer"]
+            outcomes = await asyncio.gather(*(executor.execute(tc, ctx) for tc in data_calls))
+            results = {}
+            for tc, out in zip(data_calls, outcomes):
+                results[tc.id] = out.content
                 flags += out.content.get("content_flags", [])
                 if out.error_code in ("call_budget_exceeded", "turn_timeout"):
                     limit = out.error_code
-        status, answer = "ok", final
-        if limit is not None:
+            for i, tc in enumerate(submits):
+                d = fin.submit(tc, mixed=bool(data_calls), duplicate=i > 0)
+                results[tc.id] = d.content
+                if d.answer is not None and accepted is None:
+                    accepted = d
+            for tc in resp.tool_calls:
+                msg = {"role": "tool", "tool_call_id": tc.id, "content": json.dumps(results[tc.id], ensure_ascii=False)}
+                messages.append(msg)
+                turn_msgs.append(msg)
+            if accepted is not None:
+                answer_text = accepted.rendered
+                limit = None
+        status, report, submitted = "ok", None, None
+        if accepted is not None:
+            report, submitted = accepted.report, accepted.answer
+            if submitted is None:        # plain text: the model's own message is already last; show the marked-up version
+                turn_msgs[-1] = {"role": "assistant", "content": answer_text}
+            else:                        # structured: history ends in the visible answer text, after the tool result
+                turn_msgs.append({"role": "assistant", "content": answer_text})
+        elif limit is not None:
             status = "limit_reached"
-            answer = await self._wrap_up(messages, ctx, limit, usage)
-            turn_msgs.append({"role": "assistant", "content": answer})
-        elif not final.strip():
-            return self._failed("empty_answer", ctx, turn_msgs, usage)
+            raw = await self._wrap_up(messages, ctx, limit, usage)
+            report = validate_plain(raw, ctx.evidence)
+            answer_text = render_markdown(raw, report)
+            turn_msgs.append({"role": "assistant", "content": answer_text})
         unique = {(f["candidate_id"], f["field"], f["pattern_id"]): f for f in flags}
-        return TurnResult(answer, status, ctx.trace, ctx.evidence, limit_code=limit,
-                          content_flags=[unique[k] for k in sorted(unique)], messages=turn_msgs, usage=usage)
+        return TurnResult(answer_text, status, ctx.trace, ctx.evidence, limit_code=limit,
+                          content_flags=[unique[k] for k in sorted(unique)], messages=turn_msgs, usage=usage,
+                          submitted=submitted, report=report, repaired=fin.repaired)
 
     async def _wrap_up(self, messages, ctx, limit: str, usage: dict) -> str:
         """After a limit: one last model call with tools disabled, so the recruiter still gets what was found."""

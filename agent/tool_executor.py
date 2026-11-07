@@ -78,6 +78,8 @@ class ToolExecutor:
         name = call.name if isinstance(call.name, str) else ""
 
         def fail(code: str, message: str | None = None, args: dict | None = None) -> ToolOutcome:
+            if name == "get_candidates" and args and code in ("call_budget_exceeded", "turn_timeout", "tool_timeout", "upstream_error"):
+                ctx.evidence.note_unfulfilled(args.get("candidate_ids", []))     # wanted, but could not be retrieved
             ctx.trace.record(call_id=call.id, sequence=seq, tool_name=name, started_ms=t0, error_code=code,
                              safe_arguments=args if args is not None else {},
                              status=STATUS_FOR.get(code, "error"))

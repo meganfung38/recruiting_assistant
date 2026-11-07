@@ -10,13 +10,37 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
+from agent.limits import Limits
 from agent.llm import OpenAILLM
 from agent.orchestrator import ConversationState, Orchestrator, TurnResult
 from services.db import db_path
 
 
+def format_structured(r: TurnResult) -> list[str]:
+    """The checked parts of a submit_answer: candidates, figures with their verification status, caveats."""
+    a, out = r.submitted, []
+    if a is None:
+        return out
+    for c in a.candidates:
+        out.append(f"  Candidate {c.candidate_id} ({c.role_id}): {c.rationale}"
+                   + (f"  Gaps: {'; '.join(c.gaps)}" if c.gaps else "") + f"  Evidence: {', '.join(c.evidence)}")
+    for f in (r.report.figures if r.report else []):
+        out.append(f"  [{'verified' if f.verified else 'UNVERIFIED'}] {f.label} = {f.value:g}  ({f.evidence} {f.field_path})"
+                   + ("" if f.verified else f"  -> {f.reason}"))
+    out += [f"  Uncertainty: {u}" for u in a.uncertainties] + [f"  Content warning (from the model): {w}" for w in a.content_warnings]
+    return ["-- Checked answer details", *out] if out else []
+
+
 def format_result(r: TurnResult, show_trace: bool = True) -> str:
     out = [r.answer.strip(), ""]
+    out += format_structured(r)
+    if r.report is not None and not r.report.machine_checked:
+        out.append("! Figures in this answer were not machine-checked (the model answered in plain text).")
+    if r.report is not None and (r.report.bad_citations or r.report.unseen_candidates or r.report.not_retrieved
+                                 or r.report.unverified_figures):
+        out.append("! Some claims could not be verified against the tool results and are marked as unverified above.")
+    if r.repaired:
+        out.append(f"(the answer was corrected once after validation: {', '.join(r.repaired)})")
     if r.status == "limit_reached":
         out.append(f"! Limit reached ({r.limit_code}): this answer may be incomplete.")
     if r.unresolved_candidates:
@@ -43,6 +67,9 @@ def main(argv=None, orchestrator: Orchestrator | None = None) -> int:
     ap.add_argument("--db", help="SQLite file (default: RECRUITING_DB_PATH or data/recruiting.db)")
     ap.add_argument("--chat", action="store_true", help="interactive multi-turn session")
     ap.add_argument("--no-trace", action="store_true")
+    ap.add_argument("--max-result-chars", type=int, help="override the per-result size cap (to force truncation)")
+    ap.add_argument("--max-tool-calls", type=int, help="override the per-turn tool-call budget")
+    ap.add_argument("--max-rounds", type=int, help="override the model-round cap")
     a = ap.parse_args(argv)
     load_dotenv()
     if orchestrator is None:
@@ -51,7 +78,10 @@ def main(argv=None, orchestrator: Orchestrator | None = None) -> int:
             print(f"Database {target} not found. Run: python -m data.seed", file=sys.stderr)
             return 2
         try:
-            orchestrator = Orchestrator(OpenAILLM(), db_path=a.db)
+            base = Limits()
+            limits = Limits(max_rounds=a.max_rounds or base.max_rounds, max_tool_calls=a.max_tool_calls or base.max_tool_calls,
+                            max_result_chars=a.max_result_chars or base.max_result_chars)
+            orchestrator = Orchestrator(OpenAILLM(), db_path=a.db, limits=limits)
         except ValueError as exc:
             print(f"{exc}", file=sys.stderr)
             return 2
