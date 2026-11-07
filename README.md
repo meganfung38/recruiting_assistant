@@ -1,7 +1,7 @@
 # Recruiting Assistant
 
 Recruiter-facing assistant over a **fully fictional** recruiting dataset (see `project-spec.md`).
-Work in progress: increments 0, 1a and 1b (scaffold, structured dataset, frozen prose) are done.
+Work in progress: dataset, services, MCP server, trusted executor and a CLI agent are done; Streamlit UI and evals are next.
 
 All people, emails (`example.com`) and companies are synthetic.
 The fixed as-of clock is **2026-11-07 12:00 PST (20:00 UTC)**; timestamps are stored in UTC.
@@ -21,6 +21,16 @@ python -m data.check_consistency        # prose vs structured facts (also run in
 python -m pytest
 ```
 Set `RECRUITING_DB_PATH` to choose which SQLite file the services read.
+
+## Run the agent (CLI)
+```bash
+cp .env.example .env     # set OPENAI_API_KEY and OPENAI_MODEL (never commit .env)
+python -m data.seed
+python -m agent.cli "Which recruiting tasks are pending or overdue?"
+python -m agent.cli --chat --role ROLE-BE      # multi-turn: ask a follow-up like "Of those three, who has waited longest?"
+```
+Each answer prints the real tool trace and the evidence IDs the model received. One MCP stdio session is opened per turn
+(and closed after it), because Streamlit reruns the script on every interaction.
 
 ## Data design (so far)
 `data/scenarios.py` holds the curated facts (who is in which stage, with dates and outcomes).

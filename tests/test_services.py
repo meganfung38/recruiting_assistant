@@ -307,6 +307,7 @@ def test_c123_supports_demo_4(conn):
     assert latest["stage"] == TI and latest["feedback_id"].startswith("FB-")
     assert c["stage_history"][-1]["event_id"].startswith("EV-")
     assert c["waiting_state"] == "awaiting_decision" and c["waiting_days"] == pytest.approx(5, abs=1e-3)
+    assert c["days_in_current_stage"] == pytest.approx(13, abs=1e-3)       # a different clock from waiting_days
     peers = [r for r in candidates.search_candidates("ROLE-MSE", stage=TI, conn=conn)["candidates"]
              if r["candidate_id"] != "C123"]
     assert len(peers) == EXPECT["demo4_c123"]["active_peers_in_stage"]
@@ -455,3 +456,11 @@ def test_search_flags_only_the_injected_cv_and_never_returns_matched_text(conn, 
         for status in ("active", "rejected", "withdrawn"):
             assert all(not r["content_flags"] for r in candidates.search_candidates(role, status=status, conn=base)["candidates"])
     base.close()
+
+
+def test_get_candidates_days_in_stage_matches_search_and_is_null_when_not_active(conn):
+    search = {r["candidate_id"]: r for r in candidates.search_candidates("ROLE-MSE", conn=conn)["candidates"]}
+    ids = list(search)
+    for c in candidates.get_candidates(ids[:6], conn=conn) + candidates.get_candidates(ids[6:], conn=conn):
+        assert c["days_in_current_stage"] == pytest.approx(search[c["candidate_id"]]["days_in_current_stage"], abs=1e-3)
+    assert candidates.get_candidates(["C132"], conn=conn)[0]["days_in_current_stage"] is None   # rejected at Recruiter Screen

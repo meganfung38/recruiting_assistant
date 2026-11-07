@@ -61,6 +61,7 @@ SCHEMAS = {
     "get_candidates": {"candidates": [{
         "candidate_id": K, "not_found": K, "role_id": K, "name": K, "current_stage": K, "application_status": K,
         "applied_at": T, "cv_text": U, "cv_truncated": K, "feedback_count": K, "waiting_state": K, "waiting_days": K,
+        "days_in_current_stage": K,
         "stage_history": [{"event_id": K, "stage": K, "entered_at": T, "scheduled_at": T, "interview_at": T,
                            "exited_at": T, "exit_outcome": K, "reason_code": K, "reason_detail": K, "exit_reason": U}],
         "feedback": [{"feedback_id": K, "stage": K, "interview_at": T, "submitted_at": T, "interviewer": K,

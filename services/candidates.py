@@ -129,6 +129,7 @@ def get_candidates(candidate_ids: list[str], as_of: datetime = AS_OF, conn=None)
                 "stage_history": events,
                 "feedback": [{k: v for k, v in f.items() if k != "criteria_json"} for f in fb],
                 "feedback_count": len(fb), "waiting_state": state,
+                "days_in_current_stage": round(days_between(parse_z(events[-1]["entered_at"]), as_of), 4) if active else None,
                 "waiting_days": round(wait, 4) if wait is not None else None,
                 "pending_tasks": [task_view(t, as_of) for t in tasks]})
     return out
