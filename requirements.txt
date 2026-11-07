@@ -1,0 +1,11 @@
+# Direct dependencies, pinned. Install: pip install -r requirements.txt
+streamlit==1.67.0
+fastmcp==4.1.6
+mcp==2.3.0
+pydantic==2.14.3
+openai==3.46.0
+python-dotenv==1.2.4
+PyYAML==6.0.3
+pytest==9.2.0
+# Pinned because the newest release had no prebuilt macOS wheel (forces a Rust build).
+cryptography==48.0.1
