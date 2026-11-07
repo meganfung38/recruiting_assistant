@@ -39,6 +39,7 @@ def summarize(safe_env: dict) -> dict:
         "source_ids": list(safe_env.get("source_refs", []))[:40],
         "content_flags": [{"candidate_id": f["candidate_id"], "pattern_id": f["pattern_id"]}
                           for f in safe_env.get("content_flags", [])],
+        "omitted_ids": list(safe_env.get("omitted", [])),
         "warnings": len(safe_env.get("warnings", []))}
 
 

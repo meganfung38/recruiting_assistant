@@ -43,6 +43,7 @@ class EvidenceRegistry:
         self._refs: dict[str, str] = {}   # citation ref -> tool that returned it
         self._candidates: set[str] = set()
         self._raw: dict[str, Any] = {}
+        self._omitted: set[str] = set()   # candidates a size-capped result left out
 
     def add(self, tool: str, safe_envelope: dict, raw_aggregates: dict | None = None) -> None:
         """Register a successful call's evidence. Callers must not invoke this for failed calls."""
@@ -50,6 +51,7 @@ class EvidenceRegistry:
             if CITATION_RE.match(ref):
                 self._refs.setdefault(ref, tool)
         self._candidates |= _candidate_ids(safe_envelope["data"])
+        self._omitted |= {i for i in safe_envelope.get("omitted", []) if re.fullmatch(r"C\d{3}", i)}
         self._raw.update(raw_aggregates or {})
 
     def has(self, ref: str) -> bool:
@@ -63,6 +65,10 @@ class EvidenceRegistry:
 
     def candidate_ids(self) -> set[str]:
         return set(self._candidates)
+
+    def unresolved_candidates(self) -> set[str]:
+        """Candidates a truncated result omitted and that no later successful call retrieved (no `cv:` record)."""
+        return {c for c in self._omitted if not self.has(f"cv:{c}")}
 
     def raw(self, ref: str) -> Any:
         return self._raw.get(ref)

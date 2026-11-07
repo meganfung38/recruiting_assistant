@@ -76,6 +76,7 @@ COLLECTIONS = {"list_roles": ("roles", "role_id"), "search_candidates": ("candid
                "get_candidates": ("candidates", "candidate_id"), "get_candidate_communications": ("messages", "email_id"),
                "get_tasks": ("tasks", "task_id")}
 ID_KEYS = ("candidate_id", "feedback_id", "event_id", "email_id", "task_id")
+ID_RE = re.compile(r"C\d{3}|EM-\d{3}|T-\d{3}|ROLE-[A-Z]{2,3}")
 
 
 def _wrap(text) -> dict:
@@ -162,7 +163,7 @@ def project(tool: str, envelope: dict) -> dict:
     as_of = envelope.get("as_of")
     return {"data": shown, "as_of": as_of if isinstance(as_of, str) and AS_OF_RE.fullmatch(as_of) else None,
             "source_refs": [r for r in envelope.get("source_refs", []) if isinstance(r, str) and CITATION_RE.match(r)][:MAX_REFS],
-            "warnings": warnings, "content_flags": flags, "error": err or None}
+            "warnings": warnings, "content_flags": flags, "omitted": [], "error": err or None}
 
 
 def _shown_ids(node) -> set[str]:
@@ -184,27 +185,33 @@ def _shown_ids(node) -> set[str]:
 
 def cap_size(tool: str, env: dict, max_chars: int) -> dict:
     """Shorten the result to fit by omitting WHOLE trailing items of the tool's main list. Nested records
-    (a candidate's feedback, stage history) are never cut. Counts, warnings, refs and flags are then
-    made consistent with exactly what remains."""
-    def too_big() -> bool:
-        return len(json.dumps(env, ensure_ascii=False)) > max_chars
-    if not too_big():
+    (a candidate's feedback, stage history) are never cut. After each removal the FINAL envelope (counts,
+    warning, omitted IDs, refs, flags) is rebuilt and measured, so what is returned always fits the cap."""
+    def size() -> int:
+        return len(json.dumps(env, ensure_ascii=False))
+    if size() <= max_chars:
         return env
     key, id_key = COLLECTIONS.get(tool, (None, None))
     items = env["data"].get(key) if key and env["data"] else None
-    total, omitted = len(items or []), []
-    while items and len(items) > 1 and too_big():
+    all_ids = [i.get(id_key) for i in items or []]
+    total, base = len(all_ids), (list(env["warnings"]), list(env["source_refs"]), list(env["content_flags"]))
+
+    def finish(omitted: list, note: str) -> None:
+        env["warnings"] = base[0] + [note]
+        env["omitted"] = [i for i in reversed(omitted) if isinstance(i, str) and ID_RE.fullmatch(i)]  # structured twin of the note
+        present = _shown_ids(env["data"])
+        env["source_refs"] = [r for r in base[1] if r.startswith("analytics:") or r.partition(":")[2] in present]
+        env["content_flags"] = [f for f in base[2] if f["candidate_id"] in present]
+
+    omitted: list = []
+    while items and len(items) > 1:
         omitted.append(items.pop().get(id_key))
-    if too_big() or not items:
-        env["data"], omitted = None, []
-        env["warnings"].append("Result too large to show; narrow the request (fewer IDs or a tighter filter).")
-    else:
         if "returned" in env["data"]:
             env["data"]["returned"] = len(items)   # `returned` always equals the items actually shown
-        names = ", ".join(str(o) for o in reversed(omitted))
-        env["warnings"].append(f"Result truncated to fit the size limit: showing {len(items)} of {total}. "
-                               f"Omitted (request again if needed): {names}.")
-    present = _shown_ids(env["data"])
-    env["source_refs"] = [r for r in env["source_refs"] if r.startswith("analytics:") or r.partition(":")[2] in present]
-    env["content_flags"] = [f for f in env["content_flags"] if f["candidate_id"] in present]
+        finish(omitted, f"Result truncated to fit the size limit: showing {len(items)} of {total}. "
+                        f"Omitted (request again if needed): {', '.join(str(o) for o in reversed(omitted))}.")
+        if size() <= max_chars:
+            return env
+    env["data"] = None                              # nothing fits (one oversized item, or no list to shorten)
+    finish(list(reversed(all_ids)), "Result too large to show; narrow the request (fewer IDs or a tighter filter).")
     return env

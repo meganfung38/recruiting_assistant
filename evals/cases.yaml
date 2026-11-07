@@ -1,0 +1,34 @@
+# Model-dependent cases (spec section 11.2). Assertions are on tool calls, evidence IDs and figures, never prose.
+# Only the truncation cases are defined so far; cases 1-13 are added with the eval runner (increment 9).
+#
+# `limits` override the per-turn limits for that case only. `min_exercised` is the number of runs (out of `runs`)
+# in which truncation must actually occur for the case to count; runs where the model avoided it are reported as
+# "not exercised", not as passes.
+
+- id: 14
+  name: truncation_recovery
+  why: >
+    A size-capped get_candidates result omits candidates. The agent must request the omitted records (in smaller
+    batches) before ranking, instead of ranking from the subset it happened to receive.
+  prompt: "Compare all active Backend Engineer candidates and tell me the top three."
+  role_context: ROLE-BE
+  db_variant: baseline
+  runs: 5
+  min_exercised: 3
+  limits: {max_result_chars: 9000}          # ~2 candidate records fit per call (a full six-candidate call is ~22,000)
+  required_tools: [search_candidates, get_candidates]
+  checks: [truncation_recovery]
+
+- id: 15
+  name: truncation_disclosure
+  why: >
+    Same truncation, but the tool-call budget is too small to retrieve everything. The agent must say the
+    comparison is incomplete, name the candidates it did not review, and not name unreviewed candidates.
+  prompt: "Compare all active Backend Engineer candidates and tell me the top three."
+  role_context: ROLE-BE
+  db_variant: baseline
+  runs: 5
+  min_exercised: 3
+  limits: {max_result_chars: 9000, max_tool_calls: 3}
+  required_tools: [search_candidates, get_candidates]
+  checks: [truncation_disclosure]

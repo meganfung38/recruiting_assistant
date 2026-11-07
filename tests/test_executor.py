@@ -526,6 +526,8 @@ def test_the_worst_six_candidates_exceed_the_cap_and_are_truncated_safely(sweep)
     full = {c["candidate_id"]: c for c in sweep["worst_uncapped"]["data"]["candidates"]}
     for c in out["data"]["candidates"]:                                 # a shown candidate is complete, never partial
         assert c == full[c["candidate_id"]] and c["feedback_count"] == len(c["feedback"])
+    assert sorted(out["omitted"]) == sorted(omitted)                    # structured twin of the warning
+    assert ctx.evidence.unresolved_candidates() == set(omitted)         # tracked until someone retrieves them
     assert all(ctx.evidence.has(f"cv:{i}") for i in shown) and not any(ctx.evidence.has(f"cv:{i}") for i in omitted)
     assert not any(ctx.evidence.candidate_seen(i) for i in omitted)    # omitted candidates are not evidence
 
@@ -584,3 +586,68 @@ def test_flags_and_warnings_in_the_whole_dataset_name_only_c117(sweep):
         assert all(not any(bit in w for bit in PAYLOAD_BITS) for w in r["warnings"])
         assert all(re.fullmatch(r"(cv|feedback|stage|email|task|analytics):[\w@.-]+", ref) for ref in r["source_refs"])
     assert seen == {"C117"}
+
+
+# ================================================================== truncation: size guarantee and recovery tracking
+def fake_candidate(cid):
+    return {"candidate_id": cid, "role_id": "ROLE-BE", "name": "N N", "current_stage": "Technical Interview",
+            "application_status": "active", "cv_text": "c" * 600, "cv_truncated": False, "feedback_count": 2,
+            "waiting_state": "awaiting_scheduling", "waiting_days": 3.0, "stage_history": [], "pending_tasks": [],
+            "feedback": [{"feedback_id": f"FB-{int(cid[1:]) * 2 + k:03d}", "stage": "Recruiter Screen",
+                          "interview_at": "2026-11-01T20:00:00Z", "submitted_at": "2026-11-01T20:00:00Z",
+                          "interviewer": "I", "criteria": {"communication": 4}, "recommendation": "yes",
+                          "summary_text": "s" * 300} for k in range(2)]}
+
+
+def candidates_handler(name, args):
+    cands = [fake_candidate(c) for c in args["candidate_ids"]]
+    refs = [f"cv:{c['candidate_id']}" for c in cands] + [f"feedback:{f['feedback_id']}" for c in cands for f in c["feedback"]]
+    return env({"candidates": cands}, refs)
+
+
+def test_a_truncated_result_always_fits_the_cap_whatever_the_cap():
+    raw = collection_env("get_candidate_communications", "messages", "email_id", "email", 50,
+                         candidate_id="C101", total_messages=50)
+    ids = [r["email_id"] for r in raw["data"]["messages"]]
+    for cap in range(1500, 14000, 650):
+        ctx = TurnContext(budget=TurnBudget(Limits(max_result_chars=cap)))
+        _, _, [out] = run_calls(FakeClient(lambda n, a: raw), [("get_candidate_communications", {"candidate_id": "C101"})], ctx)
+        c = out.content
+        assert len(json.dumps(c, ensure_ascii=False)) <= cap, cap          # includes the warning, omitted list and refs
+        shown = [m["email_id"] for m in c["data"]["messages"]] if c["data"] else []
+        assert c["data"] is None or c["data"]["returned"] == len(shown)
+        if shown and len(shown) < 50:
+            assert [i for i in ids if i in shown] + c["omitted"] == ids      # shown + omitted == everything, in order
+
+
+def test_omitted_candidates_stay_unresolved_until_a_later_call_retrieves_them():
+    ctx = TurnContext(budget=TurnBudget(Limits(max_result_chars=5000)))
+    wanted = [f"C{n}" for n in range(101, 107)]
+
+    async def go():
+        ex = ToolExecutor(FakeClient(candidates_handler))
+        await ex.start()
+        history, pending = [], list(wanted)
+        while pending:
+            out = await ex.execute(ToolCall(str(len(history)), "get_candidates", {"candidate_ids": pending[:6]}), ctx)
+            assert out.ok and len(json.dumps(out.content, ensure_ascii=False)) <= 5000
+            shown = [c["candidate_id"] for c in out.content["data"]["candidates"]]
+            history.append((shown, out.content["omitted"], set(ctx.evidence.unresolved_candidates())))
+            assert shown, "made no progress"
+            pending = out.content["omitted"]
+        return history
+    history = asyncio.run(go())
+    assert len(history) >= 2                                                  # the cap really forced a follow-up
+    first_shown, first_omitted, first_unresolved = history[0]
+    assert first_omitted and first_unresolved == set(first_omitted)           # tracked right after the truncation
+    assert history[-1][2] == set() and ctx.evidence.unresolved_candidates() == set()
+    assert all(ctx.evidence.has(f"cv:{c}") for c in wanted)
+    assert [e.result_summary["omitted_ids"] for e in ctx.trace.ordered()][0] == first_omitted  # visible in the trace
+
+
+def test_omitted_non_candidates_are_reported_but_never_block_candidate_tracking():
+    raw = collection_env("get_tasks", "tasks", "task_id", "task", 30)
+    ctx = TurnContext(budget=TurnBudget(Limits(max_result_chars=6000)))
+    _, _, [out] = run_calls(FakeClient(lambda n, a: raw), [("get_tasks", {})], ctx)
+    assert out.content["omitted"] and all(i.startswith("T-") for i in out.content["omitted"])
+    assert ctx.evidence.unresolved_candidates() == set()
