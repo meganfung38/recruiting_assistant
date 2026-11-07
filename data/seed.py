@@ -38,7 +38,7 @@ def build(path: str | Path | None = None, variant: str = "injected", frozen: boo
     target.unlink(missing_ok=True)
     cv_p, em_p, fb_p, er_p = (_frozen(n) if frozen else {} for n in ("cv", "emails", "feedback", "exit_reasons"))
     name_of = {c["candidate_id"]: c["name"] for c in sc.CANDIDATES}
-    conn = connect(target)
+    conn = connect(target, create=True)
     with conn:
         conn.executescript((HERE / "schema.sql").read_text())
         for r in sc.ROLES:
