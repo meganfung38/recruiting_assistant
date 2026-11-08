@@ -23,9 +23,13 @@ def server_env(db_path: str | Path | None = None) -> dict[str, str]:
 
 
 class McpSession:
-    def __init__(self, db_path: str | Path | None = None, extra_args: tuple[str, ...] = ()):
+    def __init__(self, db_path: str | Path | None = None, extra_args: tuple[str, ...] = (), log_file: str | Path | None = None):
+        # The server's stderr goes to a file (default: discarded), never to ours: that keeps startup independent of the
+        # host's stderr (captured, redirected, a service) and keeps the server's log lines out of the CLI/UI output.
+        # Set RECRUITING_MCP_LOG=/path/to/file to keep them when debugging a startup failure.
         transport = StdioTransport(command=sys.executable, args=["-m", "mcp_server.server", *extra_args],
-                                   env=server_env(db_path), cwd=str(REPO_ROOT), keep_alive=False)
+                                   env=server_env(db_path), cwd=str(REPO_ROOT), keep_alive=False,
+                                   log_file=Path(log_file or os.environ.get("RECRUITING_MCP_LOG") or os.devnull))
         self._client = Client(transport)
 
     async def __aenter__(self) -> "McpSession":

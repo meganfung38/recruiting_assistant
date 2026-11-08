@@ -25,7 +25,8 @@ def format_structured(r: TurnResult) -> list[str]:
         out.append(f"  Candidate {c.candidate_id} ({c.role_id}): {c.rationale}"
                    + (f"  Gaps: {'; '.join(c.gaps)}" if c.gaps else "") + f"  Evidence: {', '.join(c.evidence)}")
     for f in (r.report.figures if r.report else []):
-        out.append(f"  [{'verified' if f.verified else 'UNVERIFIED'}] {f.label} = {f.value:g}  ({f.evidence} {f.field_path})"
+        src = f"{f.source_ref} (cited as {f.evidence})" if f.relabelled else f.evidence
+        out.append(f"  [{'verified' if f.verified else 'UNVERIFIED'}] {f.label} = {f.value:g}  ({src} {f.field_path})"
                    + ("" if f.verified else f"  -> {f.reason}"))
     out += [f"  Uncertainty: {u}" for u in a.uncertainties] + [f"  Content warning (from the model): {w}" for w in a.content_warnings]
     return ["-- Checked answer details", *out] if out else []

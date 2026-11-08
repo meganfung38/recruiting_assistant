@@ -584,7 +584,7 @@ def test_flags_and_warnings_in_the_whole_dataset_name_only_c117(sweep):
     for r in envelopes(sweep):
         seen |= {f["candidate_id"] for f in r["content_flags"]}
         assert all(not any(bit in w for bit in PAYLOAD_BITS) for w in r["warnings"])
-        assert all(re.fullmatch(r"(cv|feedback|stage|email|task|analytics):[\w@.-]+", ref) for ref in r["source_refs"])
+        assert all(re.fullmatch(r"(cv|search|feedback|stage|email|task|analytics):[\w@.-]+", ref) for ref in r["source_refs"])
     assert seen == {"C117"}
 
 

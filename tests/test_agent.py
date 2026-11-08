@@ -291,7 +291,7 @@ def test_follow_up_turn_can_requery_with_ids_from_the_previous_answer(real):
 
 def test_truncation_state_is_surfaced_when_omitted_candidates_are_never_retrieved(real):
     steps = [call(("1", "get_candidates", {"candidate_ids": ["C104", "C108", "C110", "C113", "C117", "C112"]})),
-             say("Top three..."), say("Top three... (still not retrieved)")]
+             say("Top three..."), say("Top three... (still not retrieved)"), say("Top three... (still silent)")]
     o, _ = real_orch(real["baseline"], steps, limits=Limits(max_result_chars=9000))
     r = o.run_turn("q")
     assert r.unresolved_candidates and set(r.unresolved_candidates) <= {"C104", "C108", "C110", "C113", "C117", "C112"}
@@ -449,10 +449,10 @@ def test_hiding_unretrieved_candidates_is_rejected_then_disclosure_is_accepted(r
         call(("1", "get_candidates", {"candidate_ids": SIX})),
         submit(answer_markdown="Top three: C104, C108.", candidates=[cand_arg("C104")]),                 # silent about the rest
         submit("s2", answer_markdown="Provisional: C104.", candidates=[cand_arg("C104")],
-               uncertainties=["Incomplete: C110, C113, C117 and C112 were not reviewed."])], limits=Limits(max_result_chars=9000))
+               uncertainties=["Incomplete: C110, C113, C117 and C112 were not reviewed."])], limits=Limits(max_result_chars=9000, max_tool_calls=1))
     r = o.run_turn("Compare all active Backend candidates")
     rejection = json.loads(llm.calls[2]["messages"][-1]["content"])
-    assert "C110" in " ".join(rejection["problems"]) and r.repaired == ["undisclosed_incomplete"]
+    assert "C110" in " ".join(rejection["problems"]) and r.repaired == ["undisclosed_incomplete"]     # budget gone: disclosure is enough
     assert r.report.ok and r.submitted.uncertainties and r.unresolved_candidates == ["C110", "C112", "C113", "C117"]
 
 
@@ -467,9 +467,196 @@ def test_retrieving_the_omitted_candidates_first_needs_no_repair(real):
     assert r.repaired == [] and r.report.ok and r.unresolved_candidates == [] and r.status == "ok"
 
 
-def test_flags_reach_the_recruiter_even_if_the_model_does_not_mention_them(real):
-    o, _ = real_orch(real["injected"], [call(("1", "get_candidates", {"candidate_ids": ["C117"]})),
-                                        submit(answer_markdown="C117 [cv:C117] is a reasonable candidate.", candidates=[cand_arg("C117")])])
+def test_flags_reach_the_recruiter_even_if_the_model_never_mentions_them(real):
+    quiet = lambda sid: submit(sid, answer_markdown="C117 [cv:C117] is a reasonable candidate.", candidates=[cand_arg("C117")])
+    o, llm = real_orch(real["injected"], [call(("1", "get_candidates", {"candidate_ids": ["C117"]})), quiet("a"), quiet("b")])
     r = o.run_turn("q")
-    assert {f["candidate_id"] for f in r.content_flags} == {"C117"}                   # the banner does not depend on the model
-    assert r.submitted.content_warnings == [] and r.repaired == []                    # and the model's omission is measurable, not masked
+    rejection = json.loads(llm.calls[2]["messages"][-1]["content"])
+    assert "C117" in " ".join(rejection["problems"]) and "content_warnings" in " ".join(rejection["problems"])
+    assert r.repaired == ["unreported_flag"] and r.submitted.content_warnings == []        # a stubborn model is not trusted to comply ...
+    assert {f["candidate_id"] for f in r.content_flags} == {"C117"}                          # ... the banner never depends on it
+
+
+def test_a_flagged_candidate_must_be_named_in_content_warnings_and_the_model_can_fix_it(real):
+    quiet = submit("a", answer_markdown="C117 [cv:C117] is fine.", candidates=[cand_arg("C117")])
+    fixed = submit("b", answer_markdown="C117 [cv:C117] is fine.", candidates=[cand_arg("C117")],
+                   content_warnings=["C117's cv_text contained instruction-like text; I ignored it."])
+    o, _ = real_orch(real["injected"], [call(("1", "get_candidates", {"candidate_ids": ["C117"]})), quiet, fixed])
+    r = o.run_turn("q")
+    assert r.report.ok and r.repaired == ["unreported_flag"] and "C117" in r.submitted.content_warnings[0]
+
+
+def test_flags_that_only_arrived_via_search_also_require_a_warning(real):
+    quiet = submit("a", answer_markdown="Top: C104 [cv:C104].", candidates=[cand_arg("C104")])
+    o, llm = real_orch(real["injected"], [call(("1", "search_candidates", {"role_id": "ROLE-BE"})),
+                                          call(("2", "get_candidates", {"candidate_ids": ["C104"]})), quiet,
+                                          submit("b", answer_markdown="Top: C104 [cv:C104].", candidates=[cand_arg("C104")],
+                                                 content_warnings=["C117 had instruction-like text (seen in search); ignored."])])
+    r = o.run_turn("q")
+    assert r.repaired == ["unreported_flag"] and r.report.ok and r.evidence.flagged_candidates() == ["C117"]
+
+
+# ================================================================== wrap-up names the unreviewed; client closed per turn
+def test_wrap_up_notice_names_every_candidate_whose_retrieval_was_refused_or_omitted():
+    steps = [call(("1", "get_candidates", {"candidate_ids": ["C101", "C102"]})),
+             call(("2", "get_candidates", {"candidate_ids": ["C103", "C104"]}), ("3", "get_candidates", {"candidate_ids": ["C105"]})),
+             say("Incomplete: C103, C104 and C105 were not reviewed.")]
+    o, llm, _ = sorch(steps, limits=Limits(max_tool_calls=1))
+    r = o.run_turn("compare all")
+    notice = llm.calls[-1]["messages"][-1]["content"]
+    assert r.limit_code == "call_budget_exceeded" and r.unresolved_candidates == ["C103", "C104", "C105"] and llm.calls[-1]["tools"] is None
+    assert "C103, C104, C105" in notice and "name every one" in notice
+    ok, llm2, _ = orch([call(("1", "list_roles", {})), call(("2", "list_roles", {})), say("done")], limits=Limits(max_rounds=2))
+    ok.run_turn("q")
+    assert "never retrieved" not in llm2.calls[-1]["messages"][-1]["content"]            # nothing to name -> no list
+
+
+def test_the_llm_client_is_closed_at_the_end_of_every_turn_including_failed_ones():
+    class ClosingLLM(ScriptedLLM):
+        closed = 0
+        async def aclose(self):
+            type(self).closed += 1
+    ClosingLLM.closed = 0
+    FakeSession.opened = FakeSession.closed = 0
+    o = Orchestrator(ClosingLLM([say("fine"), LLMUnavailable("llm_unavailable")]), session_factory=lambda: FakeSession(FakeClient()))
+    o.run_turn("q1")
+    o.run_turn("q2")
+    assert ClosingLLM.closed == 2 and FakeSession.closed == 2
+
+
+def test_citing_a_search_row_is_allowed_but_ranking_it_without_retrieval_is_not():
+    """The model may cite cv:C113 for facts it saw in a search row (e.g. a content flag), but cannot rank it unretrieved."""
+    search = lambda n, a: env({"role_id": "ROLE-BE", "total_matching": 1, "returned": 1, "candidates": [
+        {"candidate_id": "C113", "name": "M V", "current_stage": "Technical Interview", "status": "active",
+         "waiting_state": "awaiting_scheduling", "waiting_days": 22.0, "days_in_current_stage": 22.0, "fit_signals": {}, "content_flags": []}]},
+        ["search:C113"])
+    steps = [call(("1", "search_candidates", {"role_id": "ROLE-BE"})),
+             submit("2", answer_markdown="C113 has waited 22 days [search:C113]."),
+             ]
+    o, llm, _ = orch(steps, client=FakeClient(search))
+    r = o.run_turn("who waits longest?")
+    assert r.repaired == [] and r.report.ok                                                # the citation is valid
+    cand_arg_search = lambda: {**cand_arg("C113"), "evidence": ["search:C113"]}
+    steps = [call(("1", "search_candidates", {"role_id": "ROLE-BE"})), submit("2", candidates=[cand_arg_search()]),
+             submit("3", answer_markdown="x", candidates=[cand_arg("C113")]), submit("4", answer_markdown="x", candidates=[cand_arg("C113")]),
+             submit("5", answer_markdown="x", candidates=[cand_arg("C113")])]
+    o, llm, _ = orch(steps, client=FakeClient(search))
+    r = o.run_turn("rank")
+    assert r.repaired == ["candidate_not_retrieved"] and r.report.not_retrieved == ["C113"]
+    assert len(llm.calls) == 4 and not r.report.ok            # first try + 2 retrieval retries, then accepted (and visibly unverified)
+
+
+def test_hiding_unretrieved_candidates_gets_two_extra_chances_that_do_not_use_up_the_normal_repair(real):
+    silent = lambda sid, md="Top three: C104.": submit(sid, answer_markdown=md, candidates=[cand_arg("C104")])
+    o, llm = real_orch(real["baseline"], [
+        call(("1", "get_candidates", {"candidate_ids": SIX})),
+        silent("a", "Top three: C104 [feedback:FB-999]."),            # citation problem AND silent about the rest
+        silent("b"),                                                   # citation fixed, still silent: a retrieval retry, not the 1 repair
+        submit("c", answer_markdown="Provisional: C104.", candidates=[cand_arg("C104")], uncertainties=["Incomplete: C110, C113, C117 and C112 not reviewed."])],
+        limits=Limits(max_result_chars=9000, max_tool_calls=1))               # no budget left to retrieve, so disclosure can satisfy it
+    r = o.run_turn("compare all")
+    assert len(llm.calls) == 4 and r.report.ok and r.status == "ok"
+    assert r.repaired == ["unsupported_citation", "undisclosed_incomplete"]                 # what the first submission got wrong
+
+
+def test_after_two_extra_chances_an_undisclosed_incomplete_answer_is_accepted_but_stays_visibly_incomplete(real):
+    silent = lambda sid: submit(sid, answer_markdown="Top three: C104.", candidates=[cand_arg("C104")])
+    o, llm = real_orch(real["baseline"], [call(("1", "get_candidates", {"candidate_ids": SIX})), silent("a"), silent("b"), silent("c")],
+                       limits=Limits(max_result_chars=9000))
+    r = o.run_turn("compare all")
+    assert len(llm.calls) == 4 and r.status == "ok" and not r.report.ok                    # 2 retries, then accepted: no endless loop
+    assert r.report.undisclosed_incomplete == ["C110", "C112", "C113", "C117"] and r.unresolved_candidates == r.report.undisclosed_incomplete
+    from agent.cli import format_result
+    assert "Incomplete comparison" in format_result(r) and "C110" in format_result(r)        # the banner never depends on the model
+
+
+def test_retrieving_the_missing_candidates_after_a_rejection_clears_the_problem(real):
+    silent = submit("a", answer_markdown="Top three: C104.", candidates=[cand_arg("C104")])
+    o, llm = real_orch(real["baseline"], [
+        call(("1", "get_candidates", {"candidate_ids": SIX})), silent,
+        call(("2", "get_candidates", {"candidate_ids": ["C110", "C113"]})), call(("3", "get_candidates", {"candidate_ids": ["C117", "C112"]})),
+        submit("b", answer_markdown="Top three after reviewing all.", candidates=[cand_arg("C104"), cand_arg("C110")])],
+        limits=Limits(max_result_chars=9000))
+    r = o.run_turn("compare all")
+    assert r.report.ok and r.unresolved_candidates == [] and r.repaired == ["undisclosed_incomplete", "unretrieved_available"]
+
+
+def test_ranking_an_unretrieved_candidate_is_a_retrieval_problem_with_its_own_retries(real):
+    """Found by the live eval: the one repair round was spent on a citation typo, then a still-unretrieved candidate got through."""
+    first = submit("a", answer_markdown="Top: C104 [feedback:FB-999].", candidates=[cand_arg("C104"), cand_arg("C110")])   # typo AND unretrieved
+    second = submit("b", answer_markdown="Top: C104.", candidates=[cand_arg("C104"), cand_arg("C110")],
+                    uncertainties=["C110 was not retrieved."])                                                           # typo fixed, C110 still ranked
+    o, llm = real_orch(real["baseline"], [
+        call(("1", "get_candidates", {"candidate_ids": SIX})), first, second,
+        call(("2", "get_candidates", {"candidate_ids": ["C110"]})),
+        submit("c", answer_markdown="Top after reviewing C110.", candidates=[cand_arg("C104"), cand_arg("C110")],
+               uncertainties=["C113, C117 and C112 were not reviewed."])], limits=Limits(max_result_chars=9000))
+    r = o.run_turn("compare all")
+    assert r.repaired == ["unsupported_citation", "candidate_not_retrieved", "undisclosed_incomplete", "unretrieved_available"]
+    assert len(llm.calls) == 5 and r.report.not_retrieved == []             # C110 was fetched during the retries
+    assert r.report.retrievable == ["C112", "C113", "C117"] and not r.report.ok  # the rest stay visibly unfetched (retries used up)
+
+
+def test_disclosing_a_gap_is_not_enough_while_the_agent_can_still_retrieve_it(real):
+    """Found by the live eval: the model used 7 of 24 calls, skipped C110, and gave no ranking, only a disclosure."""
+    disclose = lambda sid: submit(sid, answer_markdown="I cannot give a ranking yet.", uncertainties=["C110 was not retrieved."])
+    o, llm = real_orch(real["baseline"], [
+        call(("1", "get_candidates", {"candidate_ids": ["C104", "C108", "C110"]})), disclose("a"),
+        call(("2", "get_candidates", {"candidate_ids": ["C110"]})),
+        submit("b", answer_markdown="Top: C110 and C104.", candidates=[cand_arg("C110"), cand_arg("C104")])], limits=Limits(max_result_chars=9000))
+    r = o.run_turn("compare")
+    rejection = json.loads(llm.calls[2]["messages"][-1]["content"])
+    assert "still have tool budget" in " ".join(rejection["problems"]) and "C110" in " ".join(rejection["problems"])
+    assert r.report.ok and r.repaired == ["unretrieved_available"] and r.unresolved_candidates == []
+
+
+def test_once_the_budget_is_gone_disclosure_is_accepted_without_further_pushback(real):
+    o, llm = real_orch(real["baseline"], [
+        call(("1", "get_candidates", {"candidate_ids": ["C104", "C108", "C110"]})),
+        submit("a", answer_markdown="Provisional only.", uncertainties=["C110 was not retrieved."])], limits=Limits(max_result_chars=9000, max_tool_calls=1))
+    r = o.run_turn("compare")
+    assert len(llm.calls) == 2 and r.repaired == [] and r.report.ok and r.unresolved_candidates == ["C110"]   # accepted; the banner still shows C110
+
+
+def test_the_pushback_is_bounded_so_it_cannot_loop_forever(real):
+    stubborn = lambda sid: submit(sid, answer_markdown="No ranking.", uncertainties=["C110 was not retrieved."])
+    o, llm = real_orch(real["baseline"], [call(("1", "get_candidates", {"candidate_ids": ["C104", "C108", "C110"]})),
+                                          stubborn("a"), stubborn("b"), stubborn("c")], limits=Limits(max_result_chars=9000))
+    r = o.run_turn("compare")
+    assert len(llm.calls) == 4 and r.status == "ok" and r.report.retrievable == ["C110"]      # 2 retries, then accepted and visibly incomplete
+
+
+def test_the_pushback_stops_when_there_is_no_round_left_to_use_it(real):
+    o, llm = real_orch(real["baseline"], [call(("1", "get_candidates", {"candidate_ids": ["C104", "C108", "C110"]})),
+                                          submit("a", answer_markdown="No ranking.", uncertainties=["C110 was not retrieved."])],
+                       limits=Limits(max_result_chars=9000, max_rounds=3))
+    r = o.run_turn("compare")
+    assert len(llm.calls) == 2 and r.report.ok and r.repaired == []                  # rounds 1-2 used; fetch+resubmit would not fit
+
+
+def test_a_model_that_cites_cv_for_a_search_only_candidate_is_told_exactly_how_to_fix_it(real):
+    wrong = submit("a", answer_markdown="C117 had instruction-like text [cv:C117].", content_warnings=["C117 had instruction-like text."])
+    right = submit("b", answer_markdown="C117 had instruction-like text [search:C117].", content_warnings=["C117 had instruction-like text."])
+    o, llm = real_orch(real["injected"], [call(("1", "search_candidates", {"role_id": "ROLE-BE"})), wrong, right])
+    r = o.run_turn("q")
+    rejection = json.loads(llm.calls[2]["messages"][-1]["content"])
+    assert "cite [search:C117]" in " ".join(rejection["problems"]) and "get_candidates" in " ".join(rejection["problems"])
+    assert r.repaired == ["unsupported_citation"] and r.report.ok and not r.evidence.retrieved("C117")
+    assert r.evidence.has("search:C117") and not r.evidence.has("cv:C117")           # the answer shows the CV was never read
+
+
+def test_a_mislabelled_figure_costs_no_repair_but_a_mislabelled_prose_citation_still_does(real):
+    figure_slip = submit("a", answer_markdown="Strong signals [search:C104].", candidates=[{**cand_arg("C104"), "evidence": ["cv:C104"]}],
+                         figures=[{"label": "C104 avg criteria score", "value": 4.57, "evidence": "cv:C104", "field_path": "fit_signals.avg_criteria_score"}])
+    o, llm = real_orch(real["baseline"], [call(("1", "search_candidates", {"role_id": "ROLE-BE"})),
+                                          call(("2", "get_candidates", {"candidate_ids": ["C104"]})), figure_slip])
+    r = o.run_turn("q")
+    assert len(llm.calls) == 3 and r.repaired == [] and r.report.ok                    # accepted on the first submission
+    f = r.report.figures[0]
+    assert f.verified and f.relabelled and f.source_ref == "search:C104" and f.evidence == "cv:C104"
+    from agent.cli import format_result
+    assert "search:C104 (cited as cv:C104)" in format_result(r)                         # the recruiter sees the real source
+    prose_slip = submit("b", answer_markdown="C113 is flagged [cv:C113].")
+    o2, llm2 = real_orch(real["baseline"], [call(("1", "search_candidates", {"role_id": "ROLE-BE"})), prose_slip,
+                                            submit("c", answer_markdown="C113 is flagged [search:C113].")])
+    assert o2.run_turn("q").repaired == ["unsupported_citation"]                       # prose citations stay strict

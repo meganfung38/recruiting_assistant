@@ -57,6 +57,12 @@ class OpenAILLM:
             self._client, self._loop = openai.AsyncOpenAI(api_key=self._api_key, timeout=self._timeout), loop
         return self._client
 
+    async def aclose(self) -> None:
+        """Close the SDK client opened in the current loop (called at the end of each turn)."""
+        client, self._client, self._loop = self._client, None, None
+        if client is not None:
+            await client.close()
+
     async def complete(self, messages: list[dict], tools: list[dict] | None = None) -> LLMResponse:
         kwargs = {"model": self.model, "messages": messages}
         if tools:

@@ -2,7 +2,7 @@
 no generic SQL. Every result uses the response convention:
     {"data", "as_of", "source_refs", "warnings", "error"}
 `source_refs` lists citable record IDs that are actually in `data`, in citation form
-(`cv:C104`, `feedback:FB-018`, `stage:EV-042`, `email:EM-031`, `task:T-011`, `analytics:ROLE-BE@2026-11-07`).
+(`cv:C104` = candidate record retrieved, `search:C104` = a search row only, `feedback:FB-018`, `stage:EV-042`, `email:EM-031`, `task:T-011`, `analytics:ROLE-BE@2026-11-07`).
 Run over stdio:  python -m mcp_server.server   (set RECRUITING_DB_PATH to pick a database).
 """
 import functools
@@ -74,7 +74,9 @@ def search_candidates(
 ) -> dict:
     """List a role's candidates as compact rows with waiting state and triage signals (skill match, feedback counts). No CV text or emails; call get_candidates for detail. Signals are not a ranking."""
     r = candidates.search_candidates(role_id, status, stage, limit)
-    return _envelope(r, warnings=_truncation(r))
+    # A search row is a compact summary derived from the CV (skill matches, waiting, flags), not the record itself:
+    # it is cited as search:<ID>. Only get_candidates yields cv:<ID>, which means the record was retrieved.
+    return _envelope(r, [f"search:{c['candidate_id']}" for c in r["candidates"]], _truncation(r))
 
 
 @mcp.tool

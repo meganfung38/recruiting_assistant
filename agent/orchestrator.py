@@ -96,7 +96,12 @@ class Orchestrator:
                 await executor.start()
             except Exception:                      # MCP startup failure or a server/tool contract mismatch
                 return self._failed("data_service_unavailable", ctx, [user])
-            return await self._loop(executor, ctx, state, user)
+            try:
+                return await self._loop(executor, ctx, state, user)
+            finally:
+                close = getattr(self.llm, "aclose", None)
+                if close:
+                    await close()                      # close HTTP connections while their event loop is still running
 
     def _failed(self, code, ctx, turn_msgs, usage=None) -> TurnResult:
         return TurnResult(UNAVAILABLE[code], "error", ctx.trace, ctx.evidence, error_code=code, messages=turn_msgs,
@@ -111,7 +116,10 @@ class Orchestrator:
         turn_msgs, flags = [user], []
         tools = executor.tool_definitions() + [submit_answer_definition()]   # submit_answer is local, never sent to MCP
         usage = {"prompt_tokens": 0, "completion_tokens": 0}
-        fin, accepted, answer_text, limit = Finalizer(ctx.evidence), None, None, None
+        def can_retrieve() -> bool:     # a rejected answer costs a fetch round plus a resubmit round, so both must still fit
+            lim = ctx.budget.limits
+            return ctx.budget.calls < lim.max_tool_calls and ctx.budget.rounds <= lim.max_rounds - 2 and ctx.budget.remaining_s() > 15
+        fin, accepted, answer_text, limit = Finalizer(ctx.evidence, can_retrieve), None, None, None
 
         def tally(resp):
             for k in usage:
@@ -187,7 +195,10 @@ class Orchestrator:
         static = f"{LIMIT_MESSAGES[limit]} The evidence gathered so far is listed below, but this answer is incomplete."
         if limit == "turn_timeout":
             return static                                            # no time left to ask again
-        notice = {"role": "system", "content": WRAP_UP_NOTICE.format(reason=LIMIT_MESSAGES[limit].rstrip("."))}
+        missing = sorted(ctx.evidence.unresolved_candidates())
+        unreviewed = (f" Their records were requested but never retrieved, so you must name every one of them as not reviewed: "
+                      f"{', '.join(missing)}.") if missing else ""
+        notice = {"role": "system", "content": WRAP_UP_NOTICE.format(reason=LIMIT_MESSAGES[limit].rstrip("."), unreviewed=unreviewed)}
         try:
             resp = await self._ask([*messages, notice], None, ctx, WRAP_UP_GRACE_S)
         except (LLMUnavailable, asyncio.TimeoutError):

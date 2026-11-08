@@ -15,7 +15,7 @@ from data.seed import build, canonical_hash
 
 EXPECTED_TOOLS = {"list_roles", "get_role", "search_candidates", "get_candidates",
                   "get_candidate_communications", "get_pipeline_analytics", "get_tasks"}
-CITATION = re.compile(r"^(cv:C\d{3}|feedback:FB-\d{3}|stage:EV-\d{3}|email:EM-\d{3}|task:T-\d{3}"
+CITATION = re.compile(r"^(cv:C\d{3}|search:C\d{3}|feedback:FB-\d{3}|stage:EV-\d{3}|email:EM-\d{3}|task:T-\d{3}"
                       r"|analytics:ROLE-[A-Z]{2,3}@\d{4}-\d{2}-\d{2})$")
 
 CALLS = {  # key -> (tool, arguments)
@@ -159,3 +159,12 @@ def test_server_is_read_only_and_leaves_no_process_behind(session):
     assert canonical_hash(session["db"]) == session["before"]  # 20 calls, zero writes
     leftover = subprocess.run(["pgrep", "-f", session["marker"]], capture_output=True, text=True).stdout.split()
     assert leftover == []
+
+
+def test_search_rows_are_cited_as_search_and_only_retrieved_records_as_cv(session):
+    search = body(session, "search")["source_refs"]
+    assert search and all(r.startswith("search:C") for r in search) and len(search) == 8
+    assert not any(r.startswith("cv:") for r in search)                       # a search row is not a retrieved record
+    cands = body(session, "cands")["source_refs"]
+    assert "cv:C123" in cands and not any(r.startswith("search:") for r in cands)
+    assert all(CITATION.match(r) for r in search)

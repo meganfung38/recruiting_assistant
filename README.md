@@ -32,6 +32,14 @@ python -m agent.cli --chat --role ROLE-BE      # multi-turn: ask a follow-up lik
 Each answer prints the real tool trace and the evidence IDs the model received. One MCP stdio session is opened per turn
 (and closed after it), because Streamlit reruns the script on every interaction.
 
+## Tests and evals
+```bash
+python -m pytest                    # deterministic: no API key, no network (includes the injection suite, tests/test_injection.py)
+python -m evals.run_evals           # model-dependent, opt-in: skips cleanly without OPENAI_API_KEY; writes docs/eval_results.md
+python -m evals.run_evals --cases 10 --runs 3
+```
+`docs/eval_results.md` records every run (including failures and what was changed). Read it before trusting any rate: samples are small.
+
 ## Data design (so far)
 `data/scenarios.py` holds the curated facts (who is in which stage, with dates and outcomes).
 `data/seed.py` turns them into SQLite deterministically. Prose (CVs, emails, feedback summaries, exit reasons) was written from those rows by an AI

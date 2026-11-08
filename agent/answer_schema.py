@@ -17,7 +17,7 @@ class CandidateEntry(_Strict):
     candidate_id: CandidateId
     role_id: RoleId
     rationale: Annotated[str, Field(max_length=1200, description="Why, in terms of the role's requirements and evidence")]
-    evidence: Annotated[list[Annotated[str, Field(max_length=60)]], Field(max_length=12, description="Citation IDs, e.g. feedback:FB-031, cv:C104")]
+    evidence: Annotated[list[Annotated[str, Field(max_length=60)]], Field(max_length=12, description="Citation IDs, e.g. feedback:FB-031, cv:C104 (record retrieved), search:C104 (search row only)")]
     gaps: Annotated[list[Annotated[str, Field(max_length=300)]], Field(max_length=8, description="Missing evidence or concerns, e.g. no system design feedback")]
 
 

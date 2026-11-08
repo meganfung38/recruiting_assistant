@@ -65,7 +65,8 @@ def registry(*, cands=("C104", "C108"), unresolved=(), failed_ref=None):
     reg.add("get_pipeline_analytics", env({}, [REF]), {REF: ANALYTICS})
     reg.add("get_tasks", env({}, ["task:T-004"]), {"task:T-004": {"task_id": "T-004", "days_overdue": 1.0}})
     for c in unresolved:                                       # seen in a search row but omitted from get_candidates
-        reg.add("get_candidates", {**env({"candidates": [{"candidate_id": c}]}, []), "omitted": [c]})
+        reg.add("search_candidates", env({"candidates": [{"candidate_id": c}]}, [f"cv:{c}"]))
+        reg.add("get_candidates", {**env({"candidates": []}, []), "omitted": [c]})
     return reg
 
 
@@ -197,7 +198,7 @@ def cand_registry():
     raw_search = env({"candidates": [{"candidate_id": "C104", "waiting_days": 3.0, "days_in_current_stage": 10.0,
                                       "fit_signals": {"avg_criteria_score": 4.57, "feedback_count": 4}},
                                      {"candidate_id": "C108", "waiting_days": 4.0, "days_in_current_stage": 7.0,
-                                      "fit_signals": {"avg_criteria_score": 3.75, "feedback_count": 3}}]}, [])
+                                      "fit_signals": {"avg_criteria_score": 3.75, "feedback_count": 3}}]}, ["search:C104", "search:C108"])
     reg.add("search_candidates", raw_search, aggregates("search_candidates", raw_search))
     raw_cands = env({"candidates": [{"candidate_id": "C104", "feedback_count": 4, "waiting_days": 3.0, "cv_text": "SECRET CV",
                                      "days_in_current_stage": 10.0, "feedback": [{"feedback_id": "FB-016", "criteria": {"coding": 5}}]}]},
@@ -209,7 +210,7 @@ def cand_registry():
 def test_candidate_numbers_from_records_and_search_signals_are_verifiable_but_cv_text_is_not_kept():
     reg = cand_registry()
     a = ans(figures=[fig(4, "cv:C104", "feedback_count"), fig(10.0, "cv:C104", "days_in_current_stage"),
-                     fig(4.57, "cv:C104", "fit_signals.avg_criteria_score"), fig(5, "cv:C104", "feedback[0].criteria.coding")])
+                     fig(4.57, "search:C104", "fit_signals.avg_criteria_score"), fig(5, "cv:C104", "feedback[0].criteria.coding")])
     assert all(f.verified for f in validate_submission(a, reg).figures)
     assert "SECRET" not in json.dumps(reg.raw("cv:C104"))
 
@@ -239,7 +240,88 @@ def test_task_numbers_are_kept_only_for_tasks_the_model_was_shown():
 
 def test_search_signals_do_not_make_a_candidate_count_as_retrieved():
     reg = cand_registry()
-    assert reg.has("cv:C104") and not reg.has("cv:C108")      # C108 was only in a search row
-    assert reg.raw("cv:C108") == {"fit_signals": {"avg_criteria_score": 3.75, "feedback_count": 3},
-                                  "waiting_days": 4.0, "days_in_current_stage": 7.0}
-    assert validate_submission(ans(candidates=[cand("C108", ("cv:C104",))]), reg).not_retrieved == ["C108"]
+    assert reg.retrieved("C104") and not reg.retrieved("C108")     # C108 was only in a search row: not retrieved ...
+    assert reg.raw("search:C108") == {"fit_signals": {"avg_criteria_score": 3.75, "feedback_count": 3},
+                                      "waiting_days": 4.0, "days_in_current_stage": 7.0}
+    assert reg.has("search:C108") and not reg.has("cv:C108")        # ... citable as a search row, never as a retrieved record
+    assert reg.raw("cv:C108") is None
+    assert validate_submission(ans(candidates=[cand("C108", ("search:C108",))]), reg).not_retrieved == ["C108"]
+
+
+def test_a_candidate_that_was_requested_but_omitted_counts_as_not_retrieved_not_as_unseen():
+    reg = registry(unresolved=("C110",))
+    r = validate_submission(ans(candidates=[cand("C110", ("cv:C104",)), cand("C150", ("cv:C104",))]), reg)
+    assert r.not_retrieved == ["C110"] and r.unseen_candidates == ["C150"]                 # a never-requested ID is a different problem
+
+
+def test_retrievable_gaps_are_flagged_only_while_the_turn_can_still_retrieve():
+    reg = registry(unresolved=("C110", "C113"))
+    told = ans(uncertainties=["C110 and C113 were not reviewed."])
+    assert validate_submission(told, reg).ok                                              # no budget: disclosure is enough
+    r = validate_submission(told, reg, can_retrieve=True)
+    assert r.retrievable == ["C110", "C113"] and r.categories == ["unretrieved_available"] and "still have tool budget" in r.problems()[0]
+    assert validate_plain("C110 and C113 not reviewed", reg, can_retrieve=True).categories == ["unretrieved_available"]
+    assert validate_submission(ans(), registry(), can_retrieve=True).ok                   # nothing unresolved -> nothing to fetch
+
+
+def test_flagged_candidates_must_be_named_in_content_warnings():
+    reg = registry()
+    reg.add("search_candidates", {**env({"candidates": [{"candidate_id": "C117"}]}, ["cv:C117"]),
+                                  "content_flags": [{"candidate_id": "C117", "field": "cv_text", "pattern_id": "concealment"}]})
+    assert reg.flagged_candidates() == ["C117"]
+    silent = validate_submission(ans(answer_markdown="x [cv:C117]", uncertainties=["C117 had instruction-like text"]), reg)
+    assert silent.unreported_flags == ["C117"] and silent.categories == ["unreported_flag"] and "content_warnings" in silent.problems()[0]
+    assert validate_submission(ans(content_warnings=["C117's CV had instruction-like text; ignored."]), reg).ok
+    assert validate_plain("C117 contained instruction-like text.", reg).ok               # plain text: any mention counts
+    assert validate_plain("All fine.", reg).unreported_flags == ["C117"]
+    assert validate_submission(ans(), registry()).ok                                      # nothing flagged -> nothing required
+
+
+# ---- cv: (record retrieved) versus search: (search row seen)
+def test_cv_means_retrieved_and_search_means_a_search_row_only():
+    reg = cand_registry()                                                    # C104: searched AND retrieved; C108: searched only
+    ok = validate_submission(ans(answer_markdown="[cv:C104] [search:C104] [search:C108]"), reg)
+    assert ok.ok and ok.bad_citations == []
+    bad = validate_submission(ans(answer_markdown="C108 has a flag [cv:C108]."), reg)
+    assert bad.bad_citations == ["cv:C108"] and "only saw C108 in a search result" in bad.problems()[0]
+    assert "[search:C108]" in bad.problems()[0] and "get_candidates" in bad.problems()[0]
+
+
+def test_citing_search_for_a_candidate_you_retrieved_is_valid_but_citing_cv_for_a_never_seen_one_is_not():
+    reg = cand_registry()
+    assert validate_submission(ans(answer_markdown="[search:C104]"), reg).ok         # search rows are real returned records too
+    assert validate_submission(ans(answer_markdown="[cv:C150] [search:C150]"), reg).bad_citations == ["cv:C150", "search:C150"]
+    reg2 = EvidenceRegistry()
+    reg2.add("get_candidates", env({"candidates": [{"candidate_id": "C104"}]}, ["cv:C104"]))
+    hint = validate_submission(ans(answer_markdown="[search:C104]"), reg2)
+    assert hint.bad_citations == ["search:C104"] and "You retrieved C104" in hint.problems()[0] and "[cv:C104]" in hint.problems()[0]
+
+
+def test_a_figure_is_verified_where_it_actually_lives_and_the_true_source_is_reported():
+    reg = cand_registry()
+    own = validate_submission(ans(figures=[fig(4.57, "search:C104", "fit_signals.avg_criteria_score")]), reg).figures[0]
+    assert own.verified and own.source_ref == "search:C104" and not own.relabelled
+    slip = validate_submission(ans(figures=[fig(4.57, "cv:C104", "fit_signals.avg_criteria_score")]), reg)
+    f = slip.figures[0]                                                              # cited as cv:, but it is a search-row signal
+    assert slip.ok and f.verified and f.relabelled and f.source_ref == "search:C104" and f.evidence == "cv:C104"
+    assert validate_submission(ans(figures=[fig(4, "search:C104", "feedback_count")]), reg).figures[0].relabelled   # and the reverse slip
+    assert validate_submission(ans(figures=[fig(4, "cv:C104", "feedback_count")]), reg).figures[0].relabelled is False
+
+
+def test_relabelling_never_rescues_a_wrong_value_or_an_unseen_source():
+    reg = cand_registry()
+    wrong = validate_submission(ans(figures=[fig(4.0, "cv:C104", "fit_signals.avg_criteria_score")]), reg).figures[0]
+    assert not wrong.verified and "the data says 4.57" in wrong.reason and wrong.source_ref == "search:C104"
+    c108 = validate_submission(ans(figures=[fig(3.75, "cv:C108", "fit_signals.avg_criteria_score")]), reg).figures[0]
+    assert c108.verified and c108.relabelled and c108.source_ref == "search:C108"      # C108 has only a search row, which holds it
+    nothing = validate_submission(ans(figures=[fig(1, "cv:C150", "feedback_count")]), reg).figures[0]
+    assert not nothing.verified and "no stored result" in nothing.reason             # no candidate record or search row at all
+
+
+def test_flagged_search_only_candidates_can_be_cited_honestly_as_search():
+    reg = EvidenceRegistry()
+    reg.add("search_candidates", {**env({"candidates": [{"candidate_id": "C117"}]}, ["search:C117"]),
+                                  "content_flags": [{"candidate_id": "C117", "field": "cv_text", "pattern_id": "concealment"}]})
+    a = ans(answer_markdown="C117's CV was flagged [search:C117].", content_warnings=["C117 had instruction-like text; ignored."])
+    assert validate_submission(a, reg).ok
+    assert not reg.retrieved("C117") and not reg.has("cv:C117")                      # the recruiter can see the CV was never read
