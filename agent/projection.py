@@ -86,6 +86,12 @@ RENAME = {"role_age_days": "days_open", "waiting_state": "waiting_for", "waiting
           "completed_over_target": "left_after_target", "active_n": "people_there_now",
           "active_median_age_days": "median_days_there_now", "active_max_age_days": "max_days_there_now",
           "active_over_target": "over_target_now"}
+# Same key, different meaning by section: "over_target_count" in scheduling counts everyone who EVER reached the stage (14 of 17
+# for Backend Technical Interview, people who already left included), which the model read as "14 people there now".
+SECTION_RENAME = {("scheduling", "over_target_count"): "everyone_who_reached_it_waiting_past_booking_target",
+                  ("scheduling", "observations"): "everyone_who_reached_it",
+                  ("scheduling", "unscheduled_active_over_target"): "there_now_unbooked_past_booking_target",
+                  ("feedback", "over_target_count"): "feedback_submitted_late"}
 # Recorded reason codes, in words a recruiter reads (the analytics "reasons" counts).
 REASON_WORDS = {"missing_required_skill": "rejected: missing a required skill", "lower_interview_signal": "rejected: interview feedback below the bar",
                 "compensation_mismatch": "compensation mismatch", "accepted_other_offer": "withdrew: accepted another offer",
@@ -100,9 +106,13 @@ HOW_TO_SHOW = {
     "get_recruiting_overview": ("Comparing roles: ONE markdown table, a row per role: Role | Days open | Waiting to be scheduled | "
                                 "Waiting on feedback | Overdue tasks. About people waiting: name them with their days waiting and stage."),
     "get_tasks": "Three or more tasks: ONE markdown table, overdue first: Person | Task | Owner | Due | Status (overdue by N days).",
-    "get_pipeline_analytics": ("Stages: ONE markdown table: Stage | Reached | Moved on | Rejected | Withdrew | There now | "
-                               "Median days in stage: people who left / people there now (target) | Why people left (counts). "
-                               "There are two medians: never quote one without saying whose it is."),
+    "get_pipeline_analytics": ("Stages: ONE markdown table: Stage | Reached | Moved on | Rejected | Withdrew | There now | Why people left "
+                               "(counts). No timing columns. Mention timing only where it explains a loss or a delay, in a sentence that "
+                               "names its clock in words and uses that clock's own target, e.g. (invented numbers) '4 people are still waiting "
+                               "for their interview to be booked, all past the 3-day booking target; the longest has waited 9 days'. The "
+                               "clocks: waiting to be booked (scheduling_days), time in the stage (duration_days), waiting for feedback "
+                               "(feedback_days). This result has counts, medians and maxima only: never list individual people's waits from "
+                               "it (get_recruiting_overview has them, by name)."),
     "get_candidates": ("Ranking: best first, on skills and interview feedback; someone with only screening notes is not ranked above "
                        "someone with positive interviews. Comparing waits or days: list the people from the largest number to the "
                        "smallest first, then name the first one as the longest. Three or more people: ONE markdown table."),
@@ -125,7 +135,8 @@ def _apply(value, spec, flags: list, cand: str = "n/a", field: str = ""):
             words = REASON_WORDS if field == "reasons" else {}
             return {words.get(k, k): _apply(v, spec["*"], flags, cand, k) for k, v in value.items()
                     if isinstance(k, str) and SAFE_KEY.fullmatch(k) and not scan(k)}  # keys can carry text too
-        return {RENAME.get(k, k): _apply(WAITING_FOR.get(value[k], value[k]) if k == "waiting_state" else value[k], sub, flags, cand, k)
+        return {SECTION_RENAME.get((field, k), RENAME.get(k, k)):
+                _apply(WAITING_FOR.get(value[k], value[k]) if k == "waiting_state" else value[k], sub, flags, cand, k)
                 for k, sub in spec.items()
                 if k in value and not (sub == U and value[k] is None)}       # no empty untrusted wrappers (e.g. exit_reason on an advance)
     if isinstance(spec, list):

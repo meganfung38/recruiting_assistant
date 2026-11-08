@@ -635,3 +635,8 @@ def test_results_with_a_natural_shape_carry_how_to_show_it_next_to_the_data():
     assert out["how_to_show"].startswith("Comparing roles: ONE markdown table")
     assert "how_to_show" not in project("list_roles", env({"roles": []}))                    # only where a shape helps
     assert "how_to_show" not in project("get_tasks", env(None, error={"code": "not_found", "message": "x"}))  # never on an error
+
+
+def test_the_pipeline_hint_keeps_timing_out_of_the_stage_table_and_names_each_clock():
+    hint = project("get_pipeline_analytics", env({"role_id": "ROLE-BE", "stages": []}))["how_to_show"]
+    assert "No timing columns" in hint and "waiting to be booked" in hint and "time in the stage" in hint and "waiting for feedback" in hint

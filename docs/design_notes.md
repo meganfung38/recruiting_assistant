@@ -63,9 +63,14 @@ paths (repair rounds; a path named `days_open` for a field called `role_age_days
 - **Distinct evidence.** Interview notes were regenerated from each record's own facts (`data/compose_feedback.py`).
 - **History notes are separate messages.** Who an answer was about is kept for follow-ups as its own system message, not appended to
   the answer: when it was part of the answer text, the model copied "[About: ...]" into its next reply and the recruiter saw it.
-- **Two medians, always labelled.** A stage has a median for people who left it and one for people still there (13.5 vs 16 days for
-  Backend Technical Interview). An unlabelled "median days vs target" column made them look contradictory, so the table hint and the
-  prompt name both, and reason codes reach the model in words ("withdrew: waited too long to be scheduled").
+- **Timing is a sentence that names its clock, not a table column.** Each stage has three targets on three clocks (time in the stage,
+  waiting to be booked, waiting for feedback; fictional policy in `data/scenarios.py`). A "median days vs target" column put one clock's
+  target beside another clock's sentence (14-day time-in-stage target in the table, "3 people over the scheduling target" after it).
+  The "where are we losing candidates" table is now funnel and reasons only; timing appears only where it explains a loss, with the clock
+  and its own target in words. Analytics has no per-person waits, so the hint forbids listing them from it (the model had invented
+  "16, 16 and 22 days" from a median and a maximum), and an example in the hint uses invented numbers so it cannot be copied as data.
+- **Counts say who they count.** In scheduling, `over_target_count` counted everyone who ever reached the stage (14 of 17), and was read
+  as people there now; the model sees it as `everyone_who_reached_it_waiting_past_booking_target`. Reason codes arrive in words.
 - **Developer view counts say what they count**: "8 active candidates" for a whole-role read, and record IDs grouped by kind
   ("8 candidate records", "18 feedback entries").
 

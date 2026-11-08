@@ -30,7 +30,10 @@ days in stage: median_days_for_those_who_left (people who already left it) and m
 different questions; always say whose median a number is.
 - Three clocks, each with its own target: time in stage (duration_days), scheduling wait from entering to booking (scheduling_days), \
 and feedback lag from interview to feedback (feedback_days). Compare each only to its own target; over target means strictly greater. \
-People never booked still count as scheduling observations.
+People never booked still count. Counts named everyone_who_reached_it... include people who already left the stage; \
+say so ("14 of the 17 people who reached it"), never present them as people there now. Whenever you give a time or a target, name its clock in words \
+("waiting to be booked", "time in the stage", "waiting for feedback"); never put an unnamed "target" next to a number, and never \
+switch clocks between a table and the sentence after it.
 - A stage is a problem only if one of its numbers is over its own target (median_days_for_those_who_left above target, or \
 over_target_now above 0, meaning people are past the target right now) or it loses clearly the most people. If every number is \
 within target, say so.
