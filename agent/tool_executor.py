@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 from pydantic import ValidationError
 
 from agent import flag_sources
-from agent.evidence import EvidenceRegistry, aggregates
+from agent.evidence import EvidenceRegistry
 from agent.limits import LimitExceeded, Limits, TurnBudget
 from agent.projection import cap_size, project
 from agent.tool_specs import ARG_MODELS, tool_definitions
@@ -119,7 +119,7 @@ class ToolExecutor:
             ctx.trace.record(call_id=call.id, sequence=seq, tool_name=name, safe_arguments=safe_args, status="error",
                              started_ms=t0, error_code=code, result_summary=summarize(safe))
             return ToolOutcome(call.id, name, False, safe, code)
-        ctx.evidence.add(name, safe, aggregates(name, raw))
+        ctx.evidence.add(name, safe)
         ctx.trace.record(call_id=call.id, sequence=seq, tool_name=name, safe_arguments=safe_args, status="success",
                          started_ms=t0, result_summary=summarize(safe), evidence_refs=safe["source_refs"],
                          result_chars=len(json.dumps(safe, ensure_ascii=False)))

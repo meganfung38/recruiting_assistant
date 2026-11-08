@@ -19,29 +19,20 @@ from services.db import db_path
 
 
 def format_structured(r: TurnResult) -> list[str]:
-    """The checked parts of a submit_answer: candidates, figures with their verification status, caveats."""
+    """The declared parts of a submit_answer and what validation found: who it is about, the ranking, caveats, problems."""
     a, out = r.submitted, []
-    if a is None:
-        return out
-    for c in a.candidates:
-        out.append(f"  Candidate {c.candidate_id} ({c.role_id}): {c.rationale}"
-                   + (f"  Gaps: {'; '.join(c.gaps)}" if c.gaps else "") + f"  Evidence: {', '.join(c.evidence)}")
-    for f in (r.report.figures if r.report else []):
-        src = f"{f.source_ref} (cited as {f.evidence})" if f.relabelled else f.evidence
-        out.append(f"  [{'verified' if f.verified else 'UNVERIFIED'}] {f.label} = {f.value:g}  ({src} {f.field_path})"
-                   + ("" if f.verified else f"  -> {f.reason}"))
-    out += [f"  Uncertainty: {u}" for u in a.uncertainties] + [f"  Content warning (from the model): {w}" for w in a.content_warnings]
+    if r.report is not None and (r.report.candidates or r.report.roles):
+        out.append("  About: " + ", ".join(r.report.candidates + r.report.roles))
+    for n, x in enumerate(a.ranking if a else [], 1):
+        out.append(f"  {n}. {x.candidate_id}: {x.reason}" + (f"  Gaps: {'; '.join(x.gaps)}" if x.gaps else ""))
+    out += [f"  Uncertainty: {u}" for u in (a.uncertainties if a else [])]
+    out += [f"  [NOT MATCHED] {p}" for p in (r.report.problems() if r.report else [])]
     return ["-- Checked answer details", *out] if out else []
 
 
 def format_result(r: TurnResult, show_trace: bool = True) -> str:
     out = [r.answer.strip(), ""]
     out += format_structured(r)
-    if r.report is not None and not r.report.machine_checked:
-        out.append("! Figures in this answer were not machine-checked (the model answered in plain text).")
-    if r.report is not None and (r.report.bad_citations or r.report.unseen_candidates or r.report.not_retrieved
-                                 or r.report.unverified_figures):
-        out.append("! Some claims could not be verified against the tool results and are marked as unverified above.")
     if r.repaired:
         out.append(f"(the answer was corrected once after validation: {', '.join(r.repaired)})")
     if r.status == "limit_reached":

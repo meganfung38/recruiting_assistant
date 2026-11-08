@@ -14,7 +14,7 @@ from agent.mcp_client import McpSession
 from agent.orchestrator import ConversationState, Orchestrator
 from data import scenarios as sc
 from data.seed import build
-from tests.test_agent import FakeSession, ScriptedLLM, call, cand_arg, fig_arg, say, submit
+from tests.test_agent import FakeSession, ScriptedLLM, call, cand_arg, say, submit
 from tests.test_executor import FakeClient
 from tests.ui_tree import inside_expander, visible_by_default, walk, whole_page
 
@@ -58,7 +58,7 @@ def assistant_default_text(at):
 
 DEMO = lambda: [call(("0", "search_candidates", {"role": "ROLE-BE"})), call(("1", "get_candidates", {"candidate_ids": ["C104", "C110"]})),
                 submit("3", answer_markdown="Top two:\n\n- **Dahlia Ramanathan (C104)** [cv:C104] [feedback:FB-016]\n- **Junko Takeda (C110)** [cv:C110]",
-                       candidates=[cand_arg("C104"), cand_arg("C110")])]
+                       ranking=[cand_arg("C104"), cand_arg("C110")])]
 
 
 # ------------------------------------------------------------------ first screen
@@ -95,15 +95,18 @@ def test_an_example_runs_a_turn_and_the_default_view_is_the_answer_plus_one_trus
     assert not any(t == "Status" for _, t, lbl in walk(at.chat_message[-1]))                  # the running line is gone once the answer is shown
 
 
-def test_evidence_panel_shows_readable_notes_grouped_by_person_not_identifiers(monkeypatch, dbs):
+def test_evidence_shows_the_same_card_for_each_ranked_person_without_identifiers(monkeypatch, dbs):
     at = start(monkeypatch, orchestrator(dbs["baseline"], DEMO))
     at.sidebar.button(key="example-1").click().run()
-    inside = [v for t, v in inside_expander(at.chat_message[-1], "Evidence")]
-    joined = "\n".join(inside)
-    assert "Dahlia Ramanathan" in joined and "feedback" in joined and "full record opened" not in joined and "Search summaries" not in joined
-    code_blocks = [v for t, v in inside_expander(at.chat_message[-1], "Evidence") if t == "Code"]
-    assert code_blocks and all(isinstance(c, str) for c in code_blocks)                      # candidate-supplied quotes are inert code blocks
-    for t, v in inside_expander(at.chat_message[-1], "Evidence"):
+    inside = inside_expander(at.chat_message[-1], "Evidence for this ranking")
+    heads = [v for t, v in inside if t == "Markdown" and v.startswith("**")]
+    assert heads == ["**1. Dahlia Ramanathan** · Backend Engineer", "**2. Junko Takeda** · Backend Engineer"]   # ranking order
+    lines = [v for t, v in inside if t == "Markdown"]
+    assert sum(v.startswith("- All required skills") for v in lines) == 2 and any("**Technical Interview · " in v for v in lines)
+    assert not any("Resume Review" in v for v in lines)                                    # screening notes left out for everyone
+    code_blocks = [v for t, v in inside if t == "Code"]
+    assert code_blocks and all(isinstance(c, str) for c in code_blocks)                      # interviewer notes are inert text
+    for t, v in inside:
         if t != "Code":
             assert "cv:C104" not in v and "FB-0" not in v, (t, v[:80])                       # IDs never appear, even when expanded
 
@@ -144,33 +147,34 @@ def test_history_survives_reruns_and_a_follow_up_sees_the_previous_answer(monkey
 # ------------------------------------------------------------------ the injection notice and the reviewer's panel
 def flagged_steps(answer, listed=("C117", "C104")):
     return lambda: [call(("1", "get_candidates", {"candidate_ids": ["C117", "C104"]})),
-                    submit("2", answer_markdown=answer, candidates=[cand_arg(c) for c in listed])]
+                    submit("2", answer_markdown=answer, ranking=[cand_arg(c) for c in listed])]
 
 
-def test_a_relevant_flag_shows_a_plain_notice_and_the_original_text_only_in_the_review_panel(monkeypatch, dbs):
+def test_a_relevant_flag_is_one_titled_block_with_the_reason_and_the_original_text_inside_it(monkeypatch, dbs):
     at = start(monkeypatch, orchestrator(dbs["injected"], flagged_steps("Quentin Abara's profile is ordinary; Dahlia Ramanathan is stronger.")))
     at.chat_input[0].set_value("check them").run()
     assert not at.exception
-    notice = next(v for _, t, v in walk(at.chat_message[-1]) if t == "Markdown" and "manipulative" in v)      # a bordered note, not a colour banner
-    assert notice.startswith("Potentially manipulative instructions were found in Quentin Abara's CV.") and notice.endswith("They were ignored in this evaluation.")
+    md = [v for _, t, v in walk(at.chat_message[-1]) if t == "Markdown"]
+    assert md[0] == "**Instruction-like text found in Quentin Abara's CV**"                 # titled, and first in the answer
+    assert md[1].startswith("The text ") and md[1].endswith("ignored it; it did not affect this answer.")
     assert not any(l in whole_page_text(at) for l in LABELS)                                 # no internal detector labels anywhere on the page
-    panel = inside_expander(at.chat_message[-1], "View the original flagged text")
+    panel = inside_expander(at.chat_message[-1], "Show the original text")
     assert ("Code", PAYLOAD) in panel and any("Candidate-supplied text, shown for your review only" in v for t, v in panel if t == "Caption")
     outside = [(t, v) for _, t, v in walk(at.main) if t != "Code" and any(b in v for b in BITS)]
     assert outside == []                                                                     # the payload text exists only inside the inert code block
 
 
-def test_an_unrelated_flag_adds_no_notice_but_the_text_is_still_reviewable(monkeypatch, dbs):
+def test_an_unrelated_flag_shows_nothing_at_all_to_the_recruiter(monkeypatch, dbs):
+    """Manual test: the original text appeared with no explanation. Now it is the block or nothing."""
     at = start(monkeypatch, orchestrator(dbs["injected"], flagged_steps("Dahlia Ramanathan has the strongest interview record.", listed=("C104",))))
     at.chat_input[0].set_value("who is strongest").run()
-    assert not any("manipulative" in v for _, t, v in walk(at.chat_message[-1]))              # no notice under an unrelated answer
-    assert ("Code", PAYLOAD) in inside_expander(at.chat_message[-1], "View the original flagged text")
+    assert not any("Instruction-like" in v or "original text" in v for _, t, v in walk(at.chat_message[-1]))
 
 
 def test_clean_data_shows_no_notice_and_no_review_panel(monkeypatch, dbs):
     at = start(monkeypatch, orchestrator(dbs["baseline"], DEMO))
     at.sidebar.button(key="example-1").click().run()
-    assert not any("manipulative" in v for _, t, v in walk(at.chat_message[-1])) and not any("original flagged text" in lbl for _, t, lbl in walk(at.chat_message[-1]) if t == "Expander")
+    assert not any("Instruction-like" in v for _, t, v in walk(at.chat_message[-1])) and not any("original text" in lbl for _, t, lbl in walk(at.chat_message[-1]) if t == "Expander")
 
 
 def test_markup_inside_flagged_text_is_displayed_as_text_not_interpreted(monkeypatch, dbs, tmp_path):
@@ -185,24 +189,23 @@ def test_markup_inside_flagged_text_is_displayed_as_text_not_interpreted(monkeyp
     at = start(monkeypatch, orchestrator(path, flagged_steps("Quentin Abara is ordinary.")))
     at.chat_input[0].set_value("check").run()
     assert not at.exception
-    panel = inside_expander(at.chat_message[-1], "View the original flagged text")
+    panel = inside_expander(at.chat_message[-1], "Show the original text")
     code = [v for t, v in panel if t == "Code"]
     assert code and "<script>" in code[0] and "http://evil.example" in code[0]                # shown literally ...
     assert all(t == "Code" for _, t, v in walk(at.main) if "<script>" in v or "evil.example" in v)  # ... and only ever inside the code block
 
 
 # ------------------------------------------------------------------ honesty about what could not be checked
-def test_unverified_claims_do_not_get_a_trust_line_and_are_explained_in_plain_words(monkeypatch, dbs):
-    bad = lambda sid: submit(sid, answer_markdown="Lag 9.5 [feedback:FB-999] [analytics:ROLE-BE@2026-11-07].", figures=[fig_arg(9.5, label="Median wait")])
+def test_unmatched_numbers_do_not_get_a_trust_line_and_are_listed_in_the_developer_view(monkeypatch, dbs):
+    bad = lambda sid: submit(sid, answer_markdown="Backend Engineer: the median lag is 9.5 days.")
     at = start(monkeypatch, orchestrator(dbs["baseline"], lambda: [call(("1", "get_pipeline_analytics", {"role": "ROLE-BE"})), bad("a"), bad("b")]))
     at.chat_input[0].set_value("lag?").run()
     default = assistant_default_text(at)
-    assert "Some details in this answer could not be verified against the records." in default and "Checked against the source records." not in default
-    assert leaks(default) == [] and "FB-999" not in default
-    assert not any(lbl == "Evidence" for _, t, lbl in walk(at.chat_message[-1]) if t == "Expander")   # nothing about a person to explain, so no panel
+    assert "Some details in this answer could not be matched to the records." in default and "Checked against the source records." not in default
+    assert leaks(default) == [] and not any(lbl.startswith("Evidence") for _, t, lbl in walk(at.chat_message[-1]) if t == "Expander")
     at.sidebar.toggle[0].set_value(True).run()
     tech = " ".join(str(c.value) for c in at.chat_message[-1].caption)
-    assert "FB-999" in tech and "Median wait" in tech
+    assert "The number 9.5" in tech and "for Backend Engineer" in tech
 
 
 def test_the_page_never_claims_a_hiring_decision(monkeypatch, dbs):
@@ -307,7 +310,7 @@ def assert_page_is_clean(at, where):
 def test_no_streamlit_internals_render_on_any_path_across_several_turns(monkeypatch, dbs):
     """The bug appeared when history was re-rendered, i.e. from the second turn on, so check every turn, the toggle and the reset path."""
     steps = lambda: [call(("1", "search_candidates", {"role": "ROLE-BE"})), call(("2", "get_candidates", {"candidate_ids": ["C104", "C117"]})),
-                     submit("3", answer_markdown="Top: Dahlia Ramanathan [cv:C104].", candidates=[cand_arg("C104")])]
+                     submit("3", answer_markdown="Top: Dahlia Ramanathan [cv:C104].", ranking=[cand_arg("C104")])]
     at = start(monkeypatch, orchestrator(dbs["injected"], steps))
     assert_page_is_clean(at, "first load")
     for n in range(1, 4):

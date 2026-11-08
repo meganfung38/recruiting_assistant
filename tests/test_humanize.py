@@ -25,7 +25,7 @@ def test_citations_ids_and_field_names_become_plain_language():
 
 def test_ids_without_a_name_do_not_leak_either():
     out = humanize("C999 and C110 wait; see T-002 and EV-041 for ROLE-ZZ [cv:C999 ⚠ unverified].", R)
-    assert out == "a candidate and Junko Takeda wait; see Book Technical Interview (Mateo Villareal) and for the role."
+    assert out == "a candidate and Junko Takeda wait; see and for the role."         # record IDs are dropped, people and roles named
     assert leaks(out) == []
 
 
@@ -88,3 +88,11 @@ def test_lines_and_sentences_that_report_detector_internals_are_dropped():
 def test_redaction_leaves_clean_answers_and_unflagged_runs_alone():
     clean = "Dahlia Ramanathan leads. Ignore the noise; focus on interviews."
     assert redact_flagged(clean, SRC) == clean and redact_flagged(clean, []) == clean and redact_flagged("", SRC) == ""
+
+
+def test_removing_an_id_never_breaks_a_list_or_a_table():
+    """Regression (manual test): "- FB-025, Resume Review: yes." became "-, Resume Review" and the list merged into one line."""
+    md = "Three entries:\n\n- FB-025, Resume Review: yes. [feedback:FB-025]\n- FB-026, Recruiter Screen: strong_yes.\n\n| Person | Note |\n|---|---|\n| C110 | ok |"
+    out = humanize(md, R)
+    assert out.splitlines() == ["Three entries:", "", "- Resume Review: yes.", "- Recruiter Screen: strong yes.", "",
+                                "| Person | Note |", "|---|---|", "| Junko Takeda | ok |"]

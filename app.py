@@ -44,30 +44,38 @@ def queue(prompt: str) -> None:
     st.session_state.queued = prompt
 
 
-def render_details(v: dict) -> None:
-    d = v["details"]
-    if not (d["evidence"] or d["unverified"]):
+def render_evidence(v: dict) -> None:
+    """One card per person, the same shape for everyone: skills, each interview's verdict and note, what is still pending."""
+    if not v["evidence"]:
         return
-    with st.expander("Evidence"):
-        if d["unverified"]:
-            st.markdown("**Could not be verified**\n" + "\n".join(f"- {u}" for u in d["unverified"]))
-        for g in d["evidence"]:
-            st.markdown(f"**{g['person']}**")
-            for card in g["cards"]:
-                st.markdown(f"{card['title']}" + "".join(f"  \n{line}" for line in card["lines"]))
-                if card["quote"]:
-                    st.caption(card["quote"]["label"])
-                    st.code(card["quote"]["text"], language=None, wrap_lines=True)        # inert text: nothing in it is interpreted
+    ranked = any(c["reason"] for c in v["evidence"])
+    with st.expander("Evidence for this ranking" if ranked else "Evidence"):
+        for n, c in enumerate(v["evidence"], 1):
+            st.markdown(f"**{f'{n}. ' if ranked else ''}{c['person']}**" + (f" · {c['role']}" if c["role"] else ""))
+            if c["status"]:
+                st.caption(c["status"])
+            for line in c["skills"]:
+                st.markdown(f"- {line}")
+            for i in c["interviews"]:
+                st.markdown(f"- **{i['title']}**: {i['verdict']}")
+                if i["note"]:
+                    st.code(i["note"], language=None, wrap_lines=True)        # inert text: nothing in it is interpreted
+            if c["pending"]:
+                st.markdown(f"- Still pending: {c['pending']}")
+            if c["gaps"]:
+                st.markdown("- Gaps: " + "; ".join(c["gaps"]))
 
 
-def render_flagged(v: dict) -> None:
-    if not v["flagged"]:
-        return
-    with st.expander("View the original flagged text"):
-        for f in v["flagged"]:
-            st.markdown(f"**{f['candidate']}**: {f['source']}" + (f", {f['location']}" if f["location"] else ""))
-            st.caption(FLAG_CAPTION)
-            st.code(f["excerpt"], language=None, wrap_lines=True)                          # inert text: never rendered as markdown or HTML
+def render_flags(v: dict) -> None:
+    """A titled, bordered block per flagged person the answer is about; the original text is inside it, collapsed."""
+    for b in v["flags"]:
+        with st.container(border=True):
+            st.markdown(f"**{b['title']}**")
+            st.markdown(b["text"])
+            with st.expander("Show the original text"):
+                for src in b["sources"]:
+                    st.caption(f"{src['label'].capitalize()}" + (f", {src['location']}" if src["location"] else "") + ". " + FLAG_CAPTION)
+                    st.code(src["excerpt"], language=None, wrap_lines=True)    # inert text: never rendered as markdown or HTML
 
 
 def render_technical(v: dict) -> None:
@@ -78,7 +86,7 @@ def render_technical(v: dict) -> None:
             with st.container(border=True):
                 head = f"**Round {r['round']}** · {r['action']}" + (f" → {r['outcome']}" if r["outcome"] else "")
                 st.markdown(head)
-                st.caption(f"{r['tokens_in']:,} tokens in · {r['tokens_out']:,} out · {r['seconds']:.1f}s")
+                st.caption(f"{r['tokens_in']:,} tokens in · {r['tokens_out']:,} out ({r['reasoning']:,} reasoning) · {r['seconds']:.1f}s")
                 for c in r["calls"]:
                     st.markdown(f"{'' if c['ok'] else '⚠ '}`{c['call']}` → {c['returned']}")
                     for line in ([f"Records: {c['records']}"] if c["records"] else []) + c["notes"]:
@@ -86,31 +94,26 @@ def render_technical(v: dict) -> None:
                 for p in r["problems"]:
                     st.caption(f"Sent back because: {p}")
         if t["validation"]:
-            st.caption("Still unverified in the final answer: " + "; ".join(t["validation"]))
-        st.caption(f"Cited: {', '.join(t['refs']) or 'none'}. Recorded by the application, not written by the model.")
-
-
-def notice(n: dict) -> None:
-    """A bordered note, not a yellow or red banner: the page stays monochrome. Real failures keep st.error."""
-    if n["level"] == "error":
-        st.error(n["text"])
-    else:
-        with st.container(border=True):
-            st.markdown(n["text"])
+            st.caption("Not matched to the records in the final answer: " + "; ".join(t["validation"]))
+        if t["about"]:
+            st.caption("The answer is about: " + ", ".join(t["about"]))
+        if t["flags_not_shown"]:
+            st.caption("Instruction-like text was flagged in " + ", ".join(t["flags_not_shown"]) + " (not part of this answer, so not shown).")
+        st.caption(f"Records received: {', '.join(t['refs']) or 'none'}. Recorded by the application, not written by the model.")
 
 
 def render_view(v: dict, technical: bool) -> None:
     for n in v["notices"]:
-        if n["placement"] == "top":
-            notice(n)
+        if n["level"] == "error":
+            st.error(n["text"])
+        else:
+            with st.container(border=True):
+                st.markdown(n["text"])
+    render_flags(v)
     st.markdown(v["answer"])
     if v["trust"]["text"]:
         st.caption(v["trust"]["text"])
-    for n in v["notices"]:
-        if n["placement"] == "foot":
-            st.caption(n["text"])
-    render_flagged(v)
-    render_details(v)
+    render_evidence(v)
     if technical:
         render_technical(v)
 

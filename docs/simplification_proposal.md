@@ -209,3 +209,25 @@ runs with zero reasoning tokens. The remaining slips fit that: naming the wrong 
 bullets instead of a requested table, and ranking someone higher for being further along. Moving `agent/llm.py` to the Responses API
 (about 100 lines; the orchestrator only depends on `complete()`) would allow `reasoning_effort="low"`. Measure it on this demo set before
 adopting it: it will add latency and tokens.
+
+## 9. Second round: the answer contract (2026-11-08)
+
+Manual testing (`convo-threads.md`) found three new symptoms: a correction round for a figure path the model guessed (`days_open`), a
+feedback list that collapsed into one line, and a top-three evidence panel with uneven, partly identical notes and a flagged-text panel
+with no explanation. All three traced to the same causes: bookkeeping asked of a model with no reasoning, three vocabularies (fields,
+descriptions, recruiter words), regex rewriting of model text, display decisions made with different rules, and templated data.
+
+Implemented (approved: spec 6.2 deviation, data regeneration, Responses API):
+1. `submit_answer` = plain prose + who it is about + optional ranking. No citations or figures. Deterministic checks of people, roles and
+   every number per line (`agent/evidence.py`). The history copy of each answer carries an `[About: ...]` line for follow-ups.
+2. Recruiter vocabulary in model-visible fields; counting fields removed from the model's view.
+3. Evidence cards per person, same shape for everyone, in ranking order (`agent/cards.py`); resume-review notes excluded for all.
+4. One subject set drives flag block and cards; the flag is a titled block with the original text inside, or nothing.
+5. `humanize.py` reduced to a line-by-line safety net that never touches list markers or table pipes.
+6. Responses API with reasoning effort low (`agent/llm.py`); medium measured: slower, not more accurate here.
+7. Interview notes regenerated from each record's facts (`data/compose_feedback.py`): 81 of 82 distinct.
+8. Presentation hints in results (`how_to_show`), and a ranking rule: someone with only screening notes is not ranked above someone
+   with positive interviews.
+
+Measured on the demo set (13 conversations, 22 turns, 3 runs): 66 of 66 turns pass the fact checks; median 2 rounds (max 3); median
+about 9k tokens (max 16k); median 4 s (max 7.5 s); 1 correction round; tables every time; the same correct top three every run.

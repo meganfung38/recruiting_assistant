@@ -322,7 +322,7 @@ def test_evidence_contains_only_successful_returned_records(live):
     assert live["outs"]["missing_role"].error_code == "not_found" and live["outs"]["bad"].error_code == "invalid_arguments"
     traced = {r for e in live["ctx"].trace.events for r in e.evidence_refs}
     assert traced == set(ev.refs())  # trace refs == registry; failed calls contributed nothing
-    assert ev.raw("analytics:ROLE-BE@2026-11-07")["stages"][2]["scheduling"]["over_target_count"] == 14
+    assert 14 in ev.numbers_for([], ["ROLE-BE"])                    # numbers the model saw are kept per role, for checking the answer
 
 
 def test_trace_is_sanitized_ordered_and_matches_calls(live):
@@ -520,7 +520,7 @@ def test_a_capped_result_drops_whole_records_names_them_and_keeps_only_shown_evi
     assert omitted and shown + omitted == every and all(o in warning for o in omitted)
     full = {c["candidate_id"]: c for c in sweep["po_uncapped"]["data"]["candidates"]}
     for c in out["data"]["candidates"]:                                 # a shown candidate is complete, never partial
-        assert c == full[c["candidate_id"]] and c["feedback_received"] == len(c["feedback"])
+        assert c == full[c["candidate_id"]] and c["feedback"] == full[c["candidate_id"]]["feedback"]
     assert out["omitted"] == omitted                                    # structured twin of the warning
     assert all(ctx.evidence.has(f"cv:{i}") for i in shown) and not any(ctx.evidence.candidate_seen(i) for i in omitted)
 
@@ -566,7 +566,7 @@ def test_pass_through_fields_hold_only_the_intended_vocabulary(sweep):
                 assert set(s["scheduling"]["exited_unscheduled_by_outcome"]) <= {"withdrawn", "rejected"}
     for search in sweep["search"]:
         for row in search["data"]["candidates"]:
-            assert set(row["fit_signals"]["recommendation_counts"]) == {"strong_yes", "yes", "mixed", "no", "strong_no"}
+            assert row["fit_signals"]["latest_recommendation"] in {"strong_yes", "yes", "mixed", "no", "strong_no", None}
 
 
 def test_flags_and_warnings_in_the_whole_dataset_name_only_c117(sweep):
@@ -628,3 +628,10 @@ def test_a_malformed_candidate_id_gets_a_hint_on_how_to_look_a_person_up_by_name
     _, _, [out] = run_calls(FakeClient(), [("get_candidate_communications", {"candidate_id": secret})])
     msg = out.content["error"]["message"]
     assert out.error_code == "invalid_arguments" and "get_candidates(names=" in msg and secret not in msg
+
+
+def test_results_with_a_natural_shape_carry_how_to_show_it_next_to_the_data():
+    out = project("get_recruiting_overview", env({"roles": [], "overdue_tasks_total": 0}))
+    assert out["how_to_show"].startswith("Comparing roles: ONE markdown table")
+    assert "how_to_show" not in project("list_roles", env({"roles": []}))                    # only where a shape helps
+    assert "how_to_show" not in project("get_tasks", env(None, error={"code": "not_found", "message": "x"}))  # never on an error

@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from agent.answer_schema import SubmittedAnswer, submit_answer_definition
-from agent.evidence import EvidenceRegistry, ValidationReport, render_markdown, validate_plain
+from agent.evidence import EvidenceRegistry, ValidationReport, validate_plain
 from agent.finalizer import Finalizer
 from agent.limits import LimitExceeded, Limits, TurnBudget
 from agent.llm import LLMUnavailable
@@ -73,6 +73,16 @@ def _notify(callback, event: dict) -> None:
             pass
 
 
+def _about_note(report, evidence) -> str:
+    """For the model's history only: who the answer was about, with IDs, so a follow-up ("of those three") can fetch them again.
+    The recruiter never sees it (the view is built from TurnResult.answer)."""
+    if report is None or not (report.candidates or report.roles):
+        return ""
+    people = [f"{evidence.candidate_name(c) or c} ({c})" for c in report.candidates[:12]]
+    roles = [f"{evidence.role_title(r) or r} ({r})" for r in report.roles]
+    return "\n\n[About: " + "; ".join(people + roles) + "]"
+
+
 def user_message(question: str, role_context: str | None) -> dict:
     if not role_context:
         return {"role": "user", "content": question}
@@ -125,7 +135,7 @@ class Orchestrator:
             except Exception:                      # MCP startup failure or a server/tool contract mismatch
                 return self._failed("data_service_unavailable", ctx, [user])
             try:
-                return await self._loop(executor, ctx, state, user, on_progress)
+                return await self._loop(executor, ctx, state, user, on_progress, question)
             finally:
                 close = getattr(self.llm, "aclose", None)
                 if close:
@@ -143,16 +153,17 @@ class Orchestrator:
         finally:
             rec.duration_ms = int((time.monotonic() - t0) * 1000)
         rec.prompt_tokens, rec.completion_tokens = resp.usage.get("prompt_tokens", 0), resp.usage.get("completion_tokens", 0)
+        rec.reasoning_tokens = resp.usage.get("reasoning_tokens", 0)
         for k in usage:
             usage[k] += resp.usage.get(k, 0)
         return resp, rec
 
-    async def _loop(self, executor, ctx, state, user, on_progress=None) -> TurnResult:
+    async def _loop(self, executor, ctx, state, user, on_progress=None, question: str = "") -> TurnResult:
         messages = [{"role": "system", "content": self.system_prompt}, *state.context_messages(), user]
         turn_msgs, flags = [user], []
         tools = executor.tool_definitions() + [submit_answer_definition()]   # submit_answer is local, never sent to MCP
         usage = {"prompt_tokens": 0, "completion_tokens": 0}
-        fin, accepted, answer_text, limit = Finalizer(ctx.evidence), None, None, None
+        fin, accepted, answer_text, limit = Finalizer(ctx.evidence, question), None, None, None
         empty = 0
 
         while accepted is None and answer_text is None and limit is None:
@@ -225,15 +236,16 @@ class Orchestrator:
         status, report, submitted = "ok", None, None
         if accepted is not None:
             report, submitted = accepted.report, accepted.answer
-            if submitted is None:        # plain text: the model's own message is already last; show the marked-up version
-                turn_msgs[-1] = {"role": "assistant", "content": answer_text}
+            memo = _about_note(report, ctx.evidence)
+            if submitted is None:        # plain text: the model's own message is already last
+                turn_msgs[-1] = {"role": "assistant", "content": answer_text + memo}
             else:                        # structured: history ends in the visible answer text, after the tool result
-                turn_msgs.append({"role": "assistant", "content": answer_text})
+                turn_msgs.append({"role": "assistant", "content": answer_text + memo})
         elif limit is not None:
             status = "limit_reached"
             raw = await self._wrap_up(messages, ctx, limit, usage)
-            report = validate_plain(raw, ctx.evidence)
-            answer_text = render_markdown(raw, report)
+            report = validate_plain(raw, ctx.evidence, question)
+            answer_text = raw
             turn_msgs.append({"role": "assistant", "content": answer_text})
         unique = {(f["candidate_id"], f["field"], f["pattern_id"]): f for f in flags}
         return TurnResult(answer_text, status, ctx.trace, ctx.evidence, limit_code=limit,

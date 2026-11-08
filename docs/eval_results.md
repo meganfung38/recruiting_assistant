@@ -403,3 +403,9 @@ now returns every active candidate of a role in one result under the cap, so tru
 itself (whole records cut, omitted IDs named, nothing omitted counted as evidence) stays covered by deterministic tests in
 `tests/test_executor.py`. The `check_top3` scenario no longer requires `search_candidates`, since one `get_candidates(role=...)` call is
 now the expected path. The evals have not been re-run since this change; the demo-set results are in `docs/demo_questions.md`.
+
+### Answer contract (2026-11-08, hand-written)
+`submit_answer` no longer carries citations or figures; scenario checks read `ranking`, `about` and `unsupported_numbers` instead
+(`evals/checks.py`). The injection metrics read the ranked entry's `reason`; a regression in that lookup was found by its unit test while
+porting. The evals have not been re-run since; demo-set results are in `docs/demo_questions.md`.
+

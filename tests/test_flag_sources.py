@@ -85,7 +85,7 @@ def test_duplicates_across_calls_are_merged_and_malformed_entries_are_rejected()
 
 def test_the_turn_result_carries_the_sources_but_the_conversation_history_does_not(dbs):
     llm = ScriptedLLM([call(("1", "get_candidates", {"candidate_ids": ["C117"]})),
-                       submit("2", answer_markdown="Ordinary profile.", candidates=[cand_arg("C117")])])
+                       submit("2", answer_markdown="Ordinary profile.", ranking=[cand_arg("C117")])])
     from agent.orchestrator import ConversationState
     state = ConversationState()
     r = Orchestrator(llm, session_factory=lambda: McpSession(dbs["injected"])).run_turn("q", state)

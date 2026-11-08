@@ -293,7 +293,7 @@ def test_follow_up_turn_can_requery_with_ids_from_the_previous_answer(real):
 
 
 # ================================================================== submit_answer, validation and the repair round
-ANALYTICS_ENV = env({"role_id": "ROLE-BE", "role_age_days": 123, "as_of": "2026-11-07T20:00:00Z", "stages": [
+ANALYTICS_ENV = env({"role_id": "ROLE-BE", "role_title": "Backend Engineer", "role_age_days": 123, "as_of": "2026-11-07T20:00:00Z", "stages": [
     {"stage": "Technical Interview", "funnel": {"entered": 17},
      "scheduling": {"scheduled_n": 11, "lag_median_scheduled_days": 8.0, "over_target_count": 14, "observations": 17}}]},
     ["analytics:ROLE-BE@2026-11-07"])
@@ -314,12 +314,9 @@ def submit(sid="s1", **args):
     return call((sid, "submit_answer", args))
 
 
-def fig_arg(value=8.0, path=LAG, label="Median scheduling lag (days)", evidence=ARef):
-    return {"label": label, "value": value, "evidence": evidence, "field_path": path}
-
-
 def cand_arg(cid="C101"):
-    return {"candidate_id": cid, "role_id": "ROLE-BE", "rationale": "Strong", "evidence": [f"cv:{cid}"], "gaps": []}
+    """One ranking entry."""
+    return {"candidate_id": cid, "reason": "Strong", "gaps": []}
 
 
 def sorch(steps, **kw):
@@ -335,50 +332,47 @@ def paired(messages):
 
 def test_accepted_submission_ends_the_turn_and_never_reaches_mcp():
     o, llm, client = sorch([call(("1", "get_candidates", {"candidate_ids": ["C101"]})),
-                            submit(answer_markdown="Dahlia (C101) [cv:C101] [feedback:FB-202].", candidates=[cand_arg()])])
+                            submit(answer_markdown="N N is the strongest.", ranking=[cand_arg()])])
     state = ConversationState()
     r = o.run_turn("q", state)
-    assert r.status == "ok" and r.submitted is not None and r.report.ok and r.repaired == []
-    assert r.answer == "Dahlia (C101) [cv:C101] [feedback:FB-202]."
+    assert r.status == "ok" and r.submitted is not None and r.report.ok and r.repaired == [] and r.answer == "N N is the strongest."
     assert [c[0] for c in client.calls] == ["get_candidates"]                           # submit_answer was handled locally
     assert [e.tool_name for e in r.trace.events] == ["get_candidates"] and len(llm.calls) == 2
-    assert json.loads(tool_messages(r)[-1]["content"])["status"] == "accepted"
-    assert r.messages[-1] == {"role": "assistant", "content": r.answer} and paired(r.messages)
-    assert state.context_messages()[-1]["content"] == r.answer                          # a follow-up can read the answer
+    assert json.loads(tool_messages(r)[-1]["content"])["status"] == "accepted" and paired(r.messages)
+    # history keeps the visible answer plus, for the model only, who it was about (a follow-up can fetch them again)
+    assert r.messages[-1] == {"role": "assistant", "content": "N N is the strongest.\n\n[About: N N (C101)]"}
+    assert state.context_messages()[-1]["content"] == r.messages[-1]["content"]
 
 
-def test_a_rejected_submission_is_repaired_once_with_the_true_values_in_the_message():
-    bad = submit(answer_markdown="Lag 9.5 [feedback:FB-999] [analytics:ROLE-BE@2026-11-07].", figures=[fig_arg(9.5)])
-    good = submit("s2", answer_markdown="Lag 8.0 [analytics:ROLE-BE@2026-11-07].", figures=[fig_arg(8.0)])
+def test_a_wrong_number_is_sent_back_once_with_the_line_it_appeared_in():
+    bad = submit(answer_markdown="Backend Engineer: the median scheduling lag is 9.5 days.")
+    good = submit("s2", answer_markdown="Backend Engineer: the median scheduling lag is 8 days.")
     o, llm, _ = sorch([call(("1", "get_pipeline_analytics", {"role": "ROLE-BE"})), bad, good])
     r = o.run_turn("q")
     rejection = json.loads(llm.calls[2]["messages"][-1]["content"])
-    assert rejection["status"] == "rejected" and rejection["reason"] == "validation_failed"
-    joined = " ".join(rejection["problems"])
-    assert "feedback:FB-999" in joined and "the data says 8.0, not 9.5" in joined and "only repair" in rejection["how_to_fix"]
-    assert r.status == "ok" and r.report.ok and r.repaired == ["unsupported_citation", "unverified_figure"]
-    assert r.answer == "Lag 8.0 [analytics:ROLE-BE@2026-11-07]." and paired(r.messages)
+    assert rejection["status"] == "rejected" and rejection["reason"] == "validation_failed" and "only repair" in rejection["how_to_fix"]
+    assert "The number 9.5" in rejection["problems"][0] and "for Backend Engineer" in rejection["problems"][0]
+    assert r.status == "ok" and r.report.ok and r.repaired == ["unsupported_number"] and r.answer.endswith("8 days.") and paired(r.messages)
 
 
-def test_after_the_one_repair_remaining_problems_are_shown_as_unverified_not_hidden():
-    still_bad = lambda sid: submit(sid, answer_markdown="Lag 9.5 [feedback:FB-999] [analytics:ROLE-BE@2026-11-07].", figures=[fig_arg(9.5)])
+def test_after_the_one_repair_remaining_problems_are_shown_not_hidden():
+    still_bad = lambda sid: submit(sid, answer_markdown="Backend Engineer: the median scheduling lag is 9.5 days.")
     o, llm, _ = sorch([call(("1", "get_pipeline_analytics", {"role": "ROLE-BE"})), still_bad("s1"), still_bad("s2")])
     r = o.run_turn("q")
     assert len(llm.calls) == 3                                                          # exactly one repair round, no more
-    assert r.status == "ok" and "[feedback:FB-999 ⚠ unverified]" in r.answer
-    assert not r.report.ok and [f.verified for f in r.report.figures] == [False] and r.report.bad_citations == ["feedback:FB-999"]
-    assert json.loads(tool_messages(r)[-1]["content"]) == {"status": "accepted", "unverified_items": 2}
+    assert r.status == "ok" and not r.report.ok and [n.value for n in r.report.unsupported_numbers] == [9.5]
+    assert json.loads(tool_messages(r)[-1]["content"]) == {"status": "accepted", "unverified_items": 1}
 
 
 def test_submit_alongside_data_calls_is_deferred_without_using_up_the_repair_round():
     mixed = call(("d", "get_pipeline_analytics", {"role": "ROLE-BE"}), ("s1", "submit_answer", {"answer_markdown": "early"}))
-    bad = submit("s2", answer_markdown="x [feedback:FB-999]")
-    good = submit("s3", answer_markdown="fixed [analytics:ROLE-BE@2026-11-07]")
+    bad = submit("s2", answer_markdown="Backend Engineer: 9.5 days.")
+    good = submit("s3", answer_markdown="Backend Engineer: 8 days.")
     o, llm, client = sorch([mixed, bad, good])
     r = o.run_turn("q")
     first = {m["tool_call_id"]: json.loads(m["content"]) for m in llm.calls[1]["messages"] if m["role"] == "tool"}
     assert first["s1"]["reason"] == "call_submit_answer_alone" and [c[0] for c in client.calls] == ["get_pipeline_analytics"]
-    assert r.repaired == ["unsupported_citation"] and r.report.ok and paired(r.messages)   # the mixed attempt did not burn the repair
+    assert r.repaired == ["unsupported_number"] and r.report.ok and paired(r.messages)   # the mixed attempt did not burn the repair
 
 
 def test_two_submit_calls_in_one_response_only_the_first_counts():
@@ -390,47 +384,46 @@ def test_two_submit_calls_in_one_response_only_the_first_counts():
 
 
 def test_malformed_submission_is_rejected_with_field_problems_and_may_be_resubmitted():
-    o, llm, _ = sorch([submit(answer_markdown="x", figures=[{"label": "l", "value": True, "evidence": "e", "field_path": "p"}]),
-                       submit("s2", answer_markdown="ok")])
+    o, llm, _ = sorch([submit(answer_markdown="x", ranking=[{"candidate_id": "C1", "reason": "r"}]), submit("s2", answer_markdown="ok")])
     r = o.run_turn("q")
     rejection = json.loads(llm.calls[1]["messages"][-1]["content"])
-    assert rejection["reason"] == "invalid_arguments" and "figures.0.value" in " ".join(rejection["problems"])
+    assert rejection["reason"] == "invalid_arguments" and "ranking.0.candidate_id" in " ".join(rejection["problems"])
     assert r.answer == "ok" and r.repaired == []                                       # invalid JSON does not use the repair round
 
 
-def test_plain_text_fallback_is_citation_checked_and_figures_are_flagged_unchecked():
-    o, _, _ = sorch([call(("1", "get_pipeline_analytics", {"role": "ROLE-BE"})), say("Lag is 8.0 [analytics:ROLE-BE@2026-11-07].")])
+def test_plain_text_fallback_is_accepted_and_still_checked():
+    o, _, _ = sorch([call(("1", "get_pipeline_analytics", {"role": "ROLE-BE"})), say("Backend Engineer: the median lag is 8 days.")])
     r = o.run_turn("q")
-    assert r.status == "ok" and r.submitted is None and r.report.machine_checked is False and r.report.ok
-    assert r.answer == "Lag is 8.0 [analytics:ROLE-BE@2026-11-07]."
+    assert r.status == "ok" and r.submitted is None and r.report.structured is False and r.report.ok and r.report.roles == ["ROLE-BE"]
+    assert r.answer == "Backend Engineer: the median lag is 8 days."
     assert sum(m["role"] == "assistant" and not m.get("tool_calls") for m in r.messages) == 1   # no duplicated final message
 
 
-def test_plain_text_with_unsupported_citations_gets_one_nudge_then_is_marked():
-    o, llm, _ = sorch([say("Ranked [cv:C104]."), say("Still [cv:C104].")])
+def test_plain_text_with_an_unsupported_number_gets_one_nudge_then_is_accepted_as_not_verified():
+    o, llm, _ = sorch([call(("1", "get_pipeline_analytics", {"role": "ROLE-BE"})), say("Backend Engineer: 9.5 days."), say("Still 9.5 days.")])
     r = o.run_turn("q")
-    nudge = llm.calls[1]["messages"][-1]
-    assert nudge["role"] == "system" and "cv:C104" in nudge["content"] and "submit_answer" in nudge["content"]
-    assert len(llm.calls) == 2 and r.answer == "Still [cv:C104 ⚠ unverified]." and r.report.bad_citations == ["cv:C104"]
-    assert r.messages[-1]["content"] == r.answer
+    nudge = llm.calls[2]["messages"][-1]
+    assert nudge["role"] == "system" and "9.5" in nudge["content"] and "submit_answer" in nudge["content"]
+    assert len(llm.calls) == 3 and r.answer == "Still 9.5 days." and [n.value for n in r.report.unsupported_numbers] == [9.5]
+    assert r.messages[-1]["content"].startswith(r.answer)
 
 
-def test_limit_wrap_up_answers_are_citation_checked_too():
-    steps = [call((f"c{i}", "list_roles", {})) for i in range(2)] + [say("Partial [feedback:FB-999].")]
+def test_limit_wrap_up_answers_are_checked_too():
+    steps = [call((f"c{i}", "list_roles", {})) for i in range(2)] + [say("Partial: 42 roles.")]
     o, _, _ = orch(steps, limits=Limits(max_rounds=2))
     r = o.run_turn("q")
-    assert r.status == "limit_reached" and "[feedback:FB-999 ⚠ unverified]" in r.answer
+    assert r.status == "limit_reached" and [n.value for n in r.report.unsupported_numbers] == [42.0]
 
 
 def test_history_with_a_structured_answer_stays_valid_and_carries_the_answer_forward():
     o, llm, _ = sorch([call(("1", "get_candidates", {"candidate_ids": ["C101"]})),
-                       submit(answer_markdown="Pick C101 [cv:C101].", candidates=[cand_arg()]),
+                       submit(answer_markdown="Pick N N.", ranking=[cand_arg()]),
                        say("Follow-up answer.")])
     state = ConversationState()
     o.run_turn("q1", state)
     o.run_turn("q2", state)
     second_turn_messages = llm.calls[2]["messages"]
-    assert paired(second_turn_messages) and second_turn_messages[-2] == {"role": "assistant", "content": "Pick C101 [cv:C101]."}
+    assert paired(second_turn_messages) and second_turn_messages[-2] == {"role": "assistant", "content": "Pick N N.\n\n[About: N N (C101)]"}
 
 
 # --- real server: truncation disclosure and flags -----------------------------------------------------------
@@ -443,17 +436,17 @@ SIX = ["C104", "C108", "C110", "C113", "C117", "C112"]
 
 def test_a_flagged_candidate_needs_no_model_warning_and_no_repair(real):
     """The application reports flagged content itself (notice + original text for review), so the model is not asked to."""
-    quiet = submit("a", answer_markdown="C117 [cv:C117] is a reasonable candidate.", candidates=[cand_arg("C117")])
+    quiet = submit("a", answer_markdown="Quentin Abara is a reasonable candidate.", ranking=[cand_arg("C117")])
     o, llm = real_orch(real["injected"], [call(("1", "get_candidates", {"candidate_ids": ["C117"]})), quiet])
     r = o.run_turn("q")
-    assert len(llm.calls) == 2 and r.repaired == [] and r.report.ok and r.submitted.content_warnings == []
+    assert len(llm.calls) == 2 and r.repaired == [] and r.report.ok and r.report.candidates == ["C117"]
     assert {f["candidate_id"] for f in r.content_flags} == {"C117"} and r.flag_sources[0]["candidate_id"] == "C117"
 
 
 def test_flags_that_only_arrived_via_search_are_also_reported_by_the_application(real):
     o, llm = real_orch(real["injected"], [call(("1", "search_candidates", {"role": "ROLE-BE"})),
                                           call(("2", "get_candidates", {"candidate_ids": ["C104"]})),
-                                          submit("a", answer_markdown="Top: Dahlia [cv:C104].", candidates=[cand_arg("C104")])])
+                                          submit("a", answer_markdown="Top: Dahlia Ramanathan.", ranking=[cand_arg("C104")])])
     r = o.run_turn("q")
     assert r.repaired == [] and r.evidence.flagged_candidates() == ["C117"] and not r.evidence.retrieved("C117")
     assert [s["candidate_id"] for s in r.flag_sources] == ["C117"]                 # inspectable although the record was never opened
@@ -484,26 +477,20 @@ def test_the_llm_client_is_closed_at_the_end_of_every_turn_including_failed_ones
     assert ClosingLLM.closed == 2 and FakeSession.closed == 2
 
 
-def test_citing_a_search_row_is_allowed_but_ranking_it_without_retrieval_is_not():
-    """The model may cite cv:C113 for facts it saw in a search row (e.g. a content flag), but cannot rank it unretrieved."""
+def test_talking_about_a_search_row_is_allowed_but_ranking_it_without_reading_the_record_is_not():
     search = lambda n, a: env({"role_id": "ROLE-BE", "total_matching": 1, "returned": 1, "candidates": [
         {"candidate_id": "C113", "name": "M V", "current_stage": "Technical Interview", "status": "active",
          "waiting_state": "awaiting_scheduling", "waiting_days": 22.0, "days_in_current_stage": 22.0, "fit_signals": {}, "content_flags": []}]},
         ["search:C113"])
-    steps = [call(("1", "search_candidates", {"role": "ROLE-BE"})),
-             submit("2", answer_markdown="C113 has waited 22 days [search:C113]."),
-             ]
-    o, llm, _ = orch(steps, client=FakeClient(search))
+    o, llm, _ = orch([call(("1", "search_candidates", {"role": "ROLE-BE"})), submit("2", answer_markdown="M V has waited 22 days.", candidates=["C113"])],
+                     client=FakeClient(search))
     r = o.run_turn("who waits longest?")
-    assert r.repaired == [] and r.report.ok                                                # the citation is valid
-    cand_arg_search = lambda: {**cand_arg("C113"), "evidence": ["search:C113"]}
-    steps = [call(("1", "search_candidates", {"role": "ROLE-BE"})), submit("2", candidates=[cand_arg_search()]),
-             submit("3", answer_markdown="x", candidates=[cand_arg("C113")]), submit("4", answer_markdown="x", candidates=[cand_arg("C113")]),
-             submit("5", answer_markdown="x", candidates=[cand_arg("C113")])]
+    assert r.repaired == [] and r.report.ok and r.report.candidates == ["C113"]
+    steps = [call(("1", "search_candidates", {"role": "ROLE-BE"})), submit("2", ranking=[cand_arg("C113")]), submit("3", ranking=[cand_arg("C113")])]
     o, llm, _ = orch(steps, client=FakeClient(search))
     r = o.run_turn("rank")
     assert r.repaired == ["candidate_not_retrieved"] and r.report.not_retrieved == ["C113"]
-    assert len(llm.calls) == 3 and not r.report.ok            # first try + the one repair, then accepted (and visibly unverified)
+    assert len(llm.calls) == 3 and not r.report.ok                                       # one repair, then accepted (and visibly not verified)
 
 
 
@@ -522,32 +509,8 @@ def test_citing_a_search_row_is_allowed_but_ranking_it_without_retrieval_is_not(
 
 
 
-def test_a_model_that_cites_cv_for_a_search_only_candidate_is_told_exactly_how_to_fix_it(real):
-    wrong = submit("a", answer_markdown="C117 had instruction-like text [cv:C117].", content_warnings=["C117 had instruction-like text."])
-    right = submit("b", answer_markdown="C117 had instruction-like text [search:C117].", content_warnings=["C117 had instruction-like text."])
-    o, llm = real_orch(real["injected"], [call(("1", "search_candidates", {"role": "ROLE-BE"})), wrong, right])
-    r = o.run_turn("q")
-    rejection = json.loads(llm.calls[2]["messages"][-1]["content"])
-    assert "cite [search:C117]" in " ".join(rejection["problems"]) and "get_candidates" in " ".join(rejection["problems"])
-    assert r.repaired == ["unsupported_citation"] and r.report.ok and not r.evidence.retrieved("C117")
-    assert r.evidence.has("search:C117") and not r.evidence.has("cv:C117")           # the answer shows the CV was never read
 
 
-def test_a_mislabelled_figure_costs_no_repair_but_a_mislabelled_prose_citation_still_does(real):
-    figure_slip = submit("a", answer_markdown="Strong signals [search:C104].", candidates=[{**cand_arg("C104"), "evidence": ["cv:C104"]}],
-                         figures=[{"label": "C104 avg criteria score", "value": 4.57, "evidence": "cv:C104", "field_path": "fit_signals.avg_criteria_score"}])
-    o, llm = real_orch(real["baseline"], [call(("1", "search_candidates", {"role": "ROLE-BE"})),
-                                          call(("2", "get_candidates", {"candidate_ids": ["C104"]})), figure_slip])
-    r = o.run_turn("q")
-    assert len(llm.calls) == 3 and r.repaired == [] and r.report.ok                    # accepted on the first submission
-    f = r.report.figures[0]
-    assert f.verified and f.relabelled and f.source_ref == "search:C104" and f.evidence == "cv:C104"
-    from agent.cli import format_result
-    assert "search:C104 (cited as cv:C104)" in format_result(r)                         # the recruiter sees the real source
-    prose_slip = submit("b", answer_markdown="C113 is flagged [cv:C113].")
-    o2, llm2 = real_orch(real["baseline"], [call(("1", "search_candidates", {"role": "ROLE-BE"})), prose_slip,
-                                            submit("c", answer_markdown="C113 is flagged [search:C113].")])
-    assert o2.run_turn("q").repaired == ["unsupported_citation"]                       # prose citations stay strict
 
 
 # ================================================================== empty model replies are retried (found by the UX baseline run)
@@ -600,10 +563,9 @@ def test_a_tool_call_with_no_text_is_not_an_empty_reply():
 
 
 def test_an_empty_reply_does_not_disturb_the_submit_answer_repair_budget():
-    bad = lambda sid: submit(sid, answer_markdown="x [feedback:FB-999]")
-    o, llm, _ = sorch([say(""), bad("a"), say(""), submit("b", answer_markdown="fixed")])
+    o, llm, _ = sorch([say(""), submit("a", answer_markdown="999 days."), say(""), submit("b", answer_markdown="fixed")])
     r = o.run_turn("q")
-    assert r.empty_retries == 2 and r.repaired == ["unsupported_citation"] and r.answer == "fixed" and r.report.ok
+    assert r.empty_retries == 2 and r.repaired == ["unsupported_number"] and r.answer == "fixed" and r.report.ok
 
 
 def test_the_failed_turn_is_not_saved_and_the_session_stays_usable():
@@ -639,8 +601,8 @@ def test_submit_answer_is_not_announced_as_a_data_tool():
 # ================================================================== per-round trace and the turn log
 def test_every_model_round_is_recorded_with_its_cost_action_and_verdict():
     usage = {"prompt_tokens": 100, "completion_tokens": 7}
-    bad = submit("s1", answer_markdown="x [feedback:FB-999]")
-    good = submit("s2", answer_markdown="Lag is 8.0 [analytics:ROLE-BE@2026-11-07].")
+    bad = submit("s1", answer_markdown="Backend Engineer: 9.5 days.")
+    good = submit("s2", answer_markdown="Backend Engineer: 8 days.")
     steps = [call(("1", "get_pipeline_analytics", {"role": "ROLE-BE"})), bad, good]
     for s in steps:
         s.usage = usage
@@ -648,7 +610,7 @@ def test_every_model_round_is_recorded_with_its_cost_action_and_verdict():
     r = o.run_turn("q")
     rounds = r.trace.rounds
     assert [(x.round, x.action, x.outcome) for x in rounds] == [(1, "tools", ""), (2, "submit", "sent back"), (3, "submit", "accepted")]
-    assert "FB-999" in rounds[1].problems[0] and all(x.prompt_tokens == 100 and x.completion_tokens == 7 for x in rounds)
+    assert "9.5" in rounds[1].problems[0] and all(x.prompt_tokens == 100 and x.completion_tokens == 7 for x in rounds)
     assert r.trace.totals()["prompt_tokens"] == r.usage["prompt_tokens"] == 300
     assert r.trace.events[0].round == 1 and r.trace.events[0].result_chars > 0
 
@@ -656,7 +618,7 @@ def test_every_model_round_is_recorded_with_its_cost_action_and_verdict():
 def test_each_turn_is_appended_to_the_log_without_any_record_text(real, tmp_path):
     log = tmp_path / "logs" / "turns.jsonl"
     o, _ = real_orch(real["injected"], [call(("1", "get_candidates", {"candidate_ids": ["C117"]})),
-                                        submit("2", answer_markdown="Quentin Abara [cv:C117] is in Technical Interview.")], log_path=log)
+                                        submit("2", answer_markdown="Quentin Abara is in Technical Interview.")], log_path=log)
     o.run_turn("Where is Quentin?")
     (line,) = log.read_text().splitlines()
     entry = json.loads(line)

@@ -38,11 +38,20 @@ python -m data.seed && streamlit run app.py
 One chat page. The sidebar has a **New conversation** button, seven **suggested questions** (the demo set, see `docs/demo_questions.md`) (full text, one click), a **Developer view**
 switch and the fixed as-of date. The theme is monochrome (`.streamlit/config.toml`).
 
-What a recruiter sees by default: the answer (names, plain dates, lists or tables), a notice only when it matters (flagged text,
-incomplete review, a limit), and one line saying whether it was **checked against the source records**. Under it, an **Evidence**
-expander appears only when the answer relied on interview notes or emails that it does not already say, grouped by person. There is no
-raw analytics table and no card for tasks, roles or pipeline numbers. If a CV, email or note contained instruction-like text, a notice
-says so, and **View the original flagged text** shows it as inert text for the reviewer.
+What a recruiter sees by default: the answer (names, plain dates, lists or tables), a notice only when it matters (a limit, an
+error), and one line saying whether it was **checked against the source records**. Under it, an **Evidence** expander gives one card
+per person the answer ranks or is about, all in the same shape: skills matched or missing, one line per interview stage (date,
+interviewer, recommendation, scores) with the interviewer's note, and anything still pending. Resume-review notes are left out for
+everyone, so the cards are comparable. If a person the answer is about has instruction-like text in their CV, an email or a note, the
+answer starts with a titled block (**Instruction-like text found in Quentin Abara's CV**) saying what it tried to do and that it was
+ignored, with the original text inside it, collapsed. A flagged person who is not part of the answer is not mentioned (the developer
+view notes it).
+
+**How answers are checked.** The model writes plain prose and declares which people and roles the answer is about, plus a ranking when
+it ranks; it writes no citations or figure paths. The application then checks, deterministically: every declared person and role
+appeared in this turn's results, every ranked person's record was read, and every number in the prose occurs in the data for the people
+or roles named on the same line (dates, times, IDs, list numbering and rank columns are not quantities). One correction round, then
+anything still unmatched is shown as not verified.
 
 **Developer view** (off by default) adds, under each answer, **How this answer was made**: one block per model round with its token cost
 and time, each tool it called (arguments, what came back, result size, record IDs), or the answer it submitted and whether validation
@@ -105,15 +114,15 @@ Recruiter Screen 7/3/2, Technical Interview 14/7/2, Hiring Manager Interview 10/
 Resume Review: 5 days in stage.
 
 ## Limits you should know about
-- Citation and figure checks verify that a record exists and a number matches it. They do not prove the claim made with it is right; the
-  evals test some of that, with small samples.
+- The checks verify that people, roles and numbers exist in this turn's data for the right subject. They do not prove the sentence using
+  them is right, and numbers written as words ("three") are not checked; the evals test some of the rest, with small samples.
 - Skill matching is a whole-word keyword match on CV text. It can be gamed and is a prefilter, not a score.
 - The injection detector is a keyword list. Before the model reads a flagged CV, email or note, the sentences that matched are replaced by a marker
   (the rest stays), and the recruiter sees the original. Paraphrased or non-English instructions evade it. This is defense in depth, not
   "prompt-injection-proof"; results are in `docs/eval_results.md`.
-- The model is called through Chat Completions with function tools. For `gpt-5.4-mini` that combination runs with **no reasoning**
-  (the API rejects `reasoning_effort` with tools on that endpoint), which shows up as occasional slips in comparing numbers or following
-  formatting rules. Moving the adapter to the Responses API would allow reasoning; see `docs/simplification_proposal.md`.
+- The model is called through the OpenAI **Responses API** with reasoning effort `low` (`OPENAI_REASONING_EFFORT`: none, low, medium).
+  Chat Completions does not allow reasoning together with function tools for `gpt-5.4-mini`, which made the agent misjudge simple
+  comparisons. Medium was measured and was slower without being more accurate on the demo set.
 - A result is capped at 32,000 characters (a whole role's comparison view is about 12-30k). Anything larger is cut by whole records with a
   warning naming what was left out.
 - All data is fictional and relative to the fixed as-of date in `services/clock.py`.

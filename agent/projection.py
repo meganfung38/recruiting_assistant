@@ -45,7 +45,6 @@ _FLAG = {"candidate_id": K, "field": K, "pattern_id": K}
 # Who someone is and where they stand come first in every candidate-shaped record, in the same order.
 _STANDING = {k: K for k in ("candidate_id", "name", "role_id", "role_title")}
 _WAITING = {k: K for k in ("stage_status", "waiting_state", "waiting_days", "days_in_current_stage")}
-_EVIDENCE_COUNTS = {k: K for k in ("interviews_completed", "feedback_received", "feedback_pending")}
 _PERSON = {**_STANDING, "stage": K, "stage_status": K, "waiting_state": K, "waiting_days": K}
 _WAIT_GROUPS = ("waiting_to_be_scheduled", "interview_booked_not_held", "waiting_for_feedback")
 
@@ -55,11 +54,11 @@ SCHEMAS = {
     "search_candidates": {"total_matching": K, "returned": K, "candidates": [{
         **_STANDING, "current_stage": K, "status": K, **_WAITING,
         "fit_signals": {"required_skills_matched": [K], "required_skills_missing": [K], "preferred_skills_matched_count": K,
-                        **_EVIDENCE_COUNTS, "latest_recommendation": K, "recommendation_counts": _COUNTS, "avg_criteria_score": K},
+                        "latest_recommendation": K},
         "content_flags": [_FLAG]}]},
     "get_candidates": {"candidates": [{
         **_STANDING, "not_found": K, "current_stage": K, "application_status": K, **_WAITING, "applied_at": T,
-        "required_skills_matched": [K], "required_skills_missing": [K], "preferred_skills_matched": [K], **_EVIDENCE_COUNTS,
+        "required_skills_matched": [K], "required_skills_missing": [K], "preferred_skills_matched": [K],
         "feedback": [{"feedback_id": K, "stage": K, "interview_at": T, "submitted_at": T, "interviewer": K,
                       "recommendation": K, "criteria": {"*": K}, "summary_text": U}],
         "stage_history": [{"event_id": K, "summary": K, "exit_reason": U}],
@@ -78,6 +77,29 @@ SCHEMAS = {
 COLLECTIONS = {"list_roles": ("roles", "role_id"), "search_candidates": ("candidates", "candidate_id"),
                "get_candidates": ("candidates", "candidate_id"), "get_candidate_communications": ("messages", "email_id"),
                "get_tasks": ("tasks", "task_id")}
+# What the model reads uses the recruiter's words. Services keep the spec's field names; only the model-visible copy is renamed.
+# Counting fields (interviews completed, feedback received, recommendation counts) are not shown at all: the model narrated them
+# ("2 interviews with 3 feedback entries") and ranked by them, and the feedback list and status sentence already say it.
+RENAME = {"role_age_days": "days_open", "waiting_state": "waiting_for", "waiting_days": "days_waiting",
+          "days_in_current_stage": "days_in_stage", "entered": "reached", "advanced": "moved_on", "still_in_stage": "there_now",
+          "completed_median_days": "median_days_for_those_who_left", "completed_n": "people_who_left",
+          "completed_over_target": "left_after_target", "active_n": "people_there_now",
+          "active_median_age_days": "median_days_there_now", "active_max_age_days": "max_days_there_now",
+          "active_over_target": "over_target_now"}
+WAITING_FOR = {"in_review": "resume review", "awaiting_scheduling": "interview to be booked",
+               "awaiting_interview": "booked interview to be held", "awaiting_feedback": "interview feedback",
+               "awaiting_decision": "a decision"}
+# The natural shape of each result, written by the application and delivered next to the data (the model follows guidance in a
+# result more reliably than in a tool description). Advice on presentation only; it never changes what is true.
+HOW_TO_SHOW = {
+    "get_recruiting_overview": ("Comparing roles: ONE markdown table, a row per role: Role | Days open | Waiting to be scheduled | "
+                                "Waiting on feedback | Overdue tasks. About people waiting: name them with their days waiting and stage."),
+    "get_tasks": "Three or more tasks: ONE markdown table, overdue first: Person | Task | Owner | Due | Status (overdue by N days).",
+    "get_pipeline_analytics": ("Stages: ONE markdown table: Stage | Reached | Moved on | Rejected | Withdrew | There now | "
+                               "Median days vs target | Recorded reasons."),
+    "get_candidates": ("Ranking: best first, on skills and interview feedback; someone with only screening notes is not ranked above "
+                       "someone with positive interviews. Three or more people: ONE markdown table."),
+}
 ID_KEYS = ("candidate_id", "feedback_id", "event_id", "email_id", "task_id")
 ID_RE = re.compile(r"C\d{3}|EM-\d{3}|T-\d{3}|ROLE-[A-Z]{2,3}")
 
@@ -95,7 +117,8 @@ def _apply(value, spec, flags: list, cand: str = "n/a", field: str = ""):
         if "*" in spec:
             return {k: _apply(v, spec["*"], flags, cand, k) for k, v in value.items()
                     if isinstance(k, str) and SAFE_KEY.fullmatch(k) and not scan(k)}  # keys can carry text too
-        return {k: _apply(value[k], sub, flags, cand, k) for k, sub in spec.items()
+        return {RENAME.get(k, k): _apply(WAITING_FOR.get(value[k], value[k]) if k == "waiting_state" else value[k], sub, flags, cand, k)
+                for k, sub in spec.items()
                 if k in value and not (sub == U and value[k] is None)}       # no empty untrusted wrappers (e.g. exit_reason on an advance)
     if isinstance(spec, list):
         return [_apply(v, spec[0], flags, cand, field) for v in value] if isinstance(value, list) else []
@@ -165,7 +188,8 @@ def project(tool: str, envelope: dict) -> dict:
         err = {"code": code if isinstance(code, str) and ERR_CODE_RE.fullmatch(code) else "tool_error",
                "message": _clean_text(err.get("message", "")) if isinstance(err, dict) else ""}
     as_of = envelope.get("as_of")
-    return {"data": shown, "as_of": as_of if isinstance(as_of, str) and AS_OF_RE.fullmatch(as_of) else None,
+    return {"data": shown, **({"how_to_show": HOW_TO_SHOW[tool]} if tool in HOW_TO_SHOW and shown else {}),
+            "as_of": as_of if isinstance(as_of, str) and AS_OF_RE.fullmatch(as_of) else None,
             "source_refs": [r for r in envelope.get("source_refs", []) if isinstance(r, str) and CITATION_RE.match(r)][:MAX_REFS],
             "warnings": warnings, "content_flags": flags, "omitted": [], "error": err or None}
 

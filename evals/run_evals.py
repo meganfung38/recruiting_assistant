@@ -42,11 +42,12 @@ def record_from_result(case: dict, condition: str, run: int, result, seconds: fl
     return {
         "case": case["id"], "condition": condition, "run": run, "status": result.status, "error_code": result.error_code,
         "limit_code": result.limit_code, "repaired": list(result.repaired), "empty_retries": result.empty_retries, "flag_source_count": len(result.flag_sources), "structured": a is not None,
-        "answer_markdown": result.answer, "candidates": [c.model_dump() for c in a.candidates] if a else None,
-        "uncertainties": list(a.uncertainties) if a else [], "content_warnings": list(a.content_warnings) if a else [],
+        "answer_markdown": result.answer, "ranking": [x.model_dump() for x in a.ranking] if a else [],
+        "about": list(result.report.candidates) if result.report else [],
+        "uncertainties": list(a.uncertainties) if a else [],
         "evidence_refs": result.evidence.refs(), "retrieved_candidates": result.evidence.retrieved_candidates(), "tool_sequence": [e.tool_name for e in result.trace.ordered()],
         "trace": [e.model_dump() for e in result.trace.ordered()], "content_flags": result.content_flags,
-        "unverified_figures": len(result.report.unverified_figures) if result.report else 0,
+        "unsupported_numbers": len(result.report.unsupported_numbers) if result.report else 0,
         "model_rounds": result.trace.model_rounds, "usage": result.usage, "seconds": round(seconds, 1)}
 
 

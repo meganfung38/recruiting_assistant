@@ -1,5 +1,11 @@
-"""OpenAI Chat Completions adapter (the project's one LLM provider). The orchestrator depends only on the
-`complete()` shape below, so tests swap in a scripted model and no API key is needed to test the loop."""
+"""OpenAI Responses API adapter (the project's one LLM provider). The orchestrator depends only on the `complete()` shape below,
+so tests swap in a scripted model and no API key is needed to test the loop.
+
+Why the Responses API: with function tools, Chat Completions only allows reasoning_effort "none" for gpt-5.4-mini, so the agent could
+not reason at all (it misread which of 3, 4 and 5 was largest). The conversation is still kept in the Chat Completions message shape
+(system/user/assistant with tool_calls/tool), which the orchestrator stores; this adapter converts it on every call. Requests are
+stateless (store=False): the full context is sent each round, as before.
+"""
 import asyncio
 import json
 import os
@@ -35,14 +41,39 @@ def _args(raw: str | None):
     return parsed if isinstance(parsed, dict) else None
 
 
+def _input_items(messages: list[dict]) -> list[dict]:
+    """Chat-shaped messages -> Responses API input items."""
+    items: list[dict] = []
+    for m in messages:
+        role = m.get("role")
+        if role == "tool":
+            items.append({"type": "function_call_output", "call_id": m["tool_call_id"], "output": m.get("content") or ""})
+        elif role == "assistant" and m.get("tool_calls"):
+            if m.get("content"):
+                items.append({"role": "assistant", "content": m["content"]})
+            items += [{"type": "function_call", "call_id": tc["id"], "name": tc["function"]["name"],
+                       "arguments": tc["function"]["arguments"] or "{}"} for tc in m["tool_calls"]]
+        else:
+            items.append({"role": role, "content": m.get("content") or ""})
+    return items
+
+
+def _tools(tools: list[dict]) -> list[dict]:
+    """Chat-style {"type": "function", "function": {...}} -> Responses-style flat function tools (non-strict: optional args exist)."""
+    return [{"type": "function", "name": t["function"]["name"], "description": t["function"].get("description", ""),
+             "parameters": t["function"]["parameters"], "strict": False} for t in tools if t.get("type") == "function"]
+
+
 class OpenAILLM:
     def __init__(self, model: str | None = None, api_key: str | None = None, temperature: float | None = None,
-                 timeout: float = 60.0, client=None):
+                 timeout: float = 60.0, client=None, reasoning_effort: str | None = None):
         self.model = model or os.environ.get("OPENAI_MODEL")
         if not self.model:
             raise ValueError("OPENAI_MODEL is not set (see .env.example)")
         self.temperature = temperature if temperature is not None else (
             float(os.environ["OPENAI_TEMPERATURE"]) if os.environ.get("OPENAI_TEMPERATURE") else None)
+        # "low" by default: enough to compare numbers and follow the answer rules; "none" turns reasoning off.
+        self.reasoning_effort = reasoning_effort or os.environ.get("OPENAI_REASONING_EFFORT") or "low"
         self._injected, self._api_key, self._timeout = client, api_key or os.environ.get("OPENAI_API_KEY"), timeout
         self._client, self._loop = None, None
 
@@ -64,13 +95,15 @@ class OpenAILLM:
             await client.close()
 
     async def complete(self, messages: list[dict], tools: list[dict] | None = None) -> LLMResponse:
-        kwargs = {"model": self.model, "messages": messages}
+        kwargs = {"model": self.model, "input": _input_items(messages), "store": False}
+        if self.reasoning_effort != "none":
+            kwargs["reasoning"] = {"effort": self.reasoning_effort}
         if tools:
-            kwargs["tools"] = tools
-        if self.temperature is not None:        # optional: some models reject a temperature setting
+            kwargs["tools"] = _tools(tools)
+        if self.temperature is not None:        # optional: reasoning models usually reject a temperature setting
             kwargs["temperature"] = self.temperature
         try:
-            resp = await self.client.chat.completions.create(**kwargs)
+            resp = await self.client.responses.create(**kwargs)
         except openai.AuthenticationError as exc:
             raise LLMUnavailable("llm_auth_error", f"{type(exc).__name__} {exc.status_code}") from exc
         except openai.RateLimitError as exc:
@@ -79,14 +112,15 @@ class OpenAILLM:
             raise LLMUnavailable("llm_bad_request", f"{type(exc).__name__} {exc.status_code}") from exc
         except openai.OpenAIError as exc:
             raise LLMUnavailable("llm_unavailable", type(exc).__name__) from exc
-        msg = resp.choices[0].message
-        calls = [tc for tc in (msg.tool_calls or []) if getattr(tc, "type", "function") == "function"]
-        assistant: dict = {"role": "assistant", "content": msg.content}
+        calls = [o for o in (resp.output or []) if getattr(o, "type", None) == "function_call"]
+        text = "".join(c.text for o in (resp.output or []) if getattr(o, "type", None) == "message"
+                       for c in (o.content or []) if getattr(c, "type", None) == "output_text") or None
+        assistant: dict = {"role": "assistant", "content": text}
         if calls:
-            assistant["tool_calls"] = [{"id": tc.id, "type": "function",
-                                        "function": {"name": tc.function.name, "arguments": tc.function.arguments}}
-                                       for tc in calls]
-        usage = {"prompt_tokens": getattr(resp.usage, "prompt_tokens", 0) or 0,
-                 "completion_tokens": getattr(resp.usage, "completion_tokens", 0) or 0}
-        return LLMResponse(msg.content, [ToolCall(tc.id, tc.function.name, _args(tc.function.arguments)) for tc in calls],
-                           assistant, usage)
+            assistant["tool_calls"] = [{"id": c.call_id, "type": "function", "function": {"name": c.name, "arguments": c.arguments}}
+                                       for c in calls]
+        u = getattr(resp, "usage", None)
+        details = getattr(u, "output_tokens_details", None)
+        usage = {"prompt_tokens": getattr(u, "input_tokens", 0) or 0, "completion_tokens": getattr(u, "output_tokens", 0) or 0,
+                 "reasoning_tokens": getattr(details, "reasoning_tokens", 0) or 0}
+        return LLMResponse(text, [ToolCall(c.call_id, c.name, _args(c.arguments)) for c in calls], assistant, usage)

@@ -1,9 +1,13 @@
 """`submit_answer`: the local finalization tool. It is handled by the orchestrator, is NOT an MCP tool and is
-not in the seven-tool allowlist. The model uses it to hand back a structured, citable answer that the
-deterministic validator in agent/evidence.py can check."""
+not in the seven-tool allowlist.
+
+The model writes the answer in plain recruiter language and declares only WHO it is about (candidate and role IDs) and, for a
+ranking or comparison, the order with a one-line reason. It does not write citations or figure paths: the application derives the
+evidence from those declarations and checks the numbers in the prose deterministically (agent/evidence.py). Bookkeeping the model is
+bad at is done by code; judgment and wording stay with the model."""
 from typing import Annotated
 
-from pydantic import BaseModel, ConfigDict, Field, StrictFloat, StrictInt
+from pydantic import BaseModel, ConfigDict, Field
 
 CandidateId = Annotated[str, Field(pattern=r"^C\d{3}$")]
 RoleId = Annotated[str, Field(pattern=r"^ROLE-[A-Z]{2,3}$")]
@@ -13,39 +17,30 @@ class _Strict(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
 
-class CandidateEntry(_Strict):
+class Ranked(_Strict):
     candidate_id: CandidateId
-    role_id: RoleId
-    rationale: Annotated[str, Field(max_length=1200, description="Why, in terms of the role's requirements and evidence")]
-    evidence: Annotated[list[Annotated[str, Field(max_length=60)]], Field(max_length=12, description="Citation IDs, e.g. feedback:FB-031, cv:C104 (record retrieved), search:C104 (search row only)")]
-    gaps: Annotated[list[Annotated[str, Field(max_length=300)]], Field(max_length=8, description="Missing evidence or concerns, e.g. no system design feedback")]
-
-
-class Figure(_Strict):
-    label: Annotated[str, Field(max_length=120)]
-    value: StrictInt | StrictFloat          # a real number copied exactly from the tool result (booleans are rejected)
-    evidence: Annotated[str, Field(max_length=60, description="Source of the number: analytics:ROLE-BE@<date>, task:T-004, or cv:C104 for a candidate's own numbers")]
-    field_path: Annotated[str, Field(max_length=200, description="Where the exact value sits, e.g. stages[Technical Interview].scheduling.lag_median_scheduled_days, days_overdue, feedback_count, days_in_current_stage, fit_signals.avg_criteria_score")]
+    reason: Annotated[str, Field(max_length=300, description="What puts them here, in terms of skills and what the interview feedback says")]
+    gaps: Annotated[list[Annotated[str, Field(max_length=200)]], Field(max_length=5, description="Missing skills, concerns, or evidence still pending")] = []
 
 
 class SubmittedAnswer(_Strict):
     answer_markdown: Annotated[str, Field(min_length=1, max_length=8000, description=(
-        "The answer the recruiter reads, in markdown, with inline citations like [feedback:FB-018]. First sentence: the answer, "
-        "correcting any wrong premise in the question (e.g. how long a role has been open). Three or more roles, tasks, people or "
-        "stages: ONE markdown table with a header row, not bullets. Names, never IDs."))]
-    candidates: Annotated[list[CandidateEntry], Field(max_length=10, description=(
-        "Only for a ranking or a comparison of candidates (e.g. a top three). Leave empty for status lookups, lists of people, "
-        "tasks and pipeline answers."))] = []
-    figures: Annotated[list[Figure], Field(max_length=20, description=(
-        "Optional. Only numbers copied from a single field of a tool result. Never counts you made yourself."))] = []
-    uncertainties: Annotated[list[Annotated[str, Field(max_length=400)]], Field(max_length=10)] = []
-    content_warnings: Annotated[list[Annotated[str, Field(max_length=400)]], Field(max_length=10, description="Unused: leave empty. The application reports flagged content itself.")] = []
+        "The answer the recruiter reads, in markdown and plain words: names, never IDs or field names, and no citation tokens. "
+        "First sentence: the answer, correcting any wrong premise in the question (e.g. how long a role has been open). Three or "
+        "more roles, tasks, people or stages: ONE markdown table with a header row, not bullets. Copy every number exactly as the "
+        "tool results give it; never add up or derive numbers yourself."))]
+    candidates: Annotated[list[CandidateId], Field(max_length=30, description="IDs of every candidate the answer talks about")] = []
+    roles: Annotated[list[RoleId], Field(max_length=5, description="IDs of every role the answer talks about")] = []
+    ranking: Annotated[list[Ranked], Field(max_length=10, description=(
+        "REQUIRED whenever the answer ranks, orders or compares candidates (a top three, who is strongest, X versus Y), best first; "
+        "the recruiter's evidence cards follow this order. Leave empty for status, task and pipeline answers."))] = []
+    uncertainties: Annotated[list[Annotated[str, Field(max_length=400)]], Field(max_length=10, description="Missing evidence, small samples")] = []
 
 
 DESCRIPTION = (
-    "Finish the turn: submit the final answer exactly once, after you have all the evidence you need. "
-    "Do not call it in the same response as other tools. Every citation, candidate and figure is checked against the "
-    "tool results you received this turn.")
+    "Finish the turn: submit the final answer exactly once, after you have all the evidence you need. Do not call it in the same "
+    "response as other tools. Every declared candidate and role, and every number in the answer, is checked against this turn's "
+    "tool results.")
 
 
 def _inline(node, defs):

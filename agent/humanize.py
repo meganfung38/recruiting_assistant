@@ -1,43 +1,53 @@
-"""Turns model text into recruiter language: no citation tokens, no internal IDs, no field names.
+"""A small safety net for the default view: the model is asked to write names and plain words, and this removes anything internal
+that slips through (a citation token, an ID, a field name) without ever touching markdown structure.
 
-This is a SAFETY NET for the default view. The prompt tells the model to write names and plain words; this guarantees that a slip
-never reaches the recruiter. Deterministic and pure; the original text is still validated and kept for the technical details.
+It works line by line and leaves each line's list marker or table pipes alone. (The previous version tidied punctuation across the
+whole text: deleting "FB-025" from "- FB-025, Resume Review" left "-, Resume Review", which is no longer a bullet, so the list
+collapsed into one line.) Deterministic and pure.
 """
 import re
 
 TOOLS = "list_roles|search_candidates|get_candidates|get_candidate_communications|get_pipeline_analytics|get_tasks|get_recruiting_overview"
 CITATION = re.compile(r"[ \t]*\[(?:(?:" + TOOLS.replace("_", "[_ ]") + r")\]|(?:cv|search|feedback|stage|email|task|role|analytics):[^\]]*\])")
-NAME_ID = re.compile(r"\s*\((?:C\d{3}|ROLE-[A-Z]{2,3})\)")        # "Name (C104)" and "Backend Engineer (ROLE-BE)": the title already says it
+NAME_ID = re.compile(r"\s*\((?:C\d{3}|ROLE-[A-Z]{2,3})\)")        # "Name (C104)": the name already says it
 CAND_ID = re.compile(r"\bC\d{3}\b")
 ROLE_ID = re.compile(r"\bROLE-[A-Z]{2,3}\b")
-TASK_ID = re.compile(r"\bT-\d{3}\b")
-OTHER_ID = re.compile(r"\b(?:FB|EV|EM)-\d{3}\b")
+RECORD_ID = re.compile(r"\b(?:T|FB|EV|EM)-\d{3}\b[,;:]?[ \t]*")    # a record ID and the separator that followed it
 SNAKE = re.compile(r"\b[a-z]+(?:_[a-z]+)+\b")
 DOT_ZERO = re.compile(r"(\d)\.0\b(?!\d)")
-PHRASES = {  # more natural than a plain underscore-to-space
-    "awaiting_scheduling": "waiting to be scheduled", "awaiting_interview": "interview booked", "awaiting_feedback": "waiting on interview feedback",
-    "awaiting_decision": "awaiting a decision", "in_review": "in resume review", "waiting_days": "days waiting", "days_in_current_stage": "days in the current stage",
-    "strong_yes": "strong yes", "strong_no": "strong no"}
+LEAD = re.compile(r"^(\s*(?:[-*+]|\d+[.)])\s+|\s*)(.*)$")              # (list marker or indent, rest of the line)
+PHRASES = {"strong_yes": "strong yes", "strong_no": "strong no", "awaiting_scheduling": "waiting to be scheduled",
+           "awaiting_interview": "interview booked", "awaiting_feedback": "waiting on interview feedback",
+           "awaiting_decision": "awaiting a decision", "in_review": "in resume review", "waiting_days": "days waiting",
+           "days_waiting": "days waiting", "days_in_current_stage": "days in the current stage", "days_in_stage": "days in the stage"}
 LEAK = re.compile(r"\bC\d{3}\b|\b(?:T|FB|EV|EM)-\d{3}\b|\bROLE-[A-Z]{2,3}\b|\[(?:cv|search|feedback|stage|email|task|role|analytics):|\b[a-z]+(?:_[a-z]+)+\b")
 
 
-def humanize(text: str, registry) -> str:
-    """Names for IDs, readable words for field names, and no citation syntax."""
-    if not text:
-        return text
-    t = CITATION.sub("", text).replace("`", "")                                 # backticks mark field names / code, never recruiter language
-    t = NAME_ID.sub("", t)                                                      # "Dahlia Ramanathan (C104)" -> "Dahlia Ramanathan"
+def _line(line: str, registry) -> str:
+    marker, rest = LEAD.match(line).groups()
+    is_table = rest.lstrip().startswith("|")
+    t = CITATION.sub("", rest).replace("`", "")
+    t = NAME_ID.sub("", t)
     t = CAND_ID.sub(lambda m: registry.candidate_name(m.group(0)) or "a candidate", t)
     t = ROLE_ID.sub(lambda m: registry.role_title(m.group(0)) or "the role", t)
-    t = TASK_ID.sub(lambda m: (registry.card(f"task:{m.group(0)}") or {}).get("title", ""), t)       # a task ID becomes its readable name
-    t = OTHER_ID.sub("", t)
+    t = RECORD_ID.sub("", t)
     for snake, plain in PHRASES.items():
         t = re.sub(rf"\b{snake}\b", plain, t)
     t = SNAKE.sub(lambda m: m.group(0).replace("_", " "), t)
     t = DOT_ZERO.sub(r"\1", t)
-    t = re.sub(r"[ \t]{2,}", " ", t)
-    t = re.sub(r" +([.,;:!?])", r"\1", t)                                       # citation removal leaves "word ." behind
-    return re.sub(r"\(\s*\)", "", t).strip()
+    t = re.sub(r"(?<=\S)[ \t]{2,}", " ", t)
+    t = re.sub(r"(?<=\w) +([.,;:!?])", r"\1", t)
+    t = re.sub(r"\(\s*\)", "", t)
+    if not is_table:
+        t = t.lstrip(",;: ")
+    return marker + t.rstrip()
+
+
+def humanize(text: str, registry) -> str:
+    """Names for IDs, readable words for field names, no citation syntax; markdown structure is kept exactly."""
+    if not text:
+        return text
+    return "\n".join(_line(line, registry) for line in text.split("\n")).strip()
 
 
 def leaks(text: str) -> list[str]:

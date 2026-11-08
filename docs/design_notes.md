@@ -13,10 +13,9 @@ The model only chooses tools. Every call goes through `ToolExecutor`, which enfo
   marker. Flags are computed from the original text; the original excerpt is kept only for the reviewer's screen (`agent/flag_sources.py`),
   never in the trace, evidence registry or model messages.
 - **Evidence** (`agent/evidence.py`): a per-turn registry built only from structured fields of successful calls. The model submits a structured
-  answer (`submit_answer`); the finalizer checks citations, that ranked candidates were read, and exact figures. One repair round, then
-  the answer is shown with its problems visible. Validation checks presence and exactness, not meaning. A figure cited to the wrong kind
-  of record is verified where the same field holds the same value; a figure whose cited source holds a different value is never verified
-  (that is how a number carried over from another role is caught).
+  answer (`submit_answer`) declaring who it is about; the finalizer checks people, roles, that ranked candidates were read, and every number
+  in the prose against the data for the subject on that line. One repair round, then the answer is shown with its problems visible.
+  Validation checks presence, not meaning.
 - **Truncation**: a result over 32,000 characters is cut by whole records, with a warning and the omitted IDs. It does not happen with
   this dataset's normal questions.
 
@@ -45,6 +44,23 @@ fragments, so the fix was better-shaped tools and a shorter prompt, not more rul
   footnote under answers that did not involve the flagged person.
 - **Trace:** one record per model round (tokens, time, action, validation verdict), shown as round blocks in the developer view and
   appended to `logs/turns.jsonl`.
+
+## The answer contract (2026-11-08, second round)
+Manual testing showed that most remaining failures came from bookkeeping the model was asked to do: inline citation tokens and figure
+paths (repair rounds; a path named `days_open` for a field called `role_age_days`), IDs written into prose and then stripped by regex
+(which merged a list into one line), and an evidence panel shaped by whichever records the model happened to cite.
+- **The model owns judgment and wording; the application owns structure and provenance.** `submit_answer` takes plain prose, the IDs of
+  the people and roles it is about, and an optional ranking with one-line reasons. Evidence is derived from those declarations.
+- **Numbers are checked deterministically**, line by line, against what the model saw for the people and roles on that line
+  (`agent/evidence.py`). This catches a number carried over from another role, which was the original failure.
+- **One vocabulary.** The model sees recruiter words (`days_open`, `days_waiting`, `waiting_for: "interview to be booked"`, `reached`,
+  `there_now`); counting fields that it narrated or ranked by are not shown. Services keep the spec's names.
+- **One "who is this answer about" set** (ranked, declared, then named in the prose, in order) drives the flag block and the evidence
+  cards, so the original flagged text can no longer appear without the notice that explains it.
+- **Presentation hints travel with the data** (`how_to_show` in each result where a shape helps). The model followed them far more
+  reliably than the same advice in a tool description: role tables went from 0-3 of 3 runs to 3 of 3.
+- **Reasoning** via the Responses API at low effort; the adapter converts the stored chat-shaped history on each call.
+- **Distinct evidence.** Interview notes were regenerated from each record's own facts (`data/compose_feedback.py`).
 
 ## What would change with a real ATS
 Verified identity and role-based access; requisition and field-level authorization; opaque candidate references and PII redaction before model calls;

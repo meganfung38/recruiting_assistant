@@ -33,6 +33,7 @@ class RoundRecord(BaseModel):
     round: int
     prompt_tokens: int = 0
     completion_tokens: int = 0
+    reasoning_tokens: int = 0          # part of completion_tokens spent reasoning (Responses API)
     duration_ms: int = 0
     action: Literal["tools", "submit", "plain_text", "empty", "wrap_up"] = "tools"
     outcome: str = ""                 # e.g. "accepted", "sent back", "deferred: call submit_answer alone"
