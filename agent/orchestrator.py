@@ -62,7 +62,7 @@ class TurnResult:
     content_flags: list[dict] = field(default_factory=list)
     messages: list[dict] = field(default_factory=list)   # this turn's messages, for history
     submitted: SubmittedAnswer | None = None     # structured answer (None for plain-text / limit / error answers)
-    report: ValidationReport | None = None       # citation / candidate / figure validation of the final answer
+    report: ValidationReport | None = None       # who the answer is about, and the people / roles / numbers checks
     repaired: list[str] = field(default_factory=list)   # problem categories found on the first submission
     empty_retries: int = 0                       # empty model replies that were nudged and retried this turn
     flag_sources: list = field(default_factory=list)   # raw flagged candidate text for the human reviewer; never sent anywhere else

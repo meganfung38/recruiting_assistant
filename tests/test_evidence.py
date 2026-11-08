@@ -128,11 +128,11 @@ def test_plain_text_answers_are_checked_for_people_and_numbers_too():
     assert r.structured is False and r.candidates == ["C113"] and [n.value for n in r.unsupported_numbers] == [30.0]
 
 
-def test_flagged_candidates_are_tracked_for_the_notice_but_are_not_a_validation_concern():
+def test_flagged_content_is_not_a_validation_concern():
     reg = turn()
     reg.add("search_candidates", env({"candidates": [{"candidate_id": "C117", "name": "Quentin Abara"}]}, ["search:C117"],
                                      [{"candidate_id": "C117", "field": "cv_text", "pattern_id": "concealment"}]))
-    assert reg.flagged_candidates() == ["C117"] and validate_answer(ans(answer_markdown="Mateo leads."), reg).ok
+    assert validate_answer(ans(answer_markdown="Mateo leads."), reg).ok      # the application reports flags; the model need not
 
 
 def test_records_are_kept_as_the_model_saw_them_and_a_detailed_read_adds_to_a_role_view():
@@ -153,3 +153,15 @@ def test_schema_is_strict_bounded_and_flat_for_the_model():
     d = submit_answer_definition()
     assert d["function"]["name"] == "submit_answer" and "$defs" not in json.dumps(d) and "$ref" not in json.dumps(d)
     assert set(d["function"]["parameters"]["properties"]) == {"answer_markdown", "candidates", "roles", "ranking", "uncertainties"}
+
+
+def test_a_target_attributed_to_the_wrong_clock_is_caught():
+    """Eval run: "3 people are past the 7-day time-in-stage target" at Technical Interview, whose time-in-stage target is 14 (7 is booking)."""
+    reg = turn()
+    reg.add("get_pipeline_analytics", env({"role_id": "ROLE-BE", "role_title": "Backend Engineer", "stages": [
+        {"stage": "Technical Interview", "targets": {"duration_days": 14, "scheduling_days": 7, "feedback_days": 2}},
+        {"stage": "Final Interview", "targets": {"duration_days": 7, "scheduling_days": 5, "feedback_days": 2}}]}, ["analytics:ROLE-BE@2026-11-07"]))
+    bad = validate_answer(ans(answer_markdown="At Technical Interview, 4 people are past the 7-day time-in-stage target."), reg)
+    assert bad.categories == ["wrong_target"] and "time-in-stage target there is 14 days" in bad.problems()[0]
+    assert validate_answer(ans(answer_markdown="At Technical Interview, 4 are past the 7-day booking target and 4 past the 14-day time-in-stage target."), reg).ok
+    assert validate_answer(ans(answer_markdown="At Final Interview, 1 person is past the 7-day time-in-stage target."), reg).ok   # same number, right clock

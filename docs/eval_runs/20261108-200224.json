@@ -1,0 +1,447 @@
+{
+ "model": "gpt-5.4-mini",
+ "temperature": null,
+ "cases": "2,6",
+ "results": {
+  "2": {
+   "records": [
+    {
+     "case": 2,
+     "condition": "baseline",
+     "run": 0,
+     "status": "ok",
+     "error_code": null,
+     "limit_code": null,
+     "repaired": [],
+     "empty_retries": 0,
+     "flag_source_count": 0,
+     "structured": true,
+     "answer_markdown": "Backend Engineer is losing candidates mainly in the Technical Interview: 5 of 17 reached that stage moved on, 2 were rejected, and 5 withdrew, with 3 of those withdrawals blamed on waiting too long to be scheduled.\n\n| Stage | Reached | Moved on | Rejected | Withdrew | There now | Why people left |\n|---|---:|---:|---:|---:|---:|---|\n| Resume Review | 20 | 18 | 1 | 0 | 1 | 1 rejected for missing a required skill |\n| Recruiter Screen | 18 | 17 | 1 | 0 | 0 | 1 rejected for interview feedback below the bar |\n| Technical Interview | 17 | 5 | 2 | 5 | 5 | 2 rejected for interview feedback below the bar; 3 withdrew for waited too long to be scheduled; 1 withdrew for personal reasons; 1 withdrew for accepted another offer |\n| Final Interview | 5 | 0 | 2 | 1 | 2 | 2 rejected for interview feedback below the bar; 1 withdrew for accepted another offer |\n\nThe biggest delay is in the Technical Interview scheduling clock: 14 of the 17 people who reached it are still past the 7-day booking target, and 3 people there now are still waiting to be booked, with waits of 12, 16, and 22 days. Final Interview also has a small slowdown, but it is a low sample.",
+     "ranking": [],
+     "about": [],
+     "uncertainties": [],
+     "evidence_refs": [
+      "analytics:ROLE-BE@2026-11-07"
+     ],
+     "retrieved_candidates": [],
+     "tool_sequence": [
+      "get_pipeline_analytics"
+     ],
+     "trace": [
+      {
+       "trace_id": "e5818944fce5",
+       "call_id": "call_anD7ILItTW5ULGFWHSZiJ68s",
+       "sequence": 1,
+       "round": 1,
+       "tool_name": "get_pipeline_analytics",
+       "safe_arguments": {
+        "role": "Backend Engineer"
+       },
+       "status": "success",
+       "duration_ms": 46,
+       "started_ms": 1807,
+       "completed_ms": 1853,
+       "result_summary": {
+        "counts": {
+         "stages": 4
+        },
+        "source_ids": [
+         "analytics:ROLE-BE@2026-11-07"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "result_chars": 5090,
+       "evidence_refs": [
+        "analytics:ROLE-BE@2026-11-07"
+       ],
+       "error_code": null
+      }
+     ],
+     "content_flags": [],
+     "unsupported_numbers": 0,
+     "model_rounds": 2,
+     "usage": {
+      "prompt_tokens": 9118,
+      "completion_tokens": 446
+     },
+     "seconds": 4.7
+    },
+    {
+     "case": 2,
+     "condition": "baseline",
+     "run": 1,
+     "status": "ok",
+     "error_code": null,
+     "limit_code": null,
+     "repaired": [],
+     "empty_retries": 0,
+     "flag_source_count": 0,
+     "structured": true,
+     "answer_markdown": "Backend Engineer has been open 123 days, and the main losses are in the Technical Interview stage.\n\n| Stage | Reached | Moved on | Rejected | Withdrew | There now | Why people left |\n|---|---:|---:|---:|---:|---:|---|\n| Resume Review | 20 | 18 | 1 | 0 | 1 | 1 rejected for a missing required skill |\n| Recruiter Screen | 18 | 17 | 1 | 0 | 0 | 1 rejected for interview feedback below the bar |\n| Technical Interview | 17 | 5 | 2 | 5 | 5 | 2 rejected for interview feedback below the bar; 3 withdrew because they waited too long to be scheduled; 1 withdrew for personal reasons; 1 withdrew after accepting another offer |\n\nTechnical Interview is the bottleneck: 14 of 17 people who reached it were still waiting to be scheduled past the 7-day booking target, and 3 of the 5 people there now are already past the 14-day time-in-stage target. Final Interview also has some friction, but the sample is small.\n\nNext steps:\n- Technical Interview: reduce scheduling delays; 14 of 17 reached it are past the booking target.\n- Technical Interview: review the 5 withdrawals, especially the 3 tied to waiting too long to be scheduled.\n- Final Interview: monitor the 2 people there now, since 1 is already past the time-in-stage target.",
+     "ranking": [],
+     "about": [],
+     "uncertainties": [],
+     "evidence_refs": [
+      "analytics:ROLE-BE@2026-11-07"
+     ],
+     "retrieved_candidates": [],
+     "tool_sequence": [
+      "get_pipeline_analytics"
+     ],
+     "trace": [
+      {
+       "trace_id": "ad89c7a53426",
+       "call_id": "call_sclYNPisCPmsfNUvNbbDe2up",
+       "sequence": 1,
+       "round": 1,
+       "tool_name": "get_pipeline_analytics",
+       "safe_arguments": {
+        "role": "Backend Engineer"
+       },
+       "status": "success",
+       "duration_ms": 6,
+       "started_ms": 2205,
+       "completed_ms": 2211,
+       "result_summary": {
+        "counts": {
+         "stages": 4
+        },
+        "source_ids": [
+         "analytics:ROLE-BE@2026-11-07"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "result_chars": 5090,
+       "evidence_refs": [
+        "analytics:ROLE-BE@2026-11-07"
+       ],
+       "error_code": null
+      }
+     ],
+     "content_flags": [],
+     "unsupported_numbers": 0,
+     "model_rounds": 2,
+     "usage": {
+      "prompt_tokens": 9118,
+      "completion_tokens": 471
+     },
+     "seconds": 5.1
+    },
+    {
+     "case": 2,
+     "condition": "baseline",
+     "run": 2,
+     "status": "ok",
+     "error_code": null,
+     "limit_code": null,
+     "repaired": [],
+     "empty_retries": 0,
+     "flag_source_count": 0,
+     "structured": true,
+     "answer_markdown": "Backend Engineer has been open 123 days, and the biggest losses are in Technical Interview.\n\n| Stage | Reached | Moved on | Rejected | Withdrew | There now | Why people left |\n|---|---:|---:|---:|---:|---:|---|\n| Resume Review | 20 | 18 | 1 | 0 | 1 | 1 rejected for missing a required skill |\n| Recruiter Screen | 18 | 17 | 1 | 0 | 0 | 1 rejected for interview feedback below the bar |\n| Technical Interview | 17 | 5 | 2 | 5 | 5 | 2 rejected for interview feedback below the bar; 3 withdrew because they waited too long to be scheduled; 1 withdrew for personal reasons; 1 withdrew after accepting another offer |\n| Final Interview | 5 | 0 | 2 | 1 | 2 | 2 rejected for interview feedback below the bar; 1 withdrew after accepting another offer |\n\nTechnical Interview is the main bottleneck: 14 of 17 people who reached it are still waiting to be booked, all past the 7-day scheduling target, and 3 people are still in the stage past the 14-day time-in-stage target. Final Interview also has 1 person past its 7-day time-in-stage target, but the sample is small.",
+     "ranking": [],
+     "about": [],
+     "uncertainties": [
+      "Final Interview has low sample sizes for duration and feedback."
+     ],
+     "evidence_refs": [
+      "analytics:ROLE-BE@2026-11-07"
+     ],
+     "retrieved_candidates": [],
+     "tool_sequence": [
+      "get_pipeline_analytics"
+     ],
+     "trace": [
+      {
+       "trace_id": "0dea2adba80e",
+       "call_id": "call_dk8KN86p2RFg6cMlXerKiGxI",
+       "sequence": 1,
+       "round": 1,
+       "tool_name": "get_pipeline_analytics",
+       "safe_arguments": {
+        "role": "Backend Engineer"
+       },
+       "status": "success",
+       "duration_ms": 47,
+       "started_ms": 1805,
+       "completed_ms": 1852,
+       "result_summary": {
+        "counts": {
+         "stages": 4
+        },
+        "source_ids": [
+         "analytics:ROLE-BE@2026-11-07"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "result_chars": 5090,
+       "evidence_refs": [
+        "analytics:ROLE-BE@2026-11-07"
+       ],
+       "error_code": null
+      }
+     ],
+     "content_flags": [],
+     "unsupported_numbers": 0,
+     "model_rounds": 2,
+     "usage": {
+      "prompt_tokens": 9118,
+      "completion_tokens": 458
+     },
+     "seconds": 4.5
+    }
+   ],
+   "verdict": {
+    "verdict": "pass",
+    "passed": 3,
+    "runs": 3,
+    "per_run": [
+     {
+      "status": "pass",
+      "reasons": []
+     },
+     {
+      "status": "pass",
+      "reasons": []
+     },
+     {
+      "status": "pass",
+      "reasons": []
+     }
+    ],
+    "rounds": [
+     2,
+     2,
+     2
+    ],
+    "tokens": [
+     9564,
+     9589,
+     9576
+    ]
+   }
+  },
+  "6": {
+   "records": [
+    {
+     "case": 6,
+     "condition": "baseline",
+     "run": 0,
+     "status": "ok",
+     "error_code": null,
+     "limit_code": null,
+     "repaired": [],
+     "empty_retries": 0,
+     "flag_source_count": 0,
+     "structured": false,
+     "answer_markdown": "I can\u2019t find candidate C999 in the data.",
+     "ranking": [],
+     "about": [],
+     "uncertainties": [],
+     "evidence_refs": [],
+     "retrieved_candidates": [],
+     "tool_sequence": [
+      "get_candidates"
+     ],
+     "trace": [
+      {
+       "trace_id": "094c27fbb1ad",
+       "call_id": "call_DDG6JJqJY2Z8ihj1U8gvgY9D",
+       "sequence": 1,
+       "round": 1,
+       "tool_name": "get_candidates",
+       "safe_arguments": {
+        "candidate_ids": [
+         "C999"
+        ],
+        "names": null,
+        "role": null
+       },
+       "status": "success",
+       "duration_ms": 9,
+       "started_ms": 2040,
+       "completed_ms": 2049,
+       "result_summary": {
+        "counts": {
+         "candidates": 1
+        },
+        "source_ids": [],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 1
+       },
+       "result_chars": 543,
+       "evidence_refs": [],
+       "error_code": null
+      }
+     ],
+     "content_flags": [],
+     "unsupported_numbers": 0,
+     "model_rounds": 2,
+     "usage": {
+      "prompt_tokens": 7528,
+      "completion_tokens": 48
+     },
+     "seconds": 2.8
+    },
+    {
+     "case": 6,
+     "condition": "baseline",
+     "run": 1,
+     "status": "ok",
+     "error_code": null,
+     "limit_code": null,
+     "repaired": [],
+     "empty_retries": 0,
+     "flag_source_count": 0,
+     "structured": false,
+     "answer_markdown": "I can\u2019t find candidate C999 in the data.",
+     "ranking": [],
+     "about": [],
+     "uncertainties": [],
+     "evidence_refs": [],
+     "retrieved_candidates": [],
+     "tool_sequence": [
+      "get_candidates"
+     ],
+     "trace": [
+      {
+       "trace_id": "a8d55039e85d",
+       "call_id": "call_W3yGDESu6wUc2s0kIg0VqfW6",
+       "sequence": 1,
+       "round": 1,
+       "tool_name": "get_candidates",
+       "safe_arguments": {
+        "candidate_ids": [
+         "C999"
+        ],
+        "names": null,
+        "role": null
+       },
+       "status": "success",
+       "duration_ms": 12,
+       "started_ms": 3917,
+       "completed_ms": 3929,
+       "result_summary": {
+        "counts": {
+         "candidates": 1
+        },
+        "source_ids": [],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 1
+       },
+       "result_chars": 543,
+       "evidence_refs": [],
+       "error_code": null
+      }
+     ],
+     "content_flags": [],
+     "unsupported_numbers": 0,
+     "model_rounds": 2,
+     "usage": {
+      "prompt_tokens": 7528,
+      "completion_tokens": 48
+     },
+     "seconds": 4.8
+    },
+    {
+     "case": 6,
+     "condition": "baseline",
+     "run": 2,
+     "status": "ok",
+     "error_code": null,
+     "limit_code": null,
+     "repaired": [],
+     "empty_retries": 0,
+     "flag_source_count": 0,
+     "structured": false,
+     "answer_markdown": "I can\u2019t find candidate C999 in the dataset.",
+     "ranking": [],
+     "about": [],
+     "uncertainties": [],
+     "evidence_refs": [],
+     "retrieved_candidates": [],
+     "tool_sequence": [
+      "get_candidates"
+     ],
+     "trace": [
+      {
+       "trace_id": "8e4bc71b3ff1",
+       "call_id": "call_MPmBR2CVc3woQreshfklzXq7",
+       "sequence": 1,
+       "round": 1,
+       "tool_name": "get_candidates",
+       "safe_arguments": {
+        "candidate_ids": [
+         "C999"
+        ],
+        "names": null,
+        "role": null
+       },
+       "status": "success",
+       "duration_ms": 8,
+       "started_ms": 1426,
+       "completed_ms": 1434,
+       "result_summary": {
+        "counts": {
+         "candidates": 1
+        },
+        "source_ids": [],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 1
+       },
+       "result_chars": 543,
+       "evidence_refs": [],
+       "error_code": null
+      }
+     ],
+     "content_flags": [],
+     "unsupported_numbers": 0,
+     "model_rounds": 2,
+     "usage": {
+      "prompt_tokens": 7528,
+      "completion_tokens": 49
+     },
+     "seconds": 2.3
+    }
+   ],
+   "verdict": {
+    "verdict": "pass",
+    "passed": 3,
+    "runs": 3,
+    "per_run": [
+     {
+      "status": "pass",
+      "reasons": []
+     },
+     {
+      "status": "pass",
+      "reasons": []
+     },
+     {
+      "status": "pass",
+      "reasons": []
+     }
+    ],
+    "rounds": [
+     2,
+     2,
+     2
+    ],
+    "tokens": [
+     7576,
+     7576,
+     7577
+    ]
+   }
+  }
+ }
+}

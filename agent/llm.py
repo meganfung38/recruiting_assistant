@@ -66,7 +66,9 @@ def _tools(tools: list[dict]) -> list[dict]:
 
 class OpenAILLM:
     def __init__(self, model: str | None = None, api_key: str | None = None, temperature: float | None = None,
-                 timeout: float = 60.0, client=None, reasoning_effort: str | None = None):
+                 timeout: float = 20.0, client=None, reasoning_effort: str | None = None):
+        # A normal round takes under 5 s. 20 s per request lets the SDK's automatic retry recover from a stalled request (one took
+        # 61.6 s for 57 tokens at a 60 s timeout) while staying inside the 90 s turn limit.
         self.model = model or os.environ.get("OPENAI_MODEL")
         if not self.model:
             raise ValueError("OPENAI_MODEL is not set (see .env.example)")

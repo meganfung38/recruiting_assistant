@@ -70,7 +70,7 @@ paths (repair rounds; a path named `days_open` for a field called `role_age_days
   and its own target in words. Analytics has no per-person waits, so the hint forbids listing them from it (the model had invented
   "16, 16 and 22 days" from a median and a maximum), and an example in the hint uses invented numbers so it cannot be copied as data.
 - **Counts say who they count.** In scheduling, `over_target_count` counted everyone who ever reached the stage (14 of 17), and was read
-  as people there now; the model sees it as `everyone_who_reached_it_waiting_past_booking_target`. Reason codes arrive in words.
+  as people there now; the model sees it as `ever_waited_past_booking_target` (past tense: a name with "waiting" in it was read as "still waiting"). Reason codes arrive in words.
 - **Developer view counts say what they count**: "8 active candidates" for a whole-role read, and record IDs grouped by kind
   ("8 candidate records", "18 feedback entries").
 

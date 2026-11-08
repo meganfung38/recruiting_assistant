@@ -86,6 +86,7 @@ def test_headline_metrics_match_independent_recompute_and_expectations(key, conn
         "scheduled_n": sch["scheduled_n"], "scheduling_lag_median_scheduled": sch["lag_median_scheduled_days"],
         "awaiting_scheduling": sch["awaiting_scheduling"],
         "unscheduled_active_wait_median": sch["unscheduled_active_wait_median_days"],
+        "unscheduled_active_wait_min": sch["unscheduled_active_wait_min_days"],
         "unscheduled_active_wait_max": sch["unscheduled_active_wait_max_days"],
         "unscheduled_active_over_target": sch["unscheduled_active_over_target"],
         "exited_unscheduled_by_outcome": sch["exited_unscheduled_by_outcome"],

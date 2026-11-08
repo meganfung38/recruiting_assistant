@@ -1,0 +1,1127 @@
+{
+ "model": "gpt-5.4-mini",
+ "temperature": null,
+ "cases": "2,4,11,13",
+ "results": {
+  "2": {
+   "records": [
+    {
+     "case": 2,
+     "condition": "baseline",
+     "run": 0,
+     "status": "ok",
+     "error_code": null,
+     "limit_code": null,
+     "repaired": [],
+     "empty_retries": 0,
+     "flag_source_count": 0,
+     "structured": true,
+     "answer_markdown": "Backend Engineer has been open 123 days, and the main loss is at the Technical Interview stage: 5 withdrew and 2 were rejected there.\n\n| Stage | Reached | Moved on | Rejected | Withdrew | There now | Why people left |\n|---|---:|---:|---:|---:|---:|---|\n| Resume Review | 20 | 18 | 1 | 0 | 1 | 1 rejected for a missing required skill |\n| Recruiter Screen | 18 | 17 | 1 | 0 | 0 | 1 rejected for interview feedback below the bar |\n| Technical Interview | 17 | 5 | 2 | 5 | 5 | 2 rejected for interview feedback below the bar; 3 withdrew because they waited too long to be scheduled; 1 withdrew for personal reasons; 1 withdrew after accepting another offer |\n| Final Interview | 5 | 0 | 2 | 1 | 2 | 2 rejected for interview feedback below the bar; 1 withdrew after accepting another offer |\n\nThe biggest bottleneck is Technical Interview scheduling: 3 people are still waiting to be booked, all past the 7-day booking target, and 14 of the 17 people who reached that stage waited past the booking target. The stage is also running slow in the stage itself, with 3 people over the 14-day time-in-stage target right now.",
+     "ranking": [],
+     "about": [],
+     "uncertainties": [],
+     "evidence_refs": [
+      "analytics:ROLE-BE@2026-11-07"
+     ],
+     "retrieved_candidates": [],
+     "tool_sequence": [
+      "get_pipeline_analytics"
+     ],
+     "trace": [
+      {
+       "trace_id": "bcdaf06a5913",
+       "call_id": "call_gkbqB8tfvSRhauGlYyy92kK4",
+       "sequence": 1,
+       "round": 1,
+       "tool_name": "get_pipeline_analytics",
+       "safe_arguments": {
+        "role": "Backend Engineer"
+       },
+       "status": "success",
+       "duration_ms": 45,
+       "started_ms": 1840,
+       "completed_ms": 1885,
+       "result_summary": {
+        "counts": {
+         "stages": 4
+        },
+        "source_ids": [
+         "analytics:ROLE-BE@2026-11-07"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "result_chars": 5030,
+       "evidence_refs": [
+        "analytics:ROLE-BE@2026-11-07"
+       ],
+       "error_code": null
+      }
+     ],
+     "content_flags": [],
+     "unsupported_numbers": 0,
+     "model_rounds": 2,
+     "usage": {
+      "prompt_tokens": 9119,
+      "completion_tokens": 428
+     },
+     "seconds": 4.8
+    },
+    {
+     "case": 2,
+     "condition": "baseline",
+     "run": 1,
+     "status": "ok",
+     "error_code": null,
+     "limit_code": null,
+     "repaired": [],
+     "empty_retries": 0,
+     "flag_source_count": 0,
+     "structured": true,
+     "answer_markdown": "Backend Engineer has been open 123 days, and the biggest losses are in Technical Interview, with Final Interview a smaller secondary loss.\n\n| Stage | Reached | Moved on | Rejected | Withdrew | There now | Why people left |\n|---|---:|---:|---:|---:|---:|---|\n| Resume Review | 20 | 18 | 1 | 0 | 1 | 1 rejection for missing a required skill |\n| Recruiter Screen | 18 | 17 | 1 | 0 | 0 | 1 rejection for interview feedback below the bar |\n| Technical Interview | 17 | 5 | 2 | 5 | 5 | 2 rejections for interview feedback below the bar; 3 withdrawals for waited too long to be scheduled; 1 withdrawal for personal reasons; 1 withdrawal for accepted another offer |\n| Final Interview | 5 | 0 | 2 | 1 | 2 | 2 rejections for interview feedback below the bar; 1 withdrawal for accepted another offer |\n\nTechnical Interview is the main bottleneck: 5 people were withdrawn, including 3 who left because they waited too long to be scheduled, and 3 people there now are already past the 14-day time-in-stage target. Final Interview is also slow for the people still in it, with 1 person over the 7-day time-in-stage target, but the sample is small.",
+     "ranking": [],
+     "about": [],
+     "uncertainties": [
+      "Final Interview has a small sample."
+     ],
+     "evidence_refs": [
+      "analytics:ROLE-BE@2026-11-07",
+      "role:ROLE-BE",
+      "role:ROLE-MSE",
+      "role:ROLE-PO"
+     ],
+     "retrieved_candidates": [],
+     "tool_sequence": [
+      "list_roles",
+      "get_pipeline_analytics"
+     ],
+     "trace": [
+      {
+       "trace_id": "dbe6b74015ed",
+       "call_id": "call_tW37p1USAXCVgTsnPq05qG4G",
+       "sequence": 1,
+       "round": 1,
+       "tool_name": "list_roles",
+       "safe_arguments": {},
+       "status": "success",
+       "duration_ms": 9,
+       "started_ms": 2326,
+       "completed_ms": 2335,
+       "result_summary": {
+        "counts": {
+         "roles": 3
+        },
+        "source_ids": [
+         "role:ROLE-BE",
+         "role:ROLE-MSE",
+         "role:ROLE-PO"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "result_chars": 1584,
+       "evidence_refs": [
+        "role:ROLE-BE",
+        "role:ROLE-MSE",
+        "role:ROLE-PO"
+       ],
+       "error_code": null
+      },
+      {
+       "trace_id": "dbe6b74015ed",
+       "call_id": "call_QZ6ycqW8SzZ9AexPcLP7ZQmQ",
+       "sequence": 2,
+       "round": 2,
+       "tool_name": "get_pipeline_analytics",
+       "safe_arguments": {
+        "role": "Backend Engineer"
+       },
+       "status": "success",
+       "duration_ms": 10,
+       "started_ms": 3200,
+       "completed_ms": 3210,
+       "result_summary": {
+        "counts": {
+         "stages": 4
+        },
+        "source_ids": [
+         "analytics:ROLE-BE@2026-11-07"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "result_chars": 5030,
+       "evidence_refs": [
+        "analytics:ROLE-BE@2026-11-07"
+       ],
+       "error_code": null
+      }
+     ],
+     "content_flags": [],
+     "unsupported_numbers": 0,
+     "model_rounds": 3,
+     "usage": {
+      "prompt_tokens": 13790,
+      "completion_tokens": 476
+     },
+     "seconds": 5.9
+    },
+    {
+     "case": 2,
+     "condition": "baseline",
+     "run": 2,
+     "status": "ok",
+     "error_code": null,
+     "limit_code": null,
+     "repaired": [],
+     "empty_retries": 0,
+     "flag_source_count": 0,
+     "structured": true,
+     "answer_markdown": "Backend Engineer has been open 123 days, and the main losses are in Technical Interview, with some loss in Final Interview.\n\n| Stage | Reached | Moved on | Rejected | Withdrew | There now | Why people left |\n|---|---:|---:|---:|---:|---:|---|\n| Resume Review | 20 | 18 | 1 | 0 | 1 | 1 rejection for missing a required skill |\n| Recruiter Screen | 18 | 17 | 1 | 0 | 0 | 1 rejection for interview feedback below the bar |\n| Technical Interview | 17 | 5 | 2 | 5 | 5 | 2 rejections for interview feedback below the bar; 3 withdrawals for waited too long to be scheduled; 1 withdrawal for personal reasons; 1 withdrawal for accepted another offer |\n| Final Interview | 5 | 0 | 2 | 1 | 2 | 2 rejections for interview feedback below the bar; 1 withdrawal for accepted another offer |\n\nThe biggest leak is Technical Interview: 5 of 17 moved on, and 5 withdrew, including 3 because they waited too long to be scheduled. There are still 3 people there who have waited past the 7-day booking target, with the longest waiting 22 days. Final Interview also has a smaller loss, but it is based on a low sample.",
+     "ranking": [],
+     "about": [],
+     "uncertainties": [],
+     "evidence_refs": [
+      "analytics:ROLE-BE@2026-11-07"
+     ],
+     "retrieved_candidates": [],
+     "tool_sequence": [
+      "get_pipeline_analytics"
+     ],
+     "trace": [
+      {
+       "trace_id": "898f08548bcd",
+       "call_id": "call_8okaZL2a5hIHErjC7TYy6iDQ",
+       "sequence": 1,
+       "round": 1,
+       "tool_name": "get_pipeline_analytics",
+       "safe_arguments": {
+        "role": "Backend Engineer"
+       },
+       "status": "success",
+       "duration_ms": 47,
+       "started_ms": 1837,
+       "completed_ms": 1884,
+       "result_summary": {
+        "counts": {
+         "stages": 4
+        },
+        "source_ids": [
+         "analytics:ROLE-BE@2026-11-07"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "result_chars": 5030,
+       "evidence_refs": [
+        "analytics:ROLE-BE@2026-11-07"
+       ],
+       "error_code": null
+      }
+     ],
+     "content_flags": [],
+     "unsupported_numbers": 0,
+     "model_rounds": 2,
+     "usage": {
+      "prompt_tokens": 9119,
+      "completion_tokens": 413
+     },
+     "seconds": 4.8
+    }
+   ],
+   "verdict": {
+    "verdict": "fail",
+    "passed": 2,
+    "runs": 3,
+    "per_run": [
+     {
+      "status": "pass",
+      "reasons": []
+     },
+     {
+      "status": "fail",
+      "reasons": [
+       "does not name the booking wait and its target",
+       "does not mention candidates still unscheduled"
+      ]
+     },
+     {
+      "status": "pass",
+      "reasons": []
+     }
+    ],
+    "rounds": [
+     2,
+     3,
+     2
+    ],
+    "tokens": [
+     9547,
+     14266,
+     9532
+    ]
+   }
+  },
+  "4": {
+   "records": [
+    {
+     "case": 4,
+     "condition": "baseline",
+     "run": 0,
+     "status": "ok",
+     "error_code": null,
+     "limit_code": null,
+     "repaired": [],
+     "empty_retries": 0,
+     "flag_source_count": 0,
+     "structured": true,
+     "answer_markdown": "Wendell Osei is in the Technical Interview stage. His latest feedback was a yes from Tobias Lindqvist on Nov 2, and he has spent 13 days in the stage, which is longer than the median of 8.0 days for people there now and tied with the maximum of 13.0 days.\n- Current stage: Technical Interview since Oct 25.\n- Latest feedback: yes, with comments that his sequencing logic was sound and his examples were clear, though he stayed general when pushed for detail.\n- Compared with others at the stage: 6 people are there now, median time in stage is 8.0 days, and the longest is 13.0 days.",
+     "ranking": [],
+     "about": [
+      "C123"
+     ],
+     "uncertainties": [],
+     "evidence_refs": [
+      "analytics:ROLE-MSE@2026-11-07",
+      "cv:C123",
+      "feedback:FB-058",
+      "feedback:FB-059",
+      "feedback:FB-060",
+      "stage:EV-069",
+      "stage:EV-070",
+      "stage:EV-071",
+      "task:T-011"
+     ],
+     "retrieved_candidates": [
+      "C123"
+     ],
+     "tool_sequence": [
+      "get_candidates",
+      "get_pipeline_analytics"
+     ],
+     "trace": [
+      {
+       "trace_id": "4d43357121a5",
+       "call_id": "call_K3AD3wIPtVUTU5jolDvRaoFv",
+       "sequence": 1,
+       "round": 1,
+       "tool_name": "get_candidates",
+       "safe_arguments": {
+        "candidate_ids": [
+         "C123"
+        ],
+        "names": null,
+        "role": null
+       },
+       "status": "success",
+       "duration_ms": 44,
+       "started_ms": 1839,
+       "completed_ms": 1883,
+       "result_summary": {
+        "counts": {
+         "candidates": 1
+        },
+        "source_ids": [
+         "cv:C123",
+         "feedback:FB-058",
+         "feedback:FB-059",
+         "feedback:FB-060",
+         "stage:EV-069",
+         "stage:EV-070",
+         "stage:EV-071",
+         "task:T-011"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "result_chars": 4271,
+       "evidence_refs": [
+        "cv:C123",
+        "feedback:FB-058",
+        "feedback:FB-059",
+        "feedback:FB-060",
+        "stage:EV-069",
+        "stage:EV-070",
+        "stage:EV-071",
+        "task:T-011"
+       ],
+       "error_code": null
+      },
+      {
+       "trace_id": "4d43357121a5",
+       "call_id": "call_RmOPu6ioch0RP8DU0gAGY7LE",
+       "sequence": 2,
+       "round": 2,
+       "tool_name": "get_pipeline_analytics",
+       "safe_arguments": {
+        "role": "Manufacturing Systems Engineer"
+       },
+       "status": "success",
+       "duration_ms": 11,
+       "started_ms": 2897,
+       "completed_ms": 2908,
+       "result_summary": {
+        "counts": {
+         "stages": 4
+        },
+        "source_ids": [
+         "analytics:ROLE-MSE@2026-11-07"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "result_chars": 4891,
+       "evidence_refs": [
+        "analytics:ROLE-MSE@2026-11-07"
+       ],
+       "error_code": null
+      }
+     ],
+     "content_flags": [],
+     "unsupported_numbers": 0,
+     "model_rounds": 3,
+     "usage": {
+      "prompt_tokens": 15191,
+      "completion_tokens": 393
+     },
+     "seconds": 5.1
+    },
+    {
+     "case": 4,
+     "condition": "baseline",
+     "run": 1,
+     "status": "ok",
+     "error_code": null,
+     "limit_code": null,
+     "repaired": [],
+     "empty_retries": 0,
+     "flag_source_count": 0,
+     "structured": true,
+     "answer_markdown": "Wendell Osei is in the Technical Interview stage. His latest feedback was a yes recommendation from Tobias Lindqvist on Nov 2, and he has been in the stage for 13 days, which is longer than the median 8 days for people there now and tied with the 13-day maximum.\n- His stage status says the interview was held Nov 1 and feedback was received Nov 2.\n- The Technical Interview currently has 6 people there now.",
+     "ranking": [],
+     "about": [
+      "C123"
+     ],
+     "uncertainties": [],
+     "evidence_refs": [
+      "analytics:ROLE-MSE@2026-11-07",
+      "cv:C123",
+      "feedback:FB-058",
+      "feedback:FB-059",
+      "feedback:FB-060",
+      "stage:EV-069",
+      "stage:EV-070",
+      "stage:EV-071",
+      "task:T-011"
+     ],
+     "retrieved_candidates": [
+      "C123"
+     ],
+     "tool_sequence": [
+      "get_candidates",
+      "get_pipeline_analytics"
+     ],
+     "trace": [
+      {
+       "trace_id": "4936104166e7",
+       "call_id": "call_fS3cu46953KwSMm3RxjbXLyA",
+       "sequence": 1,
+       "round": 1,
+       "tool_name": "get_candidates",
+       "safe_arguments": {
+        "candidate_ids": [
+         "C123"
+        ],
+        "names": null,
+        "role": null
+       },
+       "status": "success",
+       "duration_ms": 8,
+       "started_ms": 1520,
+       "completed_ms": 1528,
+       "result_summary": {
+        "counts": {
+         "candidates": 1
+        },
+        "source_ids": [
+         "cv:C123",
+         "feedback:FB-058",
+         "feedback:FB-059",
+         "feedback:FB-060",
+         "stage:EV-069",
+         "stage:EV-070",
+         "stage:EV-071",
+         "task:T-011"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "result_chars": 4271,
+       "evidence_refs": [
+        "cv:C123",
+        "feedback:FB-058",
+        "feedback:FB-059",
+        "feedback:FB-060",
+        "stage:EV-069",
+        "stage:EV-070",
+        "stage:EV-071",
+        "task:T-011"
+       ],
+       "error_code": null
+      },
+      {
+       "trace_id": "4936104166e7",
+       "call_id": "call_YFrP4kDXzbSZovKNE1EK5sdz",
+       "sequence": 2,
+       "round": 2,
+       "tool_name": "get_pipeline_analytics",
+       "safe_arguments": {
+        "role": "Manufacturing Systems Engineer"
+       },
+       "status": "success",
+       "duration_ms": 10,
+       "started_ms": 2611,
+       "completed_ms": 2621,
+       "result_summary": {
+        "counts": {
+         "stages": 4
+        },
+        "source_ids": [
+         "analytics:ROLE-MSE@2026-11-07"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "result_chars": 4891,
+       "evidence_refs": [
+        "analytics:ROLE-MSE@2026-11-07"
+       ],
+       "error_code": null
+      }
+     ],
+     "content_flags": [],
+     "unsupported_numbers": 0,
+     "model_rounds": 3,
+     "usage": {
+      "prompt_tokens": 15191,
+      "completion_tokens": 380
+     },
+     "seconds": 4.7
+    },
+    {
+     "case": 4,
+     "condition": "baseline",
+     "run": 2,
+     "status": "ok",
+     "error_code": null,
+     "limit_code": null,
+     "repaired": [],
+     "empty_retries": 0,
+     "flag_source_count": 0,
+     "structured": true,
+     "answer_markdown": "Wendell Osei is in the Technical Interview stage. His latest feedback was a yes from Tobias Lindqvist after the Nov 1 interview, submitted Nov 2.\n\nHe has been in the stage for 13 days. That is longer than the 8-day median for people there now and matches the 13-day maximum there now.",
+     "ranking": [],
+     "about": [
+      "C123"
+     ],
+     "uncertainties": [],
+     "evidence_refs": [
+      "analytics:ROLE-MSE@2026-11-07",
+      "cv:C123",
+      "feedback:FB-058",
+      "feedback:FB-059",
+      "feedback:FB-060",
+      "stage:EV-069",
+      "stage:EV-070",
+      "stage:EV-071",
+      "task:T-011"
+     ],
+     "retrieved_candidates": [
+      "C123"
+     ],
+     "tool_sequence": [
+      "get_candidates",
+      "get_pipeline_analytics"
+     ],
+     "trace": [
+      {
+       "trace_id": "e13eb74d93e5",
+       "call_id": "call_gzXFHoURklfTXSPjiBPUUE99",
+       "sequence": 1,
+       "round": 1,
+       "tool_name": "get_candidates",
+       "safe_arguments": {
+        "candidate_ids": [
+         "C123"
+        ],
+        "names": null,
+        "role": null
+       },
+       "status": "success",
+       "duration_ms": 8,
+       "started_ms": 1646,
+       "completed_ms": 1654,
+       "result_summary": {
+        "counts": {
+         "candidates": 1
+        },
+        "source_ids": [
+         "cv:C123",
+         "feedback:FB-058",
+         "feedback:FB-059",
+         "feedback:FB-060",
+         "stage:EV-069",
+         "stage:EV-070",
+         "stage:EV-071",
+         "task:T-011"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "result_chars": 4271,
+       "evidence_refs": [
+        "cv:C123",
+        "feedback:FB-058",
+        "feedback:FB-059",
+        "feedback:FB-060",
+        "stage:EV-069",
+        "stage:EV-070",
+        "stage:EV-071",
+        "task:T-011"
+       ],
+       "error_code": null
+      },
+      {
+       "trace_id": "e13eb74d93e5",
+       "call_id": "call_vpbyP3DPnHXQUEuzqNImO2zL",
+       "sequence": 2,
+       "round": 2,
+       "tool_name": "get_pipeline_analytics",
+       "safe_arguments": {
+        "role": "Manufacturing Systems Engineer"
+       },
+       "status": "success",
+       "duration_ms": 11,
+       "started_ms": 2711,
+       "completed_ms": 2722,
+       "result_summary": {
+        "counts": {
+         "stages": 4
+        },
+        "source_ids": [
+         "analytics:ROLE-MSE@2026-11-07"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "result_chars": 4891,
+       "evidence_refs": [
+        "analytics:ROLE-MSE@2026-11-07"
+       ],
+       "error_code": null
+      }
+     ],
+     "content_flags": [],
+     "unsupported_numbers": 0,
+     "model_rounds": 3,
+     "usage": {
+      "prompt_tokens": 15191,
+      "completion_tokens": 394
+     },
+     "seconds": 5.1
+    }
+   ],
+   "verdict": {
+    "verdict": "pass",
+    "passed": 3,
+    "runs": 3,
+    "per_run": [
+     {
+      "status": "pass",
+      "reasons": []
+     },
+     {
+      "status": "pass",
+      "reasons": []
+     },
+     {
+      "status": "pass",
+      "reasons": []
+     }
+    ],
+    "rounds": [
+     3,
+     3,
+     3
+    ],
+    "tokens": [
+     15584,
+     15571,
+     15585
+    ]
+   }
+  },
+  "11": {
+   "records": [
+    {
+     "case": 11,
+     "condition": "baseline",
+     "run": 0,
+     "status": "ok",
+     "error_code": null,
+     "limit_code": null,
+     "repaired": [],
+     "empty_retries": 0,
+     "flag_source_count": 0,
+     "structured": true,
+     "answer_markdown": "People Operations is slow mainly at the Hiring Manager Interview stage: it has 1 person over the time-in-stage target, and feedback is lagging there, while the earlier stages are within target.\n\n| Stage | Reached | Moved on | Rejected | Withdrew | There now | Why people left |\n|---|---:|---:|---:|---:|---:|---|\n| Resume Review | 20 | 18 | 1 | 0 | 1 | 1 rejected for missing a required skill |\n| Recruiter Screen | 18 | 16 | 1 | 1 | 0 | 1 compensation mismatch; 1 rejected for interview feedback below the bar |\n| Hiring Manager Interview | 16 | 4 | 2 | 1 | 9 | 2 rejected for interview feedback below the bar; 1 withdrew for personal reasons |\n| Final Interview | 4 | 0 | 1 | 1 | 2 | 1 rejected for interview feedback below the bar; 1 withdrew for accepted another offer |\n\n- Hiring Manager Interview is the bottleneck: 9 people are there now, the median time in stage for people still there is 8 days against a 10-day target, and 1 person is already over the target.\n- Feedback is also slow at Hiring Manager Interview: the median feedback lag is 3 days against a 2-day target, and 3 feedback items are overdue.\n- Final Interview is small-sample, and its timing is within target.",
+     "ranking": [],
+     "about": [],
+     "uncertainties": [
+      "Final Interview has a low sample size for duration, scheduling, and feedback."
+     ],
+     "evidence_refs": [
+      "analytics:ROLE-PO@2026-11-07"
+     ],
+     "retrieved_candidates": [],
+     "tool_sequence": [
+      "get_pipeline_analytics"
+     ],
+     "trace": [
+      {
+       "trace_id": "5cadee2a27ba",
+       "call_id": "call_I7hiSvum7rlL9BcY7o2E3uxQ",
+       "sequence": 1,
+       "round": 1,
+       "tool_name": "get_pipeline_analytics",
+       "safe_arguments": {
+        "role": "People Operations"
+       },
+       "status": "success",
+       "duration_ms": 15,
+       "started_ms": 1841,
+       "completed_ms": 1856,
+       "result_summary": {
+        "counts": {
+         "stages": 4
+        },
+        "source_ids": [
+         "analytics:ROLE-PO@2026-11-07"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "result_chars": 4964,
+       "evidence_refs": [
+        "analytics:ROLE-PO@2026-11-07"
+       ],
+       "error_code": null
+      }
+     ],
+     "content_flags": [],
+     "unsupported_numbers": 0,
+     "model_rounds": 2,
+     "usage": {
+      "prompt_tokens": 9081,
+      "completion_tokens": 479
+     },
+     "seconds": 4.7
+    },
+    {
+     "case": 11,
+     "condition": "baseline",
+     "run": 1,
+     "status": "ok",
+     "error_code": null,
+     "limit_code": null,
+     "repaired": [],
+     "empty_retries": 0,
+     "flag_source_count": 0,
+     "structured": true,
+     "answer_markdown": "People Operations is slow mainly at Hiring Manager Interview: it has one person over the time-in-stage target and the longest feedback delays.\n\n| Stage | Reached | Moved on | Rejected | Withdrew | There now | Why people left |\n|---|---:|---:|---:|---:|---:|---|\n| Resume Review | 20 | 18 | 1 | 0 | 1 | 1 rejected for a missing required skill |\n| Recruiter Screen | 18 | 16 | 1 | 1 | 0 | 1 compensation mismatch; 1 rejected for interview feedback below the bar |\n| Hiring Manager Interview | 16 | 4 | 2 | 1 | 9 | 2 rejected for interview feedback below the bar; 1 withdrew for personal reasons |\n| Final Interview | 4 | 0 | 1 | 1 | 2 | 1 rejected for interview feedback below the bar; 1 withdrew for accepted another offer |\n\nAt Hiring Manager Interview, 1 person is still there after 12 days in the stage, past the 10-day time-in-stage target, and feedback is lagging: 7 of 8 submitted feedbacks were late, with 3 still overdue. Final Interview is a small sample.",
+     "ranking": [],
+     "about": [],
+     "uncertainties": [
+      "Final Interview has low sample for duration, scheduling, and feedback."
+     ],
+     "evidence_refs": [
+      "analytics:ROLE-PO@2026-11-07"
+     ],
+     "retrieved_candidates": [],
+     "tool_sequence": [
+      "get_pipeline_analytics"
+     ],
+     "trace": [
+      {
+       "trace_id": "df7d83850a05",
+       "call_id": "call_2dcLL94R7URrM8dLwzkkXuWV",
+       "sequence": 1,
+       "round": 1,
+       "tool_name": "get_pipeline_analytics",
+       "safe_arguments": {
+        "role": "People Operations"
+       },
+       "status": "success",
+       "duration_ms": 15,
+       "started_ms": 1606,
+       "completed_ms": 1621,
+       "result_summary": {
+        "counts": {
+         "stages": 4
+        },
+        "source_ids": [
+         "analytics:ROLE-PO@2026-11-07"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "result_chars": 4964,
+       "evidence_refs": [
+        "analytics:ROLE-PO@2026-11-07"
+       ],
+       "error_code": null
+      }
+     ],
+     "content_flags": [],
+     "unsupported_numbers": 0,
+     "model_rounds": 2,
+     "usage": {
+      "prompt_tokens": 9081,
+      "completion_tokens": 441
+     },
+     "seconds": 4.2
+    },
+    {
+     "case": 11,
+     "condition": "baseline",
+     "run": 2,
+     "status": "ok",
+     "error_code": null,
+     "limit_code": null,
+     "repaired": [],
+     "empty_retries": 0,
+     "flag_source_count": 0,
+     "structured": true,
+     "answer_markdown": "People Operations is slow mainly because the Hiring Manager Interview is backing up; the role has been open 82 days.\n\n| Stage | Reached | Moved on | Rejected | Withdrew | There now | Why people left |\n|---|---:|---:|---:|---:|---:|---|\n| Resume Review | 20 | 18 | 1 | 0 | 1 | 1 rejected for a missing required skill |\n| Recruiter Screen | 18 | 16 | 1 | 1 | 0 | 1 compensation mismatch; 1 rejected for interview feedback below the bar |\n| Hiring Manager Interview | 16 | 4 | 2 | 1 | 9 | 2 rejected for interview feedback below the bar; 1 withdrew for personal reasons |\n| Final Interview | 4 | 0 | 1 | 1 | 2 | 1 rejected for interview feedback below the bar; 1 withdrew for accepted another offer |\n\nNine people are still in Hiring Manager Interview, and 1 is already past the 10-day time-in-stage target. Feedback is also lagging there: 3 of 8 submitted feedbacks were late, and 1 is still missing past due. Final Interview is small, so its low-sample timings are less conclusive.",
+     "ranking": [],
+     "about": [],
+     "uncertainties": [],
+     "evidence_refs": [
+      "analytics:ROLE-PO@2026-11-07"
+     ],
+     "retrieved_candidates": [],
+     "tool_sequence": [
+      "get_pipeline_analytics"
+     ],
+     "trace": [
+      {
+       "trace_id": "94e3669702cc",
+       "call_id": "call_UYyQKJlkrCyN9xyZGKGZvF2n",
+       "sequence": 1,
+       "round": 1,
+       "tool_name": "get_pipeline_analytics",
+       "safe_arguments": {
+        "role": "People Operations"
+       },
+       "status": "success",
+       "duration_ms": 9,
+       "started_ms": 1739,
+       "completed_ms": 1748,
+       "result_summary": {
+        "counts": {
+         "stages": 4
+        },
+        "source_ids": [
+         "analytics:ROLE-PO@2026-11-07"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "result_chars": 4964,
+       "evidence_refs": [
+        "analytics:ROLE-PO@2026-11-07"
+       ],
+       "error_code": null
+      }
+     ],
+     "content_flags": [],
+     "unsupported_numbers": 0,
+     "model_rounds": 2,
+     "usage": {
+      "prompt_tokens": 9081,
+      "completion_tokens": 470
+     },
+     "seconds": 4.5
+    }
+   ],
+   "verdict": {
+    "verdict": "pass",
+    "passed": 3,
+    "runs": 3,
+    "per_run": [
+     {
+      "status": "pass",
+      "reasons": []
+     },
+     {
+      "status": "pass",
+      "reasons": []
+     },
+     {
+      "status": "pass",
+      "reasons": []
+     }
+    ],
+    "rounds": [
+     2,
+     2,
+     2
+    ],
+    "tokens": [
+     9560,
+     9522,
+     9551
+    ]
+   }
+  },
+  "13": {
+   "records": [
+    {
+     "case": 13,
+     "condition": "baseline",
+     "run": 0,
+     "status": "ok",
+     "error_code": null,
+     "limit_code": null,
+     "repaired": [],
+     "empty_retries": 0,
+     "flag_source_count": 0,
+     "structured": true,
+     "answer_markdown": "Manufacturing Systems Engineer is 180 days open, and the main issue is the Final Interview stage, where 2 people are still there and both are past the time-in-stage target.\n\n| Stage | Reached | Moved on | Rejected | Withdrew | There now | Why people left |\n|---|---:|---:|---:|---:|---:|---|\n| Resume Review | 20 | 13 | 6 | 0 | 1 | 6 rejections for missing a required skill |\n| Recruiter Screen | 13 | 11 | 2 | 0 | 0 | 2 rejections for interview feedback below the bar |\n| Technical Interview | 11 | 3 | 1 | 1 | 6 | 1 rejection for interview feedback below the bar; 1 withdrawal for compensation mismatch |\n| Final Interview | 3 | 0 | 1 | 0 | 2 | 1 rejection for interview feedback below the bar |\n\nThe Final Interview is the bottleneck: its time-in-stage median for people there now is 8.5 days against a 7-day target, and 2 of 2 people there now are over target. It is a low-sample stage, so treat the numbers cautiously. The Technical Interview is not currently over target: 6 people are there now, and their median time in stage is 8 days against a 14-day target.",
+     "ranking": [],
+     "about": [],
+     "uncertainties": [
+      "Final Interview is a low-sample stage."
+     ],
+     "evidence_refs": [
+      "analytics:ROLE-MSE@2026-11-07"
+     ],
+     "retrieved_candidates": [],
+     "tool_sequence": [
+      "get_pipeline_analytics"
+     ],
+     "trace": [
+      {
+       "trace_id": "348c4ba6d065",
+       "call_id": "call_BTIxmtdFdq4qrmR3iW3VnX79",
+       "sequence": 1,
+       "round": 1,
+       "tool_name": "get_pipeline_analytics",
+       "safe_arguments": {
+        "role": "Manufacturing"
+       },
+       "status": "success",
+       "duration_ms": 8,
+       "started_ms": 1501,
+       "completed_ms": 1509,
+       "result_summary": {
+        "counts": {
+         "stages": 4
+        },
+        "source_ids": [
+         "analytics:ROLE-MSE@2026-11-07"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "result_chars": 4891,
+       "evidence_refs": [
+        "analytics:ROLE-MSE@2026-11-07"
+       ],
+       "error_code": null
+      }
+     ],
+     "content_flags": [],
+     "unsupported_numbers": 0,
+     "model_rounds": 2,
+     "usage": {
+      "prompt_tokens": 9058,
+      "completion_tokens": 436
+     },
+     "seconds": 4.1
+    },
+    {
+     "case": 13,
+     "condition": "baseline",
+     "run": 1,
+     "status": "ok",
+     "error_code": null,
+     "limit_code": null,
+     "repaired": [],
+     "empty_retries": 0,
+     "flag_source_count": 0,
+     "structured": true,
+     "answer_markdown": "Manufacturing Systems Engineer has been open 180 days, and the main issue is the Final Interview stage: 2 people are there now, both past the 7-day time-in-stage target, while Resume Review is shedding candidates for missing required skills.\n\n| Stage | Reached | Moved on | Rejected | Withdrew | There now | Why people left |\n|---|---:|---:|---:|---:|---:|---|\n| Resume Review | 20 | 13 | 6 | 0 | 1 | 6 rejections for missing a required skill |\n| Recruiter Screen | 13 | 11 | 2 | 0 | 0 | 2 rejections for interview feedback below the bar |\n| Technical Interview | 11 | 3 | 1 | 1 | 6 | 1 rejection for interview feedback below the bar; 1 withdrawal for compensation mismatch |\n| Final Interview | 3 | 0 | 1 | 0 | 2 | 1 rejection for interview feedback below the bar |\n\nFinal Interview is the bottleneck: its time in the stage is 8.5 days median for people there now, with a maximum of 9 days, both above the 7-day target. It is also a low-sample stage.\n\nResume Review is the main sourcing screen issue: 6 of 20 reached it were rejected for missing a required skill. Technical Interview has 6 people there now, and 1 person is still waiting to be booked for 5 days, which is within the 7-day booking target.",
+     "ranking": [],
+     "about": [],
+     "uncertainties": [
+      "Final Interview is marked low_sample, so its timing numbers are based on a small sample."
+     ],
+     "evidence_refs": [
+      "analytics:ROLE-MSE@2026-11-07"
+     ],
+     "retrieved_candidates": [],
+     "tool_sequence": [
+      "get_pipeline_analytics"
+     ],
+     "trace": [
+      {
+       "trace_id": "74b78363ab4f",
+       "call_id": "call_SZGz6SXKtE0bKmOxvAR0X0Co",
+       "sequence": 1,
+       "round": 1,
+       "tool_name": "get_pipeline_analytics",
+       "safe_arguments": {
+        "role": "Manufacturing"
+       },
+       "status": "success",
+       "duration_ms": 14,
+       "started_ms": 1516,
+       "completed_ms": 1530,
+       "result_summary": {
+        "counts": {
+         "stages": 4
+        },
+        "source_ids": [
+         "analytics:ROLE-MSE@2026-11-07"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "result_chars": 4891,
+       "evidence_refs": [
+        "analytics:ROLE-MSE@2026-11-07"
+       ],
+       "error_code": null
+      }
+     ],
+     "content_flags": [],
+     "unsupported_numbers": 0,
+     "model_rounds": 2,
+     "usage": {
+      "prompt_tokens": 9058,
+      "completion_tokens": 482
+     },
+     "seconds": 4.3
+    },
+    {
+     "case": 13,
+     "condition": "baseline",
+     "run": 2,
+     "status": "ok",
+     "error_code": null,
+     "limit_code": null,
+     "repaired": [],
+     "empty_retries": 0,
+     "flag_source_count": 0,
+     "structured": true,
+     "answer_markdown": "Manufacturing Systems Engineer is moving, but the Final Interview is the main bottleneck: 2 people are there now and both are past the 7-day time-in-stage target.\n\n| Stage | Reached | Moved on | Rejected | Withdrew | There now | Why people left |\n|---|---:|---:|---:|---:|---:|---|\n| Resume Review | 20 | 13 | 6 | 0 | 1 | 6 rejected for missing a required skill |\n| Recruiter Screen | 13 | 11 | 2 | 0 | 0 | 2 rejected for interview feedback below the bar |\n| Technical Interview | 11 | 3 | 1 | 1 | 6 | 1 rejected for interview feedback below the bar; 1 withdrew for compensation mismatch |\n| Final Interview | 3 | 0 | 1 | 0 | 2 | 1 rejected for interview feedback below the bar |\n\nThe Final Interview also has a low sample, so treat that stage cautiously. Resume Review and Recruiter Screen are within target, and Technical Interview has 1 person still waiting to be booked 5 days, which is within the 7-day booking target.",
+     "ranking": [],
+     "about": [],
+     "uncertainties": [],
+     "evidence_refs": [
+      "analytics:ROLE-MSE@2026-11-07"
+     ],
+     "retrieved_candidates": [],
+     "tool_sequence": [
+      "get_pipeline_analytics"
+     ],
+     "trace": [
+      {
+       "trace_id": "fceeb16a1538",
+       "call_id": "call_sqqWbU85l6riisBUIEW2ph3S",
+       "sequence": 1,
+       "round": 1,
+       "tool_name": "get_pipeline_analytics",
+       "safe_arguments": {
+        "role": "Manufacturing"
+       },
+       "status": "success",
+       "duration_ms": 15,
+       "started_ms": 1497,
+       "completed_ms": 1512,
+       "result_summary": {
+        "counts": {
+         "stages": 4
+        },
+        "source_ids": [
+         "analytics:ROLE-MSE@2026-11-07"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "result_chars": 4891,
+       "evidence_refs": [
+        "analytics:ROLE-MSE@2026-11-07"
+       ],
+       "error_code": null
+      }
+     ],
+     "content_flags": [],
+     "unsupported_numbers": 0,
+     "model_rounds": 2,
+     "usage": {
+      "prompt_tokens": 9058,
+      "completion_tokens": 379
+     },
+     "seconds": 3.7
+    }
+   ],
+   "verdict": {
+    "verdict": "pass",
+    "passed": 3,
+    "runs": 3,
+    "per_run": [
+     {
+      "status": "pass",
+      "reasons": []
+     },
+     {
+      "status": "pass",
+      "reasons": []
+     },
+     {
+      "status": "pass",
+      "reasons": []
+     }
+    ],
+    "rounds": [
+     2,
+     2,
+     2
+    ],
+    "tokens": [
+     9494,
+     9540,
+     9437
+    ]
+   }
+  }
+ }
+}

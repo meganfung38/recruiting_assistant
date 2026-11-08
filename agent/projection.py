@@ -37,7 +37,7 @@ _ANALYTICS_STAGE = {
                                 "active_n", "active_median_age_days", "active_max_age_days", "active_over_target")},
     "scheduling": {**{k: K for k in (
         "scheduled_n", "lag_median_scheduled_days", "awaiting_scheduling", "unscheduled_active_wait_median_days",
-        "unscheduled_active_wait_max_days", "unscheduled_active_over_target", "over_target_count", "observations")}, "exited_unscheduled_by_outcome": _COUNTS},
+        "unscheduled_active_wait_min_days", "unscheduled_active_wait_max_days", "unscheduled_active_over_target", "over_target_count", "observations")}, "exited_unscheduled_by_outcome": _COUNTS},
     "feedback": {k: K for k in ("interviews_held", "submitted", "lag_median_days", "lag_n", "over_target_count",
                                 "missing_overdue", "missing_not_yet_due")},
 }
@@ -88,9 +88,13 @@ RENAME = {"role_age_days": "days_open", "waiting_state": "waiting_for", "waiting
           "active_over_target": "over_target_now"}
 # Same key, different meaning by section: "over_target_count" in scheduling counts everyone who EVER reached the stage (14 of 17
 # for Backend Technical Interview, people who already left included), which the model read as "14 people there now".
-SECTION_RENAME = {("scheduling", "over_target_count"): "everyone_who_reached_it_waiting_past_booking_target",
+SECTION_RENAME = {("scheduling", "over_target_count"): "ever_waited_past_booking_target",   # past tense: most have left
                   ("scheduling", "observations"): "everyone_who_reached_it",
                   ("scheduling", "unscheduled_active_over_target"): "there_now_unbooked_past_booking_target",
+                  ("scheduling", "awaiting_scheduling"): "there_now_unbooked",
+                  ("scheduling", "unscheduled_active_wait_min_days"): "there_now_unbooked_shortest_wait_days",
+                  ("scheduling", "unscheduled_active_wait_median_days"): "there_now_unbooked_median_wait_days",
+                  ("scheduling", "unscheduled_active_wait_max_days"): "there_now_unbooked_longest_wait_days",
                   ("feedback", "over_target_count"): "feedback_submitted_late"}
 # Recorded reason codes, in words a recruiter reads (the analytics "reasons" counts).
 REASON_WORDS = {"missing_required_skill": "rejected: missing a required skill", "lower_interview_signal": "rejected: interview feedback below the bar",
@@ -111,7 +115,8 @@ HOW_TO_SHOW = {
                                "names its clock in words and uses that clock's own target, e.g. (invented numbers) '4 people are still waiting "
                                "for their interview to be booked, all past the 3-day booking target; the longest has waited 9 days'. The "
                                "clocks: waiting to be booked (scheduling_days), time in the stage (duration_days), waiting for feedback "
-                               "(feedback_days). This result has counts, medians and maxima only: never list individual people's waits from "
+                               "(feedback_days). If a stage has people still waiting to be booked (there_now_unbooked above 0), say how many and the "
+                               "longest wait: it is the most actionable delay. This result has counts, medians and maxima only: never list individual people's waits from "
                                "it (get_recruiting_overview has them, by name)."),
     "get_candidates": ("Ranking: best first, on skills and interview feedback; someone with only screening notes is not ranked above "
                        "someone with positive interviews. Comparing waits or days: list the people from the largest number to the "

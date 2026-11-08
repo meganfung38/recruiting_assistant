@@ -166,3 +166,13 @@ def test_scenario_verdict_counts_passes_and_errors():
     v = scenario_verdict(case, [good, bad])
     assert v["verdict"] == "fail" and (v["passed"], v["runs"]) == (1, 2) and v["tokens"] == [15, 15]
     assert scenario_verdict(case, [good])["verdict"] == "pass"
+
+
+def test_checker_regressions_found_in_the_last_eval_run():
+    from evals.checks import SCENARIO_CHECKS as S
+    assert S["check_unknown_candidate"](_rec("I can’t find candidate C999 in the data.")) == []         # "can't" was not accepted
+    good = ("Technical Interview loses the most: 5 withdrew, 3 of them waiting too long to be booked, and 3 people are still "
+            "waiting to be booked, past the 7-day booking target.")
+    assert S["check_losing_candidates"](_rec(good, ["get_pipeline_analytics"])) == []
+    assert S["check_losing_candidates"](_rec(good + " Five people are past the 14-day target.", ["get_pipeline_analytics"])) == [
+        "uses the 14-day time-in-stage target without naming that clock"]

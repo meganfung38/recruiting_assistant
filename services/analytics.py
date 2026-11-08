@@ -83,6 +83,7 @@ def _scheduling(evs, target, as_of):
     over = sum(w > target for _, w, _ in obs)
     return {"scheduled_n": len(sched), "lag_median_scheduled_days": _med(sched),
             "awaiting_scheduling": len(wait), "unscheduled_active_wait_median_days": _med(wait),
+            "unscheduled_active_wait_min_days": _r(min(wait)) if wait else None,
             "unscheduled_active_wait_max_days": _r(max(wait)) if wait else None,
             "unscheduled_active_over_target": sum(w > target for w in wait),
             "exited_unscheduled_by_outcome": by_outcome,

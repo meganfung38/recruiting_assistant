@@ -1,12 +1,9 @@
-# Model-dependent cases (spec section 11.2). Assertions are on tool calls, evidence IDs and figures, never prose.
-# Notes for increment 9 (found in live CLI runs):
-#  - Case 4 (C123 vs peers): a prompt rule alone was not enough at first; the model compared waiting_days with an unrelated
-#    "unscheduled active wait" median. Assert the comparison figure's field_path is duration.active_median_age_days (or
-#    active_max_age_days) and that C123's days_in_current_stage (13.0) is the other side; a wrong-clock comparison must fail.
-#  - Case 4 also: the analytics role must be C123's role (ROLE-MSE). In one live run the model fetched get_candidates and
-#    get_pipeline_analytics in the same round, guessed ROLE-BE, and every figure still validated (the numbers were real, the
-#    comparison was against the wrong role). Assert the analytics ref's role == the candidate's role_id.
-#  - Case 5 (follow-up): also require the answer to name each candidate's waiting_state, not just the numbers.
+# Model-dependent cases (spec section 11.2). Assertions are on tool calls, the people and roles the answer declares, the ranking,
+# whether every number matched the data, and facts from the seeded dataset; never on prose quality. Checkers: evals/checks.py.
+# Lessons kept from live runs:
+#  - Case 4 (C123 vs peers): the comparison must use time in stage (13 days) against the stage's median and maximum for people there
+#    now, and the analytics must be C123's own role (ROLE-MSE). Both were wrong in early runs.
+#  - Case 5 (follow-up): the answer must say which wait it uses, not just the numbers.
 # Cases 14-16 (truncation recovery) were removed on 2026-11-08: a whole role now fits in one get_candidates result, so the
 # recovery path they exercised no longer exists. Truncation itself is covered by deterministic tests (tests/test_executor.py).
 # `limits` (optional) override the per-turn limits for that case only.

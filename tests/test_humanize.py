@@ -4,9 +4,6 @@ from agent.humanize import humanize, leaks
 class Reg:
     names = {"C104": "Dahlia Ramanathan", "C110": "Junko Takeda"}
     roles = {"ROLE-BE": "Backend Engineer"}
-    cards = {"task:T-002": {"title": "Book Technical Interview (Mateo Villareal)"}}
-
-    def card(self, ref): return self.cards.get(ref)
 
     def candidate_name(self, c): return self.names.get(c)
     def role_title(self, r): return self.roles.get(r)

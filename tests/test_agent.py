@@ -161,8 +161,6 @@ def test_call_budget_exhaustion_is_reported_and_leaves_every_call_answered():
 
 
 def test_turn_timeout_returns_a_static_message_and_makes_no_further_model_call():
-    async def slow(messages, tools):
-        await asyncio.sleep(5)
     class SlowLLM:
         calls = 0
         async def complete(self, messages, tools=None):
@@ -297,8 +295,6 @@ ANALYTICS_ENV = env({"role_id": "ROLE-BE", "role_title": "Backend Engineer", "ro
     {"stage": "Technical Interview", "funnel": {"entered": 17},
      "scheduling": {"scheduled_n": 11, "lag_median_scheduled_days": 8.0, "over_target_count": 14, "observations": 17}}]},
     ["analytics:ROLE-BE@2026-11-07"])
-LAG = "stages[Technical Interview].scheduling.lag_median_scheduled_days"
-ARef = "analytics:ROLE-BE@2026-11-07"
 
 
 def router(name, args):
@@ -430,7 +426,6 @@ def test_history_with_a_structured_answer_stays_valid_and_carries_the_answer_for
 
 
 # --- real server: truncation disclosure and flags -----------------------------------------------------------
-SIX = ["C104", "C108", "C110", "C113", "C117", "C112"]
 
 
 
@@ -451,7 +446,7 @@ def test_flags_that_only_arrived_via_search_are_also_reported_by_the_application
                                           call(("2", "get_candidates", {"candidate_ids": ["C104"]})),
                                           submit("a", answer_markdown="Top: Dahlia Ramanathan.", ranking=[cand_arg("C104")])])
     r = o.run_turn("q")
-    assert r.repaired == [] and r.evidence.flagged_candidates() == ["C117"] and not r.evidence.retrieved("C117")
+    assert r.repaired == [] and {f["candidate_id"] for f in r.content_flags} == {"C117"} and not r.evidence.retrieved("C117")
     assert [s["candidate_id"] for s in r.flag_sources] == ["C117"]                 # inspectable although the record was never opened
 
 

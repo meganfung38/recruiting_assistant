@@ -17,7 +17,8 @@ from agent.tool_specs import ARG_MODELS
 
 LIMIT_TEXT = {"round_limit": "ran out of steps", "call_budget_exceeded": "reached its lookup limit", "turn_timeout": "ran out of time"}
 REPAIR_LABELS = {"unseen_candidate": "a candidate not in any record", "candidate_not_retrieved": "a ranked candidate whose record had not been read",
-                 "unknown_role": "a role not in any record", "unsupported_number": "a number that was not in the data"}
+                 "unknown_role": "a role not in any record", "unsupported_number": "a number that was not in the data",
+                 "wrong_target": "a target attributed to the wrong clock"}
 MAX_CARDS_RANKED, MAX_CARDS_OTHER = 5, 3
 TOOL_LABELS = {"list_roles": "Looking up roles", "search_candidates": "Searching candidates",
                "get_candidates": "Reading candidate records", "get_candidate_communications": "Reading candidate emails",

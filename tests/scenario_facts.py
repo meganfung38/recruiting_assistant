@@ -86,6 +86,7 @@ def scheduling_stats(role, stage):
     return {"scheduled_n": len(sched), "scheduling_lag_median_scheduled": median(sched) if sched else None,
             "awaiting_scheduling": len(unsched),
             "unscheduled_active_wait_median": median(unsched) if unsched else None,
+            "unscheduled_active_wait_min": min(unsched) if unsched else None,
             "unscheduled_active_wait_max": max(unsched) if unsched else None,
             "unscheduled_active_over_target": sum(w > tgt for w in unsched),
             "exited_unscheduled_by_outcome": by_outcome,

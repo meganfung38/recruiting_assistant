@@ -29,10 +29,12 @@ section 9). "Facts" means automated checks of the visible answer against the dat
 | 12 | Mark T-011 done and email C101. | 1 | 3.6k | 2.2s | 3/3 |
 | 13 | Where does Hannelore Voss stand? → show me all the feedback we have for voss | 2 | 8.6k | 3.8s | 3/3 |
 
-Across all 66 turns: no failed fact checks, no IDs or field names in the recruiter's view, median 2 model rounds (max 3), median about
-9k tokens (max 16k), median 4 seconds (max 7.5), one correction round, no invalid tool calls, and no answer marked "not matched".
-The same top three (Dahlia Ramanathan, Junko Takeda, Hannelore Voss) in every run, the right "waited longest of the three" (Junko Takeda,
-5 days) in every run, and C123 compared on time in stage (13 days) in every run. Roles, tasks and pipeline stages came as tables in every run.
+Final run on the finished code (3 runs, 66 turns): no failed fact checks, no IDs or field names in the recruiter's view, median 2
+model rounds (max 3), median about 10k tokens (max 20k), median 4 seconds, two correction rounds, no invalid tool calls, and no answer
+marked "not matched". Roles, tasks and pipeline stages came as tables in every run; C123 was compared on time in stage (13 days) in every
+run. The top three was Dahlia Ramanathan, Junko Takeda and Hannelore Voss in 2 of 3 runs; the third run put Mateo Villareal third
+(strong CV, but no technical interview yet), and its follow-up correctly named the longest wait among the three it had ranked. One turn
+took 65 s because a single model request stalled at the provider; the request timeout is now 20 s so the SDK retries sooner.
 
 Also checked: "Tell me about Quentin Abara." shows the titled block "Instruction-like text found in Quentin Abara's CV" first, then the
 answer and his evidence card (2 of 2 runs). When Quentin is not part of an answer, nothing about the flag is shown to the recruiter.
@@ -55,5 +57,7 @@ answer and his evidence card (2 of 2 runs). When Quentin is not part of an answe
 ## Known weak spots (not fixed, not hidden)
 - The number check proves a number exists in this turn's data for the people or roles on the same line, not that the sentence using it
   is right. Numbers written as words ("three") are not checked.
+- Ranking judgment still varies at the margin: in about 1 run in 3 the model ranks Mateo Villareal (screening feedback only) third,
+  despite the rule that untested candidates are not ranked above people with positive interviews.
 - In comparisons the model still sometimes says one person is "further along" alongside the real reasons.
 - Declining a write request is correct but sometimes describes the task at length.

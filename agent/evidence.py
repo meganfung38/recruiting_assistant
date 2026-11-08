@@ -24,6 +24,11 @@ NOT_A_QUANTITY = re.compile(                    # dates, times, years, IDs and r
     r"|\b\d{1,2}:\d{2}(?: ?[AaPp]\.?[Mm]\.?)?(?: [A-Z]{3})?|\b(?:19|20)\d{2}\b|\b(?:C\d{3}|ROLE-[A-Z]{2,3}|(?:FB|EV|EM|T)-\d{3})\b|#\d+"
     r"|\[[a-z]+:[^\]]*\]")
 LIST_MARKER = re.compile(r"^\s*(?:\d+[.)]|[-*+])\s+")
+# "a 7-day time-in-stage target": the number must be THAT clock's target for the stage on the line (three clocks, three targets).
+CLOCK_TARGET = re.compile(r"(\d+)[- ]day (time[- ]in[- ](?:the[- ])?stage|stage[- ]duration|duration|booking|scheduling|feedback) target", re.I)
+CLOCK_KEY = {"time": "duration_days", "stage": "duration_days", "duration": "duration_days", "booking": "scheduling_days",
+             "scheduling": "scheduling_days", "feedback": "feedback_days"}
+CLOCK_WORDS = {"duration_days": "time-in-stage", "scheduling_days": "booking", "feedback_days": "feedback"}
 NUMBER = re.compile(r"(?<![\w.])\d+(?:\.\d+)?(?!\d)")
 ANY = "*"
 
@@ -135,8 +140,8 @@ class EvidenceRegistry:
         self._names: dict[str, str] = {}
         self._roles: dict[str, str] = {}      # role_id -> title, learned from any result that carries both
         self._cand_roles: dict[str, str] = {} # candidate_id -> role_id
-        self._flagged: set[str] = set()       # candidates whose content a tool result flagged as instruction-like
         self._numbers: dict[str, set[float]] = {ANY: set()}   # candidate_id / role_id / ANY -> numbers the model saw
+        self._targets: dict[tuple[str, str], dict] = {}       # (role_id, stage) -> {duration_days, scheduling_days, feedback_days}
 
     def add(self, tool: str, safe_envelope: dict) -> None:
         """Register a successful call's evidence (projected result only). Callers must not invoke this for failed calls."""
@@ -148,7 +153,10 @@ class EvidenceRegistry:
         self._names.update(_names(data))
         self._roles.update(_roles(data))
         self._cand_roles.update(_candidate_roles(data))
-        self._flagged |= {f["candidate_id"] for f in safe_envelope.get("content_flags", []) if CAND_RE.fullmatch(str(f.get("candidate_id")))}
+        if tool == "get_pipeline_analytics" and isinstance(data, dict):
+            for st in data.get("stages", []):
+                if isinstance(st.get("targets"), dict) and isinstance(st.get("stage"), str):
+                    self._targets[(str(data.get("role_id")), st["stage"])] = st["targets"]
         if tool == "get_candidates":
             for c in (data or {}).get("candidates", []):
                 if c.get("not_found") or not isinstance(c.get("candidate_id"), str):
@@ -192,9 +200,6 @@ class EvidenceRegistry:
     def record(self, candidate_id: str) -> dict | None:
         return self._records.get(candidate_id)
 
-    def flagged_candidates(self) -> list[str]:
-        return sorted(self._flagged)
-
     def retrieved(self, candidate_id: str) -> bool:
         return candidate_id in self._retrieved
 
@@ -231,6 +236,12 @@ class EvidenceRegistry:
                  if re.search(rf"\b{re.escape(title)}\b", text, re.I) or (len(heads[title.split()[0]]) == 1 and re.search(rf"\b{re.escape(title.split()[0])}\b", text))]
         return cands, roles
 
+    def targets_for(self, line: str, roles: list[str]) -> list[tuple[str, dict]]:
+        """(stage, targets) for the stages named on the line (all known stages if none), within the line's roles if any."""
+        known = [(r, s, t) for (r, s), t in self._targets.items() if not roles or r in roles]
+        named = [(s, t) for r, s, t in known if re.search(rf"\b{re.escape(s)}\b", line, re.I)]
+        return named or [(s, t) for r, s, t in known]
+
     def numbers_for(self, cands: list[str], roles: list[str]) -> set[float]:
         """Numbers a line about these people/roles may use: their own, plus each person's role (targets, stage medians)."""
         if not cands and not roles:
@@ -256,11 +267,13 @@ class ValidationReport:
     not_retrieved: list[str] = field(default_factory=list)
     unknown_roles: list[str] = field(default_factory=list)
     unsupported_numbers: list[UnsupportedNumber] = field(default_factory=list)
+    wrong_targets: list[str] = field(default_factory=list)   # "a 7-day time-in-stage target" where that clock's target is 14 days
 
     @property
     def categories(self) -> list[str]:
         return [c for c, bad in (("unseen_candidate", self.unseen_candidates), ("candidate_not_retrieved", self.not_retrieved),
-                                 ("unknown_role", self.unknown_roles), ("unsupported_number", self.unsupported_numbers)) if bad]
+                                 ("unknown_role", self.unknown_roles), ("unsupported_number", self.unsupported_numbers),
+                                 ("wrong_target", self.wrong_targets)) if bad]
 
     @property
     def ok(self) -> bool:
@@ -275,7 +288,7 @@ class ValidationReport:
         out += [f"The number {n.value:g} in \"{n.line.strip()[:90]}\" is not in this turn's data"
                 + (f" for {', '.join(n.about)}" if n.about else "") + ". Use the exact value from the results, or remove it."
                 for n in self.unsupported_numbers]
-        return out
+        return out + self.wrong_targets
 
 
 def _cells(line: str) -> list[str]:
@@ -307,6 +320,22 @@ def _check_numbers(text: str, registry: EvidenceRegistry, allowed: set[float]) -
     return out
 
 
+def _check_targets(text: str, registry: EvidenceRegistry) -> list[str]:
+    """Every "N-day <clock> target" names the target of that clock for a stage on the same line. Catches the clock mix-up where a
+    7-day booking target was called a time-in-stage target (that clock's target was 14 days)."""
+    out = []
+    for line in (text or "").splitlines():
+        for m in CLOCK_TARGET.finditer(line):
+            key = CLOCK_KEY[m.group(2).split()[0].split("-")[0].lower()]
+            stages = registry.targets_for(line, registry.mentioned_in(line)[1])
+            right = sorted({t.get(key) for _, t in stages if t.get(key) is not None})
+            if right and float(m.group(1)) not in right:
+                out.append(f"\"{m.group(0)}\" in \"{line.strip()[:90]}\": the {CLOCK_WORDS[key]} target there is "
+                           + " or ".join(f"{d:g} days" for d in right) + f". {m.group(1)} days is a different clock's target; "
+                           "name the clock that target belongs to.")
+    return out
+
+
 def validate_answer(answer, registry: EvidenceRegistry, question: str = "") -> ValidationReport:
     """Check a SubmittedAnswer against what this turn's tools returned."""
     ranked = [r.candidate_id for r in answer.ranking]
@@ -317,6 +346,7 @@ def validate_answer(answer, registry: EvidenceRegistry, question: str = "") -> V
     r.not_retrieved = [c for c in dict.fromkeys(ranked) if registry.candidate_seen(c) and not registry.retrieved(c)]
     r.unknown_roles = [x for x in dict.fromkeys(answer.roles) if not registry.role_seen(x)]
     r.unsupported_numbers = _check_numbers(answer.answer_markdown, registry, set(numbers_in(question)))
+    r.wrong_targets = _check_targets(answer.answer_markdown, registry)
     return r
 
 
@@ -325,4 +355,5 @@ def validate_plain(text: str, registry: EvidenceRegistry, question: str = "") ->
     named, named_roles = registry.mentioned_in(text)
     r = ValidationReport(structured=False, candidates=named, roles=named_roles)
     r.unsupported_numbers = _check_numbers(text, registry, set(numbers_in(question)))
+    r.wrong_targets = _check_targets(text, registry)
     return r

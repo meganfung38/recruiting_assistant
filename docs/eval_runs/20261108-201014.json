@@ -1,0 +1,371 @@
+{
+ "model": "gpt-5.4-mini",
+ "temperature": null,
+ "cases": "2",
+ "results": {
+  "2": {
+   "records": [
+    {
+     "case": 2,
+     "condition": "baseline",
+     "run": 0,
+     "status": "ok",
+     "error_code": null,
+     "limit_code": null,
+     "repaired": [],
+     "empty_retries": 0,
+     "flag_source_count": 0,
+     "structured": true,
+     "answer_markdown": "Backend Engineer has been open 123 days, and the main loss point is the Technical Interview stage.\n\n| Stage | Reached | Moved on | Rejected | Withdrew | There now | Why people left |\n|---|---:|---:|---:|---:|---:|---|\n| Resume Review | 20 | 18 | 1 | 0 | 1 | 1 rejection for missing a required skill |\n| Recruiter Screen | 18 | 17 | 1 | 0 | 0 | 1 rejection for interview feedback below the bar |\n| Technical Interview | 17 | 5 | 2 | 5 | 5 | 2 rejections for interview feedback below the bar; 3 withdrawals for waited too long to be scheduled; 1 withdrawal for personal reasons; 1 withdrawal for accepted another offer |\n| Final Interview | 5 | 0 | 2 | 1 | 2 | 2 rejections for interview feedback below the bar; 1 withdrawal for accepted another offer |\n\nThe biggest operational bottleneck is Technical Interview scheduling: 3 people are still waiting to be booked, all past the 7-day booking target, and the longest has waited 22 days. There are also 3 people already in the stage who are past the 14-day time-in-stage target.",
+     "ranking": [],
+     "about": [],
+     "uncertainties": [
+      "Technical Interview timing has a small sample for the people still there now; Final Interview timing is also a small sample."
+     ],
+     "evidence_refs": [
+      "analytics:ROLE-BE@2026-11-07"
+     ],
+     "retrieved_candidates": [],
+     "tool_sequence": [
+      "get_pipeline_analytics"
+     ],
+     "trace": [
+      {
+       "trace_id": "25adda6dccb1",
+       "call_id": "call_ZeLBzObRHiwVIbQKg2EsvBia",
+       "sequence": 1,
+       "round": 1,
+       "tool_name": "get_pipeline_analytics",
+       "safe_arguments": {
+        "role": "Backend Engineer"
+       },
+       "status": "success",
+       "duration_ms": 50,
+       "started_ms": 1631,
+       "completed_ms": 1681,
+       "result_summary": {
+        "counts": {
+         "stages": 4
+        },
+        "source_ids": [
+         "analytics:ROLE-BE@2026-11-07"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "result_chars": 5177,
+       "evidence_refs": [
+        "analytics:ROLE-BE@2026-11-07"
+       ],
+       "error_code": null
+      }
+     ],
+     "content_flags": [],
+     "unsupported_numbers": 0,
+     "model_rounds": 2,
+     "usage": {
+      "prompt_tokens": 9154,
+      "completion_tokens": 447
+     },
+     "seconds": 4.5
+    },
+    {
+     "case": 2,
+     "condition": "baseline",
+     "run": 1,
+     "status": "ok",
+     "error_code": null,
+     "limit_code": null,
+     "repaired": [],
+     "empty_retries": 0,
+     "flag_source_count": 0,
+     "structured": true,
+     "answer_markdown": "Backend Engineer has been open 123 days, and the main losses are in Technical Interview.\n\n| Stage | Reached | Moved on | Rejected | Withdrew | There now | Why people left |\n|---|---:|---:|---:|---:|---:|---|\n| Resume Review | 20 | 18 | 1 | 0 | 1 | 1 rejection for missing a required skill |\n| Recruiter Screen | 18 | 17 | 1 | 0 | 0 | 1 rejection for interview feedback below the bar |\n| Technical Interview | 17 | 5 | 2 | 5 | 5 | 2 rejections for interview feedback below the bar; 3 withdrawals for waited too long to be scheduled; 1 withdrawal for personal reasons; 1 withdrawal for accepted another offer |\n\nTechnical Interview is the bottleneck: 3 people there are still past the 14-day time-in-stage target, and 3 people are still waiting to be booked, all past the 7-day scheduling target; the longest has waited 22 days.",
+     "ranking": [],
+     "about": [],
+     "uncertainties": [],
+     "evidence_refs": [
+      "analytics:ROLE-BE@2026-11-07"
+     ],
+     "retrieved_candidates": [],
+     "tool_sequence": [
+      "get_pipeline_analytics"
+     ],
+     "trace": [
+      {
+       "trace_id": "6ded1518ec28",
+       "call_id": "call_T9HXcBXthZ5OElx7LxFF6fCJ",
+       "sequence": 1,
+       "round": 1,
+       "tool_name": "get_pipeline_analytics",
+       "safe_arguments": {
+        "role": "Backend Engineer"
+       },
+       "status": "success",
+       "duration_ms": 25,
+       "started_ms": 1656,
+       "completed_ms": 1681,
+       "result_summary": {
+        "counts": {
+         "stages": 4
+        },
+        "source_ids": [
+         "analytics:ROLE-BE@2026-11-07"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "result_chars": 5177,
+       "evidence_refs": [
+        "analytics:ROLE-BE@2026-11-07"
+       ],
+       "error_code": null
+      }
+     ],
+     "content_flags": [],
+     "unsupported_numbers": 0,
+     "model_rounds": 2,
+     "usage": {
+      "prompt_tokens": 9154,
+      "completion_tokens": 482
+     },
+     "seconds": 4.5
+    },
+    {
+     "case": 2,
+     "condition": "baseline",
+     "run": 2,
+     "status": "ok",
+     "error_code": null,
+     "limit_code": null,
+     "repaired": [],
+     "empty_retries": 0,
+     "flag_source_count": 0,
+     "structured": true,
+     "answer_markdown": "Backend Engineer is losing the most candidates in the Technical Interview stage, mainly to scheduling delay and then to rejections.\n\n| Stage | Reached | Moved on | Rejected | Withdrew | There now | Why people left |\n|---|---:|---:|---:|---:|---:|---|\n| Resume Review | 20 | 18 | 1 | 0 | 1 | 1 rejection for missing a required skill |\n| Recruiter Screen | 18 | 17 | 1 | 0 | 0 | 1 rejection for interview feedback below the bar |\n| Technical Interview | 17 | 5 | 2 | 5 | 5 | 2 rejections for interview feedback below the bar; 5 withdrawals, including 3 who waited too long to be scheduled, 1 personal reason, and 1 accepted another offer |\n\nThe biggest bottleneck is Technical Interview scheduling: 3 people are still waiting to be scheduled, all past the 7-day booking target, and the longest has waited 22 days. Technical Interview also has 1 person past the time-in-stage target, and the people there now have been in stage a median 16.0 days, above the 14-day target.",
+     "ranking": [],
+     "about": [],
+     "uncertainties": [],
+     "evidence_refs": [
+      "analytics:ROLE-BE@2026-11-07"
+     ],
+     "retrieved_candidates": [],
+     "tool_sequence": [
+      "get_pipeline_analytics"
+     ],
+     "trace": [
+      {
+       "trace_id": "b48ebb719303",
+       "call_id": "call_5cc284a25a6c468a9caaadec4d1bf089",
+       "sequence": 1,
+       "round": 1,
+       "tool_name": "get_pipeline_analytics",
+       "safe_arguments": {
+        "role": "Backend Engineer"
+       },
+       "status": "success",
+       "duration_ms": 13,
+       "started_ms": 1880,
+       "completed_ms": 1893,
+       "result_summary": {
+        "counts": {
+         "stages": 4
+        },
+        "source_ids": [
+         "analytics:ROLE-BE@2026-11-07"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "result_chars": 5177,
+       "evidence_refs": [
+        "analytics:ROLE-BE@2026-11-07"
+       ],
+       "error_code": null
+      }
+     ],
+     "content_flags": [],
+     "unsupported_numbers": 0,
+     "model_rounds": 2,
+     "usage": {
+      "prompt_tokens": 9154,
+      "completion_tokens": 388
+     },
+     "seconds": 4.5
+    },
+    {
+     "case": 2,
+     "condition": "baseline",
+     "run": 3,
+     "status": "ok",
+     "error_code": null,
+     "limit_code": null,
+     "repaired": [],
+     "empty_retries": 0,
+     "flag_source_count": 0,
+     "structured": true,
+     "answer_markdown": "Backend Engineer has been open 123 days, and the biggest losses are in Technical Interview, where 5 people left and 3 are still waiting to be booked past the 7-day scheduling target.\n\n| Stage | Reached | Moved on | Rejected | Withdrew | There now | Why people left |\n|---|---:|---:|---:|---:|---:|---|\n| Resume Review | 20 | 18 | 1 | 0 | 1 | 1 rejected for a missing required skill |\n| Recruiter Screen | 18 | 17 | 1 | 0 | 0 | 1 rejected for interview feedback below the bar |\n| Technical Interview | 17 | 5 | 2 | 5 | 5 | 2 rejected for interview feedback below the bar; 3 withdrew after waiting too long to be scheduled; 1 withdrew for personal reasons; 1 withdrew after accepting another offer |\n| Final Interview | 5 | 0 | 2 | 1 | 2 | 2 rejected for interview feedback below the bar; 1 withdrew after accepting another offer |\n\nNext steps:\n- Technical Interview needs attention first: 3 people are still waiting to be booked, all past the 7-day booking target, and the longest has waited 22 days.\n- Technical Interview also has the most departures: 2 rejections and 5 withdrawals.\n- Final Interview is a smaller but real loss point: 2 rejections and 1 withdrawal.",
+     "ranking": [],
+     "about": [],
+     "uncertainties": [
+      "Technical Interview has low_sample=true for duration and feedback, so the timing signals there are based on a small sample. Final Interview also has low_sample=true for duration and feedback."
+     ],
+     "evidence_refs": [
+      "analytics:ROLE-BE@2026-11-07"
+     ],
+     "retrieved_candidates": [],
+     "tool_sequence": [
+      "get_pipeline_analytics"
+     ],
+     "trace": [
+      {
+       "trace_id": "e4eba71c5dd8",
+       "call_id": "call_ct7x6Kc0yJ9P42ddaI7EasxD",
+       "sequence": 1,
+       "round": 1,
+       "tool_name": "get_pipeline_analytics",
+       "safe_arguments": {
+        "role": "Backend Engineer"
+       },
+       "status": "success",
+       "duration_ms": 8,
+       "started_ms": 1991,
+       "completed_ms": 1999,
+       "result_summary": {
+        "counts": {
+         "stages": 4
+        },
+        "source_ids": [
+         "analytics:ROLE-BE@2026-11-07"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "result_chars": 5177,
+       "evidence_refs": [
+        "analytics:ROLE-BE@2026-11-07"
+       ],
+       "error_code": null
+      }
+     ],
+     "content_flags": [],
+     "unsupported_numbers": 0,
+     "model_rounds": 2,
+     "usage": {
+      "prompt_tokens": 9154,
+      "completion_tokens": 537
+     },
+     "seconds": 5.2
+    },
+    {
+     "case": 2,
+     "condition": "baseline",
+     "run": 4,
+     "status": "ok",
+     "error_code": null,
+     "limit_code": null,
+     "repaired": [],
+     "empty_retries": 0,
+     "flag_source_count": 0,
+     "structured": true,
+     "answer_markdown": "Backend Engineer has been open 123 days, and the main loss is in the Technical Interview stage.\n\n| Stage | Reached | Moved on | Rejected | Withdrew | There now | Why people left |\n|---|---:|---:|---:|---:|---:|---|\n| Resume Review | 20 | 18 | 1 | 0 | 1 | 1 rejected for missing a required skill |\n| Recruiter Screen | 18 | 17 | 1 | 0 | 0 | 1 rejected for interview feedback below the bar |\n| Technical Interview | 17 | 5 | 2 | 5 | 5 | 2 rejected for interview feedback below the bar; 3 withdrew after waiting too long to be scheduled; 1 withdrew for personal reasons; 1 withdrew after accepting another offer |\n| Final Interview | 5 | 0 | 2 | 1 | 2 | 2 rejected for interview feedback below the bar; 1 withdrew after accepting another offer |\n\nThe biggest leak is Technical Interview: 3 people are still waiting to be booked there, all past the 7-day booking target, and 14 of the 17 people who reached it waited past that booking target. Final Interview also has 1 person over the 7-day time-in-stage target now.",
+     "ranking": [],
+     "about": [],
+     "uncertainties": [],
+     "evidence_refs": [
+      "analytics:ROLE-BE@2026-11-07"
+     ],
+     "retrieved_candidates": [],
+     "tool_sequence": [
+      "get_pipeline_analytics"
+     ],
+     "trace": [
+      {
+       "trace_id": "7e64c629dca5",
+       "call_id": "call_fp5r5z14xG8nwjN9jMLwRdnu",
+       "sequence": 1,
+       "round": 1,
+       "tool_name": "get_pipeline_analytics",
+       "safe_arguments": {
+        "role": "Backend Engineer"
+       },
+       "status": "success",
+       "duration_ms": 17,
+       "started_ms": 2181,
+       "completed_ms": 2198,
+       "result_summary": {
+        "counts": {
+         "stages": 4
+        },
+        "source_ids": [
+         "analytics:ROLE-BE@2026-11-07"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "result_chars": 5177,
+       "evidence_refs": [
+        "analytics:ROLE-BE@2026-11-07"
+       ],
+       "error_code": null
+      }
+     ],
+     "content_flags": [],
+     "unsupported_numbers": 0,
+     "model_rounds": 2,
+     "usage": {
+      "prompt_tokens": 9154,
+      "completion_tokens": 440
+     },
+     "seconds": 4.6
+    }
+   ],
+   "verdict": {
+    "verdict": "pass",
+    "passed": 5,
+    "runs": 5,
+    "per_run": [
+     {
+      "status": "pass",
+      "reasons": []
+     },
+     {
+      "status": "pass",
+      "reasons": []
+     },
+     {
+      "status": "pass",
+      "reasons": []
+     },
+     {
+      "status": "pass",
+      "reasons": []
+     },
+     {
+      "status": "pass",
+      "reasons": []
+     }
+    ],
+    "rounds": [
+     2,
+     2,
+     2,
+     2,
+     2
+    ],
+    "tokens": [
+     9601,
+     9636,
+     9542,
+     9691,
+     9594
+    ]
+   }
+  }
+ }
+}

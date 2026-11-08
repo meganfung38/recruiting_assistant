@@ -28,7 +28,6 @@ from services.clock import AS_OF, iso_z
 
 RR, RS = "Resume Review", "Recruiter Screen"
 TI, HMI, FI = "Technical Interview", "Hiring Manager Interview", "Final Interview"
-INTERVIEW_STAGES = (RS, TI, HMI, FI)
 
 LIS = "lower_interview_signal"
 MSR = "missing_required_skill"
@@ -36,7 +35,6 @@ COMP = "compensation_mismatch"
 AOO = "accepted_other_offer"
 DELAY = "withdrew_scheduling_delay"
 PERSONAL = "withdrew_personal"
-NOREASON = "withdrew_no_reason"
 
 # Held interviews where the candidate asked to move the slot (email falls between booking and interview).
 RESCHEDULED = {("C101", TI), ("C104", FI), ("C112", TI), ("C121", TI), ("C141", HMI)}
