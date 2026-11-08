@@ -12,5 +12,3 @@ Written for the author to review and correct before submission; it describes wha
 | Evals | Written with AI assistance | Checker logic has unit tests; results are small samples and are labelled as such |
 | Agent redesign (task-shaped tools, answer contract, deterministic number and clock checks, evidence cards, Responses API) | Proposed and implemented with Claude Code after the author's manual testing (`docs/manual_testing/`), one observed failure at a time | Each failure traced in the turn log before changing code; deterministic regression tests for each fix; the 13-conversation demo set run 3 times after each change (`docs/demo_questions.md`); spec evals re-run (`docs/eval_results.md`) |
 | README and design notes | Drafted with AI assistance | Read against the code |
-
-Time spent and anything else the author did by hand: _to be filled in by the author._

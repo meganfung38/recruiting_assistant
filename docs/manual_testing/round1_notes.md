@@ -1,3 +1,7 @@
+> Raw notes from the author's manual testing of an earlier version of the assistant, kept as a record of how it was tested.
+> Each observation was traced in the turn log before code changed; the resulting fixes are listed in the failures table in
+> `docs/design_notes.md`. The answers quoted here are not the current behaviour.
+
 ## 1
 What open roles do we have?
 

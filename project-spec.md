@@ -1,5 +1,20 @@
 # Recruiting Assistant: Implementation Specification (v2.1)
 
+> **Status: the original plan, kept for reference.** The build follows it, with these deliberate deviations (each explained in
+> `docs/design_notes.md`):
+> - **Tools:** still seven, but `get_role` was folded into `list_roles` and `get_recruiting_overview` was added. Tools accept role and
+>   people names; `get_candidates` takes 1-20 IDs, names, or a role (every active candidate, for shortlists) instead of 1-6 IDs.
+> - **Result cap:** 32,000 characters per result, not 24,000 (a whole role's comparison view must fit).
+> - **Answer schema (6.2):** no inline citations and no figures with field paths. The model declares the people and roles the answer is
+>   about and an optional ranking; the application derives the evidence and checks every number and every clock target in the prose.
+>   Flagged content is reported by the application, so there is no `content_warnings` field.
+> - **Model calls:** OpenAI Responses API with reasoning effort low (Chat Completions allows no reasoning together with tools for the
+>   chosen model).
+> - **What the model reads:** recruiter vocabulary for field names, and some counting fields left out; services keep the names below.
+> - **UI (10):** no role selector (the question names the role); the per-call trace is behind a "Developer view" switch; evidence is
+>   shown as one card per person rather than a list of IDs.
+> - **Evals (11.2):** cases 1-13 as specified; the truncation-recovery cases added during development were retired with that mechanism.
+
 > **Audience:** coding agent implementing this repository, and the human author who must be able to explain every module in a live review. Treat this document as the source of truth for scope, architecture, behavior, tests, and completion criteria. Implement the smallest reliable system that satisfies it. Do not build speculative infrastructure and do not replace the MCP boundary with direct database access from the agent.
 
 ## 1. Product and scope

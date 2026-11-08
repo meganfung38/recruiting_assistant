@@ -129,8 +129,8 @@ in the service, so the model restates facts instead of reconstructing them from 
 7. **Follow-ups are cheap and re-query.** Earlier turns are replayed as question, answer, and a separate note of who the answer was
    about, never their old tool results, so "of those three…" fetches fresh facts.
 
-Longer rationale, the failures that led to each decision, and the alternatives considered: `docs/design_notes.md` and
-`docs/simplification_proposal.md`.
+Longer rationale and the failures that led to each decision: `docs/design_notes.md`. A step-by-step demo script:
+`docs/demo_walkthrough.md`.
 
 ## How correctness was verified
 - **389 deterministic tests** (`python -m pytest`): every analytics number and status sentence is recomputed independently from the raw
@@ -142,8 +142,8 @@ Longer rationale, the failures that led to each decision, and the alternatives c
   the top three, the payload was never repeated or cited, and the reviewer could always see the original text.
 - **Spec evals** (`docs/eval_results.md`): 13 cases scored on tool calls, declared people, rankings, matched numbers and facts from the
   seeded data, never prose quality. Small samples, recorded with their failures and what was changed.
-- **Demo set** (`docs/demo_questions.md`): 13 conversations with follow-ups, run 3 times through the real app pipeline after every
-  change: 66 of 66 turns correct on the facts checked, median 2 model rounds, about 10k tokens and 4 seconds per answer.
+- **Demo set** (`docs/demo_questions.md`): 13 conversations with follow-ups, run 3 times through the real app pipeline after each round
+  of changes; on the final code: 66 of 66 turns correct on the facts checked, median 2 model rounds, about 10k tokens and 4 seconds per answer.
 - **Manual testing** by the author (`docs/manual_testing/`): each observation was traced through the turn log before any code changed.
 
 ## Known limitations
@@ -177,6 +177,6 @@ services/              queries, analytics, tasks, overview (deterministic, take 
 data/                  scenarios, seed, frozen prose, consistency checker, expectations, note composer
 evals/                 model-dependent cases and checkers
 tests/                 deterministic tests
-docs/                  design notes, AI use, eval results, demo questions, manual testing notes, design history
-project-spec.md        the implementation spec this was built from
+docs/                  design notes, demo walkthrough, demo questions, eval results, AI use, manual testing notes
+project-spec.md        the original implementation plan (its first lines list where the build deviates)
 ```
