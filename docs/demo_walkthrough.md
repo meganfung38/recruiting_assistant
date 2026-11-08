@@ -31,8 +31,9 @@ data it was built from, and shows the evidence."
 | `Who are the top three Backend Engineer candidates, and why?` | Dahlia Ramanathan, Junko Takeda, Hannelore Voss, each with what separates them | Open **Evidence for this ranking**: one card per person, same shape (skills, each interview with the interviewer's note, "still pending" for Hannelore's final interview). Resume-review notes are left out for everyone so the cards compare fairly. |
 | → `Of those three, who has been waiting longest?` | Junko Takeda, 5 days waiting for a decision | A follow-up: the agent re-fetched the three people, it did not answer from memory. |
 | `The Backend Engineer role has been open for four months. Where is our process losing candidates?` | 123 days open; a table of stages (reached, moved on, rejected, withdrew, there now, why people left); Technical Interview is the leak: 5 withdrew, 3 of them after waiting too long to be booked; 3 people still waiting to be booked, all past the 7-day booking target, longest 22 days | The reasons are recorded reasons, in words. Timing is a sentence that names its clock and that clock's own target. |
-| `Which recruiting tasks are pending or overdue?` | 21 pending, 10 overdue, one table, overdue first | Owners, due dates, and the boundary: Yusuf Demir's task, due one minute before the as-of time, is "overdue by under a day", while a task due at exactly that moment is not overdue. |
+| → `who is waiting to be booked?` | Mateo Villareal, Kofi Adeyemi, Quentin Abara | A follow-up: uses previous conversation context. |
 | → `When was Mateo Villareal's interview booking due?` | Oct 23 | Looked up by name; no ID needed. |
+| `Which recruiting tasks are pending or overdue?` | 21 pending, 10 overdue, one table, overdue first | Owners, due dates, and the boundary: Yusuf Demir's task, due one minute before the as-of time, is "overdue by under a day", while a task due at exactly that moment is not overdue. |
 
 ### B. Show how the answer was made (switch Developer view on)
 Re-ask or open the last answer's **How this answer was made**:
