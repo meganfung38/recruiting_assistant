@@ -134,5 +134,5 @@ def get_pipeline_analytics(role_id: str, as_of: datetime = AS_OF, conn=None) -> 
             "low_sample": {"duration": dur["completed_n"] < LOW_SAMPLE_N if dur else None,
                            "scheduling": sched["scheduled_n"] < LOW_SAMPLE_N if sched else None,
                            "feedback": fb["lag_n"] < LOW_SAMPLE_N if fb else None}})
-    return {"role_id": role_id, "role_age_days": (as_of - parse_z(role["opened_at"])).days,
+    return {"role_id": role_id, "role_title": role["title"], "role_age_days": (as_of - parse_z(role["opened_at"])).days,
             "as_of": iso_z(as_of), "stages": stages}

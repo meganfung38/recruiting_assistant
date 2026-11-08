@@ -222,8 +222,8 @@ def test_search_defaults_and_shape(conn):
     assert r["total_matching"] == r["returned"] == 8  # C104,C108,C110-C113,C117,C120
     assert {c["status"] for c in r["candidates"]} == {"active"}
     for c in r["candidates"]:
-        assert set(c) == {"candidate_id", "name", "current_stage", "status", "waiting_state", "waiting_days",
-                          "days_in_current_stage", "fit_signals", "content_flags"}
+        assert set(c) == {"candidate_id", "role_id", "role_title", "name", "current_stage", "status", "stage_status", "waiting_state", "waiting_days",
+                          "days_in_current_stage", "fit_signals", "content_flags", "flag_sources"}
         assert "Skills:" not in json.dumps(c) and "@" not in json.dumps(c)  # no CV text, no addresses
     assert candidates.search_candidates("ROLE-BE", stage=TI, conn=conn)["returned"] == 5
     assert candidates.search_candidates("ROLE-BE", status="withdrawn", conn=conn)["total_matching"] == 6
@@ -464,3 +464,113 @@ def test_get_candidates_days_in_stage_matches_search_and_is_null_when_not_active
     for c in candidates.get_candidates(ids[:6], conn=conn) + candidates.get_candidates(ids[6:], conn=conn):
         assert c["days_in_current_stage"] == pytest.approx(search[c["candidate_id"]]["days_in_current_stage"], abs=1e-3)
     assert candidates.get_candidates(["C132"], conn=conn)[0]["days_in_current_stage"] is None   # rejected at Recruiter Screen
+
+
+def test_search_hands_the_boundary_a_raw_excerpt_only_for_flagged_fields(conn):
+    rows = {r["candidate_id"]: r for r in candidates.search_candidates("ROLE-BE", conn=conn)["candidates"]}
+    assert rows["C104"]["flag_sources"] == []
+    (src,) = rows["C117"]["flag_sources"]
+    assert src["field"] == "cv_text" and src["location"] == "near the end"       # the payload ends a ~550-character CV
+    assert src["excerpt"] == sc.INJECTION_PAYLOAD                                  # the whole payload paragraph, nothing else
+    assert "asked to be ranked first" in src["intents"] and "asked for the instructions to be kept hidden" in src["intents"]
+
+
+def test_task_rows_carry_readable_names_and_role_level_tasks_carry_none(conn):
+    by_id = {t["task_id"]: t for t in tasks.get_tasks(conn=conn)["tasks"]}
+    assert (by_id["T-002"]["candidate_name"], by_id["T-002"]["role_title"]) == ("Mateo Villareal", "Backend Engineer")
+    assert (by_id["T-017"]["candidate_name"], by_id["T-017"]["role_title"]) == ("Valentina Roos", "People Operations Specialist")
+    assert by_id["T-028"]["candidate_id"] is None and by_id["T-028"]["candidate_name"] is None and by_id["T-028"]["role_title"] == "People Operations Specialist"
+    c112 = candidates.get_candidates(["C112"], conn=conn)[0]["pending_tasks"][0]
+    assert c112["candidate_name"] == "Lena Sorensen" and c112["role_title"] == "Backend Engineer"
+
+
+def test_interview_evidence_matches_independent_recompute(conn):
+    """Completed interviews, feedback received and feedback pending are separate counts, recomputed here straight from the tables."""
+    seen = 0
+    for role in ROLES:
+        for status in ("active", "rejected", "withdrawn"):
+            for r in candidates.search_candidates(role, status=status, conn=conn)["candidates"]:
+                cid, sig = r["candidate_id"], r["fit_signals"]
+                held = [e["stage"] for e in conn.execute("SELECT stage, interview_at FROM stage_events WHERE candidate_id = ?", (cid,))
+                        if e["interview_at"] and e["interview_at"] <= AS_OF.strftime("%Y-%m-%dT%H:%M:%SZ")]
+                fed = {f["stage"] for f in conn.execute("SELECT stage FROM interview_feedback WHERE candidate_id = ?", (cid,))}
+                n_fb = conn.execute("SELECT COUNT(*) FROM interview_feedback WHERE candidate_id = ?", (cid,)).fetchone()[0]
+                assert sig["interviews_completed"] == len(held)
+                assert sig["feedback_received"] == sig["feedback_count"] == n_fb
+                assert sig["feedback_pending"] == sum(s not in fed for s in held)
+                assert sig["stages_with_feedback"] == len(fed)
+                full = candidates.get_candidates([cid], conn=conn)[0]
+                assert {k: full[k] for k in ("interviews_completed", "feedback_received", "feedback_pending", "stages_with_feedback")} == \
+                       {k: sig[k] for k in ("interviews_completed", "feedback_received", "feedback_pending", "stages_with_feedback")}
+                seen += sig["feedback_pending"] > 0
+    assert seen, "dataset should contain at least one candidate with feedback still pending"
+
+
+def _expected_status(conn, cid):
+    """Stage status rebuilt from the raw tables with its own date logic, not by calling the service."""
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+
+    def day(iso):
+        d = datetime.strptime(iso, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=ZoneInfo("UTC")).astimezone(ZoneInfo("America/Los_Angeles"))
+        return d.strftime("%b ") + str(d.day)
+
+    now = AS_OF.strftime("%Y-%m-%dT%H:%M:%SZ")
+    status = conn.execute("SELECT application_status FROM candidates WHERE candidate_id = ?", (cid,)).fetchone()[0]
+    e = conn.execute("SELECT * FROM stage_events WHERE candidate_id = ? ORDER BY entered_at DESC, event_id DESC", (cid,)).fetchone()
+    subs = [r[0] for r in conn.execute("SELECT submitted_at FROM interview_feedback WHERE candidate_id = ? AND stage = ?", (cid, e["stage"]))]
+    if status != "active":
+        return f"{status.capitalize()} at {e['stage']}" + (f" on {day(e['exited_at'])}." if e["exited_at"] else ".")
+    fb = f"Feedback received {day(max(subs))}." if subs else "No feedback yet."
+    if e["stage"] == "Resume Review":
+        return f"Resume Review: in review since {day(e['entered_at'])}, " + ("review note on file." if subs else "no review note yet.")
+    if not e["scheduled_at"]:
+        return f"{e['stage']}: interview not booked yet. {fb}"
+    if not e["interview_at"] or e["interview_at"] > now:
+        return f"{e['stage']}: interview booked {day(e['scheduled_at'])}, not held yet. {fb}"
+    return f"{e['stage']}: interview held {day(e['interview_at'])}. {fb}"
+
+
+def test_stage_status_matches_independent_recompute_for_every_candidate(conn):
+    kinds, n = set(), 0
+    for cid in [r[0] for r in conn.execute("SELECT candidate_id FROM candidates ORDER BY candidate_id")]:
+        want = _expected_status(conn, cid)
+        got = candidates.get_candidates([cid], conn=conn)[0]["stage_status"]
+        assert got == want, cid
+        kinds.add(("booked" if "booked" in got else "held" if "held" in got else "other"))
+        n += 1
+    assert n >= 40 and {"booked", "held"} <= kinds
+    rows_ = [r for role in ROLES for s in ("active", "rejected", "withdrawn") for r in candidates.search_candidates(role, status=s, conn=conn)["candidates"]]
+    assert all(r["stage_status"] == _expected_status(conn, r["candidate_id"]) for r in rows_)
+
+
+def test_hannelore_final_interview_is_booked_not_held(conn):
+    s = candidates.get_candidates(["C108"], conn=conn)[0]["stage_status"]
+    assert s == "Final Interview: interview booked Nov 3, not held yet. No feedback yet."
+
+
+def test_recruiting_overview_matches_independent_counts(conn):
+    from services import overview
+    o = overview.get_recruiting_overview(conn=conn)
+    now = AS_OF.strftime("%Y-%m-%dT%H:%M:%SZ")
+    assert o["overdue_tasks_total"] == conn.execute("SELECT COUNT(*) FROM tasks WHERE status = 'pending' AND due_at < ?", (now,)).fetchone()[0] == 10
+    for r in o["roles"]:
+        rid = r["role_id"]
+        act = conn.execute("SELECT COUNT(*) FROM candidates WHERE role_id = ? AND application_status = 'active'", (rid,)).fetchone()[0]
+        unbooked = conn.execute("""SELECT COUNT(*) FROM candidates c JOIN stage_events e ON e.candidate_id = c.candidate_id AND e.exited_at IS NULL
+                                   WHERE c.role_id = ? AND c.application_status = 'active' AND e.stage != 'Resume Review' AND e.scheduled_at IS NULL""", (rid,)).fetchone()[0]
+        no_fb = conn.execute("""SELECT COUNT(*) FROM candidates c JOIN stage_events e ON e.candidate_id = c.candidate_id AND e.exited_at IS NULL
+                                WHERE c.role_id = ? AND c.application_status = 'active' AND e.interview_at IS NOT NULL
+                                AND NOT EXISTS (SELECT 1 FROM interview_feedback f WHERE f.candidate_id = c.candidate_id AND f.stage = e.stage)""", (rid,)).fetchone()[0]
+        overdue = conn.execute("SELECT COUNT(*) FROM tasks WHERE role_id = ? AND status = 'pending' AND due_at < ?", (rid, now)).fetchone()[0]
+        assert (r["active_candidates"], r["waiting_to_be_scheduled"], r["waiting_for_feedback"], r["overdue_tasks"]) == (act, unbooked, no_fb, overdue)
+    assert sum(r["overdue_tasks"] for r in o["roles"]) <= o["overdue_tasks_total"]
+    sched, feedback = o["waiting_to_be_scheduled"], o["waiting_for_feedback"]
+    for group in (sched, o["interview_booked_not_held"], feedback):
+        days = [w["waiting_days"] for w in group]
+        assert days == sorted(days, reverse=True)
+    assert sched[0]["name"] == "Mateo Villareal" and round(sched[0]["waiting_days"]) == 22
+    assert sorted(w["name"] for w in feedback) == ["Lena Sorensen", "Valentina Roos", "Wyatt Nakamura", "Xiomara Lindholm", "Yara Eklund"]
+    everyone = sched + o["interview_booked_not_held"] + feedback + o["other_active"]
+    assert len(everyone) == len({w["candidate_id"] for w in everyone}) == sum(r["active_candidates"] for r in o["roles"])
+    assert [len(g) for g in (sched, o["interview_booked_not_held"], feedback)] == [sum(r[k] for r in o["roles"]) for k in ("waiting_to_be_scheduled", "interview_booked_not_held", "waiting_for_feedback")]

@@ -14,8 +14,8 @@ from fastmcp.client.transports import StdioTransport
 from data.seed import build, canonical_hash
 
 EXPECTED_TOOLS = {"list_roles", "get_role", "search_candidates", "get_candidates",
-                  "get_candidate_communications", "get_pipeline_analytics", "get_tasks"}
-CITATION = re.compile(r"^(cv:C\d{3}|search:C\d{3}|feedback:FB-\d{3}|stage:EV-\d{3}|email:EM-\d{3}|task:T-\d{3}"
+                  "get_candidate_communications", "get_pipeline_analytics", "get_tasks", "get_recruiting_overview"}
+CITATION = re.compile(r"^(cv:C\d{3}|search:C\d{3}|feedback:FB-\d{3}|stage:EV-\d{3}|email:EM-\d{3}|task:T-\d{3}|role:ROLE-[A-Z]{2,3}"
                       r"|analytics:ROLE-[A-Z]{2,3}@\d{4}-\d{2}-\d{2})$")
 
 CALLS = {  # key -> (tool, arguments)

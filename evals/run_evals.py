@@ -19,10 +19,10 @@ from dotenv import load_dotenv
 
 from agent.limits import Limits
 from agent.llm import LLMUnavailable, OpenAILLM
-from agent.orchestrator import Orchestrator
+from agent.orchestrator import ConversationState, Orchestrator
 from data.seed import build
 from evals import report
-from evals.checks import CHECKS, summarize_injection
+from evals.checks import CHECKS, SCENARIO_CHECKS, summarize_injection
 
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_CASES = "10,14,15"
@@ -41,7 +41,7 @@ def record_from_result(case: dict, condition: str, run: int, result, seconds: fl
     a = result.submitted
     return {
         "case": case["id"], "condition": condition, "run": run, "status": result.status, "error_code": result.error_code,
-        "limit_code": result.limit_code, "repaired": list(result.repaired), "structured": a is not None,
+        "limit_code": result.limit_code, "repaired": list(result.repaired), "empty_retries": result.empty_retries, "flag_source_count": len(result.flag_sources), "structured": a is not None,
         "answer_markdown": result.answer, "candidates": [c.model_dump() for c in a.candidates] if a else None,
         "uncertainties": list(a.uncertainties) if a else [], "content_warnings": list(a.content_warnings) if a else [],
         "evidence_refs": result.evidence.refs(), "retrieved_candidates": result.evidence.retrieved_candidates(), "tool_sequence": [e.tool_name for e in result.trace.ordered()],
@@ -58,7 +58,10 @@ def default_factory(temperature):
 
 def one_run(make, case, condition, db, run) -> dict:
     t0 = time.monotonic()
-    result = make(case, db).run_turn(case["prompt"], role_context=case.get("role_context"))
+    state = ConversationState()
+    for earlier in case.get("setup", []):                     # prior turns of the same conversation (not scored)
+        make(case, db).run_turn(earlier, state, role_context=case.get("role_context"))
+    result = make(case, db).run_turn(case["prompt"], state, role_context=case.get("role_context"))
     return record_from_result(case, condition, run, result, time.monotonic() - t0)
 
 
@@ -77,6 +80,15 @@ def truncation_verdict(case: dict, records: list[dict]) -> tuple[list[dict], dic
     return per, {"verdict": verdict, "exercised": exercised, "counts": counts}
 
 
+def scenario_verdict(case: dict, records: list[dict]) -> dict:
+    check = SCENARIO_CHECKS[case["check"]]
+    per = [{"status": "error", "reasons": [r["error_code"]]} if r["status"] == "error" else
+           {"status": "fail" if (why := check(r)) else "pass", "reasons": why} for r in records]
+    passed = sum(p["status"] == "pass" for p in per)
+    return {"verdict": "pass" if passed == len(per) else "fail", "passed": passed, "runs": len(per), "per_run": per,
+            "rounds": [r["model_rounds"] for r in records], "tokens": [r["usage"]["prompt_tokens"] + r["usage"]["completion_tokens"] for r in records]}
+
+
 def run_cases(cases: list[dict], dbs: dict, make, workers: int = 3, log=print) -> dict:
     jobs = []
     for c in cases:
@@ -90,8 +102,9 @@ def run_cases(cases: list[dict], dbs: dict, make, workers: int = 3, log=print) -
         mine = [r for r in recs if r["case"] == c["id"]]
         if c.get("paired"):
             out[c["id"]] = {"records": mine, "summary": summarize_injection(
-                [r for r in mine if r["condition"] == "baseline"], [r for r in mine if r["condition"] == "injected"],
-                c.get("min_surfaced", 0.8))}
+                [r for r in mine if r["condition"] == "baseline"], [r for r in mine if r["condition"] == "injected"])}
+        elif c.get("kind") == "scenario":
+            out[c["id"]] = {"records": mine, "verdict": scenario_verdict(c, mine)}
         else:
             per, verdict = truncation_verdict(c, mine)
             out[c["id"]] = {"records": mine, "per_run": per, "verdict": verdict}
@@ -142,8 +155,9 @@ def main(argv=None, make=None, dbs=None) -> int:
     sections, now = {}, datetime.now(timezone.utc)
     for c in chosen:
         r = results[c["id"]]
-        sections[c["id"]] = (report.render_injection(r["summary"]) if c.get("paired")
-                             else report.render_truncation(c, r["per_run"], r["verdict"]))
+        sections[c["id"]] = (report.render_injection(r["summary"]) if c.get("paired") else
+                             report.render_scenario(c, r["verdict"]) if c.get("kind") == "scenario" else
+                             report.render_truncation(c, r["per_run"], r["verdict"]))
     model = os.environ.get("OPENAI_MODEL", "?")
     info = (f"**Last run:** {now:%Y-%m-%d %H:%M} UTC · model `{model}` · temperature "
             f"{temperature if temperature is not None else 'model default (parameter not sent or not accepted)'} · "

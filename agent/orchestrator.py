@@ -13,10 +13,11 @@ from agent.finalizer import Finalizer
 from agent.limits import LimitExceeded, Limits, TurnBudget
 from agent.llm import LLMUnavailable
 from agent.mcp_client import McpSession
-from agent.prompts import LIMIT_MESSAGES, SYSTEM_PROMPT, WRAP_UP_NOTICE
+from agent.prompts import EMPTY_NUDGE, LIMIT_MESSAGES, SYSTEM_PROMPT, WRAP_UP_NOTICE
 from agent.tool_executor import ToolExecutor, TurnContext
 from agent.tracing import Trace
 
+MAX_EMPTY_RETRIES = 2          # empty model replies tolerated per turn before giving up (each also uses one model round)
 WRAP_UP_GRACE_S = 30.0          # extra time allowed for the final no-tools answer after a step/call limit
 UNAVAILABLE = {
     "llm_auth_error": "The language model rejected the API key. Check OPENAI_API_KEY.",
@@ -30,16 +31,13 @@ UNAVAILABLE = {
 
 @dataclass
 class ConversationState:
-    """Per-session history. The latest turn is replayed in full (tool calls and results kept paired);
-    older turns are reduced to the question and the final answer, which keeps context small and pushes the
-    model to re-query anything that may have changed."""
+    """Per-session history. Every earlier turn is replayed as the question and the final answer only, never its tool results:
+    that keeps follow-ups small and makes the model re-query anything that may have changed. Only the current turn
+    keeps its tool calls and results paired (they are built fresh in _loop)."""
     turns: list[list[dict]] = field(default_factory=list)
 
     def context_messages(self) -> list[dict]:
-        out: list[dict] = []
-        for i, msgs in enumerate(self.turns):
-            out += msgs if i == len(self.turns) - 1 else [msgs[0], msgs[-1]]
-        return out
+        return [m for msgs in self.turns for m in (msgs[0], msgs[-1])]
 
     def reset(self) -> None:
         self.turns.clear()
@@ -58,11 +56,22 @@ class TurnResult:
     submitted: SubmittedAnswer | None = None     # structured answer (None for plain-text / limit / error answers)
     report: ValidationReport | None = None       # citation / candidate / figure validation of the final answer
     repaired: list[str] = field(default_factory=list)   # problem categories found on the first submission
+    empty_retries: int = 0                       # empty model replies that were nudged and retried this turn
+    flag_sources: list = field(default_factory=list)   # raw flagged candidate text for the human reviewer; never sent anywhere else
     usage: dict = field(default_factory=lambda: {"prompt_tokens": 0, "completion_tokens": 0})
 
     @property
     def unresolved_candidates(self) -> list[str]:
         return sorted(self.evidence.unresolved_candidates())
+
+
+def _notify(callback, event: dict) -> None:
+    """Progress is a convenience for the UI: a failing callback must never affect the turn."""
+    if callback is not None:
+        try:
+            callback(event)
+        except Exception:
+            pass
 
 
 def user_message(question: str, role_context: str | None) -> dict:
@@ -78,15 +87,17 @@ class Orchestrator:
         self.llm, self.limits, self.system_prompt = llm, limits, system_prompt
         self.session_factory = session_factory or (lambda: McpSession(db_path))
 
-    def run_turn(self, question: str, state: ConversationState | None = None, role_context: str | None = None) -> TurnResult:
-        """Sync entry point for the CLI and Streamlit: exactly one event loop and one MCP session per call."""
+    def run_turn(self, question: str, state: ConversationState | None = None, role_context: str | None = None,
+                 on_progress=None) -> TurnResult:
+        """Sync entry point for the CLI and Streamlit: exactly one event loop and one MCP session per call.
+        `on_progress(event)` is called with {"type": "model"} before each model call and {"type": "tools", "names": [...]} before tool calls."""
         state = state if state is not None else ConversationState()
-        result = asyncio.run(self._run(question, state, role_context))
+        result = asyncio.run(self._run(question, state, role_context, on_progress))
         if result.status != "error":
             state.turns.append(result.messages)
         return result
 
-    async def _run(self, question, state, role_context) -> TurnResult:
+    async def _run(self, question, state, role_context, on_progress=None) -> TurnResult:
         ctx = TurnContext(budget=TurnBudget(self.limits), trace=Trace())
         user = user_message(question, role_context)
         async with AsyncExitStack() as stack:
@@ -97,7 +108,7 @@ class Orchestrator:
             except Exception:                      # MCP startup failure or a server/tool contract mismatch
                 return self._failed("data_service_unavailable", ctx, [user])
             try:
-                return await self._loop(executor, ctx, state, user)
+                return await self._loop(executor, ctx, state, user, on_progress)
             finally:
                 close = getattr(self.llm, "aclose", None)
                 if close:
@@ -111,7 +122,7 @@ class Orchestrator:
         ctx.trace.model_rounds += 1
         return await asyncio.wait_for(self.llm.complete(messages, tools), max(0.1, timeout))
 
-    async def _loop(self, executor, ctx, state, user) -> TurnResult:
+    async def _loop(self, executor, ctx, state, user, on_progress=None) -> TurnResult:
         messages = [{"role": "system", "content": self.system_prompt}, *state.context_messages(), user]
         turn_msgs, flags = [user], []
         tools = executor.tool_definitions() + [submit_answer_definition()]   # submit_answer is local, never sent to MCP
@@ -120,6 +131,7 @@ class Orchestrator:
             lim = ctx.budget.limits
             return ctx.budget.calls < lim.max_tool_calls and ctx.budget.rounds <= lim.max_rounds - 2 and ctx.budget.remaining_s() > 15
         fin, accepted, answer_text, limit = Finalizer(ctx.evidence, can_retrieve), None, None, None
+        empty = 0
 
         def tally(resp):
             for k in usage:
@@ -130,6 +142,7 @@ class Orchestrator:
                 ctx.budget.begin_round()
                 if ctx.budget.remaining_s() <= 0:
                     raise LimitExceeded("turn_timeout")
+                _notify(on_progress, {"type": "model"})
                 resp = await self._ask(messages, tools, ctx, ctx.budget.remaining_s())
             except LimitExceeded as exc:
                 limit = exc.code
@@ -140,11 +153,19 @@ class Orchestrator:
             except LLMUnavailable as exc:
                 return self._failed(exc.code, ctx, turn_msgs, usage)
             tally(resp)
+            if not resp.tool_calls and not (resp.content or "").strip():
+                # An empty completion (no text, no tool call) is a model hiccup, not an answer. It is NOT added to the
+                # conversation (an empty assistant message is invalid to replay); nudge and try again, within bounds.
+                empty += 1
+                if empty > MAX_EMPTY_RETRIES:
+                    failed = self._failed("empty_answer", ctx, turn_msgs, usage)
+                    failed.empty_retries = empty - 1
+                    return failed
+                messages.append({"role": "system", "content": EMPTY_NUDGE})
+                continue
             messages.append(resp.message)
             turn_msgs.append(resp.message)
             if not resp.tool_calls:                                   # plain-text answer: validated by regex only
-                if not (resp.content or "").strip():
-                    return self._failed("empty_answer", ctx, turn_msgs, usage)
                 decision, nudge = fin.plain_text(resp.content)
                 if nudge:
                     messages.append({"role": "system", "content": nudge})
@@ -153,6 +174,8 @@ class Orchestrator:
                 break
             submits = [tc for tc in resp.tool_calls if tc.name == "submit_answer"]
             data_calls = [tc for tc in resp.tool_calls if tc.name != "submit_answer"]
+            if data_calls:
+                _notify(on_progress, {"type": "tools", "names": [tc.name for tc in data_calls]})
             outcomes = await asyncio.gather(*(executor.execute(tc, ctx) for tc in data_calls))
             results = {}
             for tc, out in zip(data_calls, outcomes):
@@ -188,14 +211,17 @@ class Orchestrator:
         unique = {(f["candidate_id"], f["field"], f["pattern_id"]): f for f in flags}
         return TurnResult(answer_text, status, ctx.trace, ctx.evidence, limit_code=limit,
                           content_flags=[unique[k] for k in sorted(unique)], messages=turn_msgs, usage=usage,
-                          submitted=submitted, report=report, repaired=fin.repaired)
+                          submitted=submitted, report=report, repaired=fin.repaired, empty_retries=empty,
+                          flag_sources=ctx.flag_sources)
 
     async def _wrap_up(self, messages, ctx, limit: str, usage: dict) -> str:
         """After a limit: one last model call with tools disabled, so the recruiter still gets what was found."""
-        static = f"{LIMIT_MESSAGES[limit]} The evidence gathered so far is listed below, but this answer is incomplete."
+        missing_ids = sorted(ctx.evidence.unresolved_candidates())
+        static = (f"{LIMIT_MESSAGES[limit]} The evidence gathered so far is listed below, but this answer is incomplete."
+                  + (f" These candidates were not reviewed: {', '.join(missing_ids)}." if missing_ids else ""))
         if limit == "turn_timeout":
             return static                                            # no time left to ask again
-        missing = sorted(ctx.evidence.unresolved_candidates())
+        missing = missing_ids
         unreviewed = (f" Their records were requested but never retrieved, so you must name every one of them as not reviewed: "
                       f"{', '.join(missing)}.") if missing else ""
         notice = {"role": "system", "content": WRAP_UP_NOTICE.format(reason=LIMIT_MESSAGES[limit].rstrip("."), unreviewed=unreviewed)}

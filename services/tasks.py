@@ -8,9 +8,9 @@ STATUSES = ("pending", "completed", "cancelled")
 MAX_LIMIT = 50
 
 
-def task_view(t: dict, as_of: datetime = AS_OF) -> dict:
+def task_view(t: dict, as_of: datetime = AS_OF, names: dict | None = None, titles: dict | None = None) -> dict:
     overdue = t["status"] == "pending" and parse_z(t["due_at"]) < as_of
-    return {**t, "overdue": overdue,
+    return {**t, "candidate_name": (names or {}).get(t.get("candidate_id")), "role_title": (titles or {}).get(t.get("role_id")), "overdue": overdue,
             "days_overdue": round((as_of - parse_z(t["due_at"])).total_seconds() / 86400, 4) if overdue else None}
 
 
@@ -31,7 +31,10 @@ def get_tasks(role_id=None, candidate_id=None, status=None, overdue_only=False, 
                 where.append(f"{col} = ?")
                 args.append(val)
         sql = "SELECT * FROM tasks" + (" WHERE " + " AND ".join(where) if where else "") + " ORDER BY due_at, task_id"
-        views = [task_view(t, as_of) for t in rows(c, sql, *args)]
+        names = {r["candidate_id"]: r["name"] for r in rows(c, "SELECT candidate_id, name FROM candidates")}
+        titles = {r["role_id"]: r["title"] for r in rows(c, "SELECT role_id, title FROM roles")}
+        views = [task_view(t, as_of, names, titles) for t in rows(c, sql, *args)]
     if overdue_only:
         views = [v for v in views if v["overdue"]]
-    return {"tasks": views[:limit], "total_matching": len(views), "returned": min(len(views), limit)}
+    return {"tasks": views[:limit], "total_matching": len(views), "returned": min(len(views), limit),
+            "overdue_total": sum(v["overdue"] for v in views), "pending_total": sum(v["status"] == "pending" for v in views)}

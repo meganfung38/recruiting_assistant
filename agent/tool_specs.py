@@ -40,6 +40,10 @@ class GetPipelineAnalyticsArgs(_Args):
     role_id: RoleId
 
 
+class GetRecruitingOverviewArgs(_Args):
+    pass
+
+
 class GetTasksArgs(_Args):
     role_id: RoleId | None = None
     candidate_id: CandidateId | None = None
@@ -52,6 +56,7 @@ ARG_MODELS: dict[str, type[_Args]] = {
     "list_roles": ListRolesArgs, "get_role": GetRoleArgs, "search_candidates": SearchCandidatesArgs,
     "get_candidates": GetCandidatesArgs, "get_candidate_communications": GetCandidateCommunicationsArgs,
     "get_pipeline_analytics": GetPipelineAnalyticsArgs, "get_tasks": GetTasksArgs,
+    "get_recruiting_overview": GetRecruitingOverviewArgs,
 }
 
 

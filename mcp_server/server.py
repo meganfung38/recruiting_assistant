@@ -1,4 +1,4 @@
-"""Read-only FastMCP server: thin typed wrappers over the service layer. Seven tools, no writes,
+"""Read-only FastMCP server: thin typed wrappers over the service layer. Eight tools, no writes,
 no generic SQL. Every result uses the response convention:
     {"data", "as_of", "source_refs", "warnings", "error"}
 `source_refs` lists citable record IDs that are actually in `data`, in citation form
@@ -11,7 +11,7 @@ from typing import Annotated, Any, Literal
 from fastmcp import FastMCP
 from pydantic import Field
 
-from services import analytics, candidates, tasks
+from services import analytics, candidates, overview, tasks
 from services.clock import AS_OF, to_pacific_iso
 from services.db import NotFound
 
@@ -54,14 +54,15 @@ def _truncation(result: dict) -> list[str]:
 @_safe
 def list_roles() -> dict:
     """List open roles with IDs, titles, open dates and role age in days. Use to find a role ID or check how long a role has been open."""
-    return _envelope({"roles": candidates.list_roles()})
+    roles = candidates.list_roles()
+    return _envelope({"roles": roles}, [f"role:{r['role_id']}" for r in roles])
 
 
 @mcp.tool
 @_safe
 def get_role(role_id: RoleId) -> dict:
     """Get one role's requirements (required/preferred skills, criteria), stage order, per-stage targets and open date. Use before judging candidates against a role."""
-    return _envelope(candidates.get_role(role_id))
+    return _envelope(candidates.get_role(role_id), [f"role:{role_id}"])
 
 
 @mcp.tool
@@ -128,6 +129,14 @@ def get_tasks(
     """List recruiting tasks with owner, due date, and computed overdue / days overdue. Overdue means pending and past due. Filter by role, candidate or status."""
     r = tasks.get_tasks(role_id, candidate_id, status, overdue_only, limit)
     return _envelope(r, [f"task:{t['task_id']}" for t in r["tasks"]], _truncation(r))
+
+
+@mcp.tool
+@_safe
+def get_recruiting_overview() -> dict:
+    """One snapshot across all roles: per role, days open, active candidates, how many are waiting to be scheduled, booked but not yet interviewed, or waiting on feedback, and overdue task counts; plus every active candidate with role, stage, stage status and wait, grouped as: waiting_to_be_scheduled, interview_booked_not_held, waiting_for_feedback (each longest wait first) and other_active. Use for "what needs attention", "which role needs attention" and "who has waited longest" questions."""
+    o = overview.get_recruiting_overview()
+    return _envelope(o, [f"role:{r['role_id']}" for r in o["roles"]] + [f"search:{w['candidate_id']}" for g in ("waiting_to_be_scheduled", "interview_booked_not_held", "waiting_for_feedback", "other_active") for w in o[g]])
 
 
 if __name__ == "__main__":

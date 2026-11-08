@@ -1,0 +1,14 @@
+# Monochrome theme: Streamlit's default red accent is what made the chat box look "invalid", so every accent here is black or gray.
+[theme]
+base = "light"
+primaryColor = "#111111"
+backgroundColor = "#ffffff"
+secondaryBackgroundColor = "#f5f5f5"
+textColor = "#111111"
+linkColor = "#111111"
+borderColor = "#d4d4d4"
+codeBackgroundColor = "#f5f5f5"
+font = "sans serif"
+
+[client]
+toolbarMode = "minimal"

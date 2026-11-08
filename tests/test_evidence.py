@@ -264,17 +264,13 @@ def test_retrievable_gaps_are_flagged_only_while_the_turn_can_still_retrieve():
     assert validate_submission(ans(), registry(), can_retrieve=True).ok                   # nothing unresolved -> nothing to fetch
 
 
-def test_flagged_candidates_must_be_named_in_content_warnings():
+def test_flagged_candidates_are_tracked_for_the_notice_but_are_not_a_validation_concern():
     reg = registry()
-    reg.add("search_candidates", {**env({"candidates": [{"candidate_id": "C117"}]}, ["cv:C117"]),
+    reg.add("search_candidates", {**env({"candidates": [{"candidate_id": "C117"}]}, ["search:C117"]),
                                   "content_flags": [{"candidate_id": "C117", "field": "cv_text", "pattern_id": "concealment"}]})
     assert reg.flagged_candidates() == ["C117"]
-    silent = validate_submission(ans(answer_markdown="x [cv:C117]", uncertainties=["C117 had instruction-like text"]), reg)
-    assert silent.unreported_flags == ["C117"] and silent.categories == ["unreported_flag"] and "content_warnings" in silent.problems()[0]
-    assert validate_submission(ans(content_warnings=["C117's CV had instruction-like text; ignored."]), reg).ok
-    assert validate_plain("C117 contained instruction-like text.", reg).ok               # plain text: any mention counts
-    assert validate_plain("All fine.", reg).unreported_flags == ["C117"]
-    assert validate_submission(ans(), registry()).ok                                      # nothing flagged -> nothing required
+    assert validate_submission(ans(answer_markdown="Top: Dahlia."), reg).ok         # no warning from the model is required
+    assert validate_plain("All fine.", reg).ok and validate_submission(ans(), registry()).ok
 
 
 # ---- cv: (record retrieved) versus search: (search row seen)
@@ -325,3 +321,14 @@ def test_flagged_search_only_candidates_can_be_cited_honestly_as_search():
     a = ans(answer_markdown="C117's CV was flagged [search:C117].", content_warnings=["C117 had instruction-like text; ignored."])
     assert validate_submission(a, reg).ok
     assert not reg.retrieved("C117") and not reg.has("cv:C117")                      # the recruiter can see the CV was never read
+
+
+def test_a_roles_age_is_a_verifiable_figure_via_its_role_reference():
+    roles = [{"role_id": "ROLE-BE", "title": "Backend Engineer", "opened_at": "2026-07-07T20:00:00Z", "role_age_days": 123},
+             {"role_id": "ROLE-MSE", "title": "Manufacturing Systems Engineer", "opened_at": "2026-05-11T20:00:00Z", "role_age_days": 180}]
+    raw = env({"roles": roles}, ["role:ROLE-BE", "role:ROLE-MSE"])
+    reg = EvidenceRegistry()
+    reg.add("list_roles", raw, aggregates("list_roles", raw))
+    ok = validate_submission(ans(answer_markdown="MSE is oldest [role:ROLE-MSE].", figures=[fig(180, "role:ROLE-MSE", "role_age_days")]), reg)
+    assert ok.figures[0].verified and not ok.bad_citations
+    assert not validate_submission(ans(figures=[fig(180, "role:ROLE-BE", "role_age_days")]), reg).figures[0].verified      # right number, wrong role

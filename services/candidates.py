@@ -9,8 +9,8 @@ import re
 from datetime import datetime
 
 from services.analytics import days_between, waiting_state
-from services.clock import AS_OF, parse_z
-from services.content_flags import flags_for
+from services.clock import AS_OF, PACIFIC, parse_z
+from services.content_flags import flags_for, sources_for
 from services.db import NotFound, load_role, rows, use
 from services.tasks import task_view
 
@@ -38,7 +38,41 @@ def _matches(text: str, skill: dict) -> bool:
     return any(re.search(rf"\b{re.escape(p)}\b", text, re.I) for p in [skill["name"], *skill["aliases"]])
 
 
-def _fit_signals(cv: str, role: dict, feedback: list[dict], last: dict, active: bool, as_of: datetime) -> dict:
+def interview_evidence(events: list[dict], feedback: list[dict], as_of: datetime) -> dict:
+    """How much interview evidence exists, kept apart on purpose: more interviews is not a stronger candidate.
+    completed = interviews that have taken place by as_of; received = feedback entries on file; pending = completed interviews whose
+    stage has no feedback yet; stages_with_feedback = distinct stages that have any."""
+    done = [e["stage"] for e in events if e["interview_at"] and parse_z(e["interview_at"]) <= as_of]
+    fed = {f["stage"] for f in feedback}
+    return {"interviews_completed": len(done), "feedback_received": len(feedback),
+            "feedback_pending": sum(st not in fed for st in done), "stages_with_feedback": len(fed)}
+
+
+def _day(iso: str) -> str:
+    d = parse_z(iso).astimezone(PACIFIC)
+    return f"{d:%b} {d.day}"
+
+
+def stage_status(events: list[dict], feedback: list[dict], status: str, as_of: datetime) -> str:
+    """One plain sentence about where the candidate stands in their current (last) stage. Booked, held and feedback are kept apart:
+    scheduled_at is when the interview was BOOKED, interview_at exists only once it has been held."""
+    e = events[-1]
+    if status != "active":
+        return f"{status.capitalize()} at {e['stage']}" + (f" on {_day(e['exited_at'])}." if e["exited_at"] else ".")
+    got = [f for f in feedback if f["stage"] == e["stage"]]
+    note = (f"feedback received {_day(max(f['submitted_at'] for f in got))}" if got else "no feedback yet")
+    if e["stage"] == "Resume Review":
+        return f"Resume Review: in review since {_day(e['entered_at'])}, " + ("review note on file." if got else "no review note yet.")
+    if e["scheduled_at"] is None:
+        step = "interview not booked yet"
+    elif e["interview_at"] is None or parse_z(e["interview_at"]) > as_of:
+        step = f"interview booked {_day(e['scheduled_at'])}, not held yet"
+    else:
+        step = f"interview held {_day(e['interview_at'])}"
+    return f"{e['stage']}: {step}. {note[0].upper() + note[1:]}."
+
+
+def _fit_signals(cv: str, role: dict, feedback: list[dict], last: dict, active: bool, as_of: datetime, events: list[dict] | None = None) -> dict:
     req, pref = role["requirements"]["required_skills"], role["requirements"]["preferred_skills"]
     counts = {k: sum(f["recommendation"] == k for f in feedback) for k in REC_VALUES}
     latest = max(feedback, key=lambda f: f["interview_at"]) if feedback else None
@@ -50,7 +84,8 @@ def _fit_signals(cv: str, role: dict, feedback: list[dict], last: dict, active: 
         "required_skills_matched": [s["name"] for s in req if _matches(cv, s)],
         "required_skills_missing": [s["name"] for s in req if not _matches(cv, s)],
         "preferred_skills_matched_count": sum(_matches(cv, s) for s in pref),
-        "feedback_count": len(feedback), "recommendation_counts": counts,
+        "feedback_count": len(feedback), **interview_evidence(events if events is not None else [last], feedback, as_of),
+        "recommendation_counts": counts,
         "latest_recommendation": latest["recommendation"] if latest else None,
         "avg_criteria_score": round(sum(scores) / len(scores), 2) if scores else None,
         "days_in_current_stage": round(age, 4) if active else None,
@@ -93,14 +128,18 @@ def search_candidates(role_id: str, status: str = "active", stage: str | None = 
         evs = _events_by_candidate(c)
     out = []
     for x in shown:
-        sig = _fit_signals(x["cv_text"], role, fbs[x["candidate_id"]], evs[x["candidate_id"]][-1], status == "active", as_of)
-        out.append({"candidate_id": x["candidate_id"], "name": x["name"], "current_stage": x["current_stage"],
-                    "status": x["application_status"], "waiting_state": sig["waiting_state"],
+        sig = _fit_signals(x["cv_text"], role, fbs[x["candidate_id"]], evs[x["candidate_id"]][-1], status == "active", as_of,
+                           evs[x["candidate_id"]])
+        out.append({"candidate_id": x["candidate_id"], "role_id": role_id, "role_title": role["title"], "name": x["name"], "current_stage": x["current_stage"],
+                    "status": x["application_status"], "stage_status": stage_status(evs[x["candidate_id"]], fbs[x["candidate_id"]], x["application_status"], as_of),
+                    "waiting_state": sig["waiting_state"],
                     "waiting_days": sig["waiting_days"], "days_in_current_stage": sig["days_in_current_stage"],
                     "fit_signals": sig,
-                    "content_flags": flags_for(x["candidate_id"], {
+                    "content_flags": flags_for(x["candidate_id"], scanned := {
                         "cv_text": x["cv_text"],
-                        **{f"feedback_summary:{f['feedback_id']}": f["summary_text"] for f in fbs[x["candidate_id"]]}})})
+                        **{f"feedback_summary:{f['feedback_id']}": f["summary_text"] for f in fbs[x["candidate_id"]]}}),
+                    # raw excerpts for the trusted boundary only: the projection allowlist drops this before the model sees a row
+                    "flag_sources": sources_for(x["candidate_id"], scanned)})
     return {"role_id": role_id, "candidates": out, "total_matching": len(cands), "returned": len(out)}
 
 
@@ -124,14 +163,15 @@ def get_candidates(candidate_ids: list[str], as_of: datetime = AS_OF, conn=None)
                            if active else (None, None))
             out.append({
                 "candidate_id": cid, "role_id": x["role_id"], "name": x["name"], "current_stage": x["current_stage"],
-                "application_status": x["application_status"], "applied_at": x["applied_at"],
+                "application_status": x["application_status"],
+                "stage_status": stage_status(events, fb, x["application_status"], as_of), "applied_at": x["applied_at"],
                 "cv_text": x["cv_text"][:CV_MAX_CHARS], "cv_truncated": len(x["cv_text"]) > CV_MAX_CHARS,
                 "stage_history": events,
                 "feedback": [{k: v for k, v in f.items() if k != "criteria_json"} for f in fb],
-                "feedback_count": len(fb), "waiting_state": state,
+                "feedback_count": len(fb), **interview_evidence(events, fb, as_of), "waiting_state": state,
                 "days_in_current_stage": round(days_between(parse_z(events[-1]["entered_at"]), as_of), 4) if active else None,
                 "waiting_days": round(wait, 4) if wait is not None else None,
-                "pending_tasks": [task_view(t, as_of) for t in tasks]})
+                "pending_tasks": [task_view(t, as_of, {cid: x["name"]}, {x["role_id"]: load_role(c, x["role_id"])["title"]}) for t in tasks]})
     return out
 
 

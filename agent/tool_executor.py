@@ -9,6 +9,7 @@ from dataclasses import dataclass, field
 
 from pydantic import ValidationError
 
+from agent import flag_sources
 from agent.evidence import EvidenceRegistry, aggregates
 from agent.limits import LimitExceeded, Limits, TurnBudget
 from agent.projection import cap_size, project
@@ -51,6 +52,7 @@ class TurnContext:
     budget: TurnBudget = field(default_factory=lambda: TurnBudget(Limits()))
     evidence: EvidenceRegistry = field(default_factory=EvidenceRegistry)
     trace: Trace = field(default_factory=Trace)
+    flag_sources: list = field(default_factory=list)    # raw flagged text for the human reviewer ONLY (see agent/flag_sources.py)
 
 
 def _error_content(code: str, message: str) -> dict:
@@ -107,6 +109,7 @@ class ToolExecutor:
         except Exception:                      # protocol failure, crash, ...: never leak details to the model
             return fail("upstream_error", args=safe_args)
 
+        ctx.flag_sources = flag_sources.merge(ctx.flag_sources, flag_sources.capture(name, raw))   # before projection; UI-only
         safe = cap_size(name, project(name, raw), ctx.budget.limits.max_result_chars)
         if safe["error"]:                      # an expected tool-level error (e.g. not_found): shown, not evidence
             code = safe["error"]["code"]

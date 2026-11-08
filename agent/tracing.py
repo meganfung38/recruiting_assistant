@@ -15,6 +15,7 @@ class TraceEvent(BaseModel):
     trace_id: str
     call_id: str
     sequence: int                     # dispatch order
+    round: int = 0                    # the model round whose tool call this was (1-based)
     tool_name: str
     safe_arguments: dict
     status: Literal["success", "error", "timeout", "validation_error"]
@@ -62,7 +63,7 @@ class Trace:
     def record(self, *, call_id, sequence, tool_name, safe_arguments, status, started_ms,
                result_summary=None, evidence_refs=None, error_code=None) -> TraceEvent:
         done = self.now_ms()
-        ev = TraceEvent(trace_id=self.trace_id, call_id=str(call_id)[:64], sequence=sequence,
+        ev = TraceEvent(trace_id=self.trace_id, call_id=str(call_id)[:64], sequence=sequence, round=self.model_rounds,
                         tool_name=safe_tool_name(tool_name), safe_arguments=safe_arguments, status=status,
                         duration_ms=max(0, done - started_ms), started_ms=started_ms, completed_ms=done,
                         result_summary=result_summary or {}, evidence_refs=evidence_refs or [], error_code=error_code)

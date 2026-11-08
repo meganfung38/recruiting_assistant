@@ -91,3 +91,20 @@ def test_a_fresh_sdk_client_is_used_for_each_event_loop(monkeypatch):
     assert len(made) == 1                      # reused across the rounds of one turn
     asyncio.run(two_rounds())
     assert len(made) == 2                      # new loop (next turn) -> new client
+
+
+# ---- the empty completion observed live: finish_reason=stop, content='', no tool calls, 3 completion tokens
+def test_the_real_adapter_and_orchestrator_recover_from_the_observed_empty_completion():
+    from agent.orchestrator import Orchestrator
+    from tests.test_agent import FakeSession
+    from tests.test_executor import FakeClient
+    replies = [NS(content="", tool_calls=None, refusal=None), NS(content="Recovered answer.", tool_calls=None, refusal=None)]
+
+    async def create(**kwargs):
+        return NS(choices=[NS(message=replies.pop(0), finish_reason="stop")], usage=NS(prompt_tokens=4474, completion_tokens=3))
+    client = NS(chat=NS(completions=NS(create=create)))
+    r = asyncio.run(OpenAILLM("m", client=client).complete([{"role": "user", "content": "q"}]))
+    assert r.content == "" and r.tool_calls == [] and r.usage["completion_tokens"] == 3         # the adapter passes the emptiness through
+    replies.insert(0, NS(content="", tool_calls=None, refusal=None))
+    out = Orchestrator(OpenAILLM("m", client=client), session_factory=lambda: FakeSession(FakeClient())).run_turn("q")
+    assert out.status == "ok" and out.answer == "Recovered answer." and out.empty_retries == 1

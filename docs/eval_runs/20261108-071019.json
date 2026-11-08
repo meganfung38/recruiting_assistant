@@ -1,0 +1,5103 @@
+{
+ "model": "gpt-5.4-mini",
+ "temperature": 0.2,
+ "cases": "1,2,3,4,5,6,7,8,9,11,12,13",
+ "results": {
+  "1": {
+   "records": [
+    {
+     "case": 1,
+     "condition": "baseline",
+     "run": 0,
+     "status": "ok",
+     "error_code": null,
+     "limit_code": null,
+     "repaired": [
+      "unsupported_citation",
+      "candidate_not_retrieved"
+     ],
+     "empty_retries": 0,
+     "flag_source_count": 0,
+     "structured": true,
+     "answer_markdown": "The top three Backend Engineer candidates are Dahlia Ramanathan (C104), Junko Takeda (C110), and Hannelore Voss (C108).\n\n- Dahlia Ramanathan (C104): all required skills, three preferred skills, and the strongest written feedback with four reviews and an average criteria score of 4.57 [cv:C104].\n- Junko Takeda (C110): all required skills, three preferred skills, and very strong feedback with three reviews and an average criteria score of 4.5 [cv:C110].\n- Hannelore Voss (C108): all required skills, two preferred skills, and solid feedback with three reviews and an average criteria score of 3.75 [cv:C108].\n\nDahlia ranks first because her feedback is the strongest and most consistent. Junko is very close, but her average criteria score is slightly lower. Hannelore is third because she has the same required-skill coverage but less preferred-skill coverage and a lower average criteria score than the top two.",
+     "candidates": [
+      {
+       "candidate_id": "C104",
+       "role_id": "ROLE-BE",
+       "rationale": "All required skills matched, three preferred skills matched, and the strongest feedback profile among active candidates with four reviews and the highest average criteria score.",
+       "evidence": [
+        "cv:C104"
+       ],
+       "gaps": []
+      },
+      {
+       "candidate_id": "C110",
+       "role_id": "ROLE-BE",
+       "rationale": "All required skills matched, three preferred skills matched, and strong feedback with three reviews and a very high average criteria score.",
+       "evidence": [
+        "cv:C110"
+       ],
+       "gaps": []
+      },
+      {
+       "candidate_id": "C108",
+       "role_id": "ROLE-BE",
+       "rationale": "All required skills matched, two preferred skills matched, and positive feedback with three reviews, though the average criteria score is below the top two.",
+       "evidence": [
+        "cv:C108"
+       ],
+       "gaps": []
+      }
+     ],
+     "uncertainties": [],
+     "content_warnings": [],
+     "evidence_refs": [
+      "analytics:ROLE-BE@2026-11-07",
+      "cv:C104",
+      "cv:C108",
+      "cv:C110",
+      "feedback:FB-013",
+      "feedback:FB-014",
+      "feedback:FB-015",
+      "feedback:FB-016",
+      "feedback:FB-025",
+      "feedback:FB-026",
+      "feedback:FB-027",
+      "feedback:FB-030",
+      "feedback:FB-031",
+      "feedback:FB-032",
+      "role:ROLE-BE",
+      "role:ROLE-MSE",
+      "role:ROLE-PO",
+      "search:C101",
+      "search:C102",
+      "search:C103",
+      "search:C104",
+      "search:C105",
+      "search:C106",
+      "search:C107",
+      "search:C108",
+      "search:C109",
+      "search:C110",
+      "search:C111",
+      "search:C112",
+      "search:C113",
+      "search:C114",
+      "search:C115",
+      "search:C116",
+      "search:C117",
+      "search:C118",
+      "search:C119",
+      "search:C120",
+      "stage:EV-013",
+      "stage:EV-014",
+      "stage:EV-015",
+      "stage:EV-016",
+      "stage:EV-026",
+      "stage:EV-027",
+      "stage:EV-028",
+      "stage:EV-029",
+      "stage:EV-033",
+      "stage:EV-034",
+      "stage:EV-035"
+     ],
+     "retrieved_candidates": [
+      "C104",
+      "C108",
+      "C110"
+     ],
+     "tool_sequence": [
+      "list_roles",
+      "get_role",
+      "search_candidates",
+      "search_candidates",
+      "search_candidates",
+      "get_pipeline_analytics",
+      "get_candidates"
+     ],
+     "trace": [
+      {
+       "trace_id": "c11fa9cc3e40",
+       "call_id": "call_0DExtbgxC8zcQiEmfHN75AFG",
+       "sequence": 1,
+       "tool_name": "list_roles",
+       "safe_arguments": {},
+       "status": "success",
+       "duration_ms": 7,
+       "started_ms": 1769,
+       "completed_ms": 1776,
+       "result_summary": {
+        "counts": {
+         "roles": 3
+        },
+        "source_ids": [
+         "role:ROLE-BE",
+         "role:ROLE-MSE",
+         "role:ROLE-PO"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "evidence_refs": [
+        "role:ROLE-BE",
+        "role:ROLE-MSE",
+        "role:ROLE-PO"
+       ],
+       "error_code": null
+      },
+      {
+       "trace_id": "c11fa9cc3e40",
+       "call_id": "call_nd5lBtAgCzPp0GKMnFusI5ZX",
+       "sequence": 2,
+       "tool_name": "get_role",
+       "safe_arguments": {
+        "role_id": "ROLE-BE"
+       },
+       "status": "success",
+       "duration_ms": 27,
+       "started_ms": 2888,
+       "completed_ms": 2915,
+       "result_summary": {
+        "counts": {
+         "stage_order": 4
+        },
+        "source_ids": [
+         "role:ROLE-BE"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "evidence_refs": [
+        "role:ROLE-BE"
+       ],
+       "error_code": null
+      },
+      {
+       "trace_id": "c11fa9cc3e40",
+       "call_id": "call_FWkYewduYiLDBFDHr4KUDNy7",
+       "sequence": 3,
+       "tool_name": "search_candidates",
+       "safe_arguments": {
+        "role_id": "ROLE-BE",
+        "status": "active",
+        "stage": null,
+        "limit": 20
+       },
+       "status": "success",
+       "duration_ms": 47,
+       "started_ms": 2888,
+       "completed_ms": 2935,
+       "result_summary": {
+        "counts": {
+         "candidates": 8
+        },
+        "source_ids": [
+         "search:C104",
+         "search:C108",
+         "search:C110",
+         "search:C111",
+         "search:C112",
+         "search:C113",
+         "search:C117",
+         "search:C120"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "evidence_refs": [
+        "search:C104",
+        "search:C108",
+        "search:C110",
+        "search:C111",
+        "search:C112",
+        "search:C113",
+        "search:C117",
+        "search:C120"
+       ],
+       "error_code": null
+      },
+      {
+       "trace_id": "c11fa9cc3e40",
+       "call_id": "call_9nb0I84YACiz0lLWoRPRl8w4",
+       "sequence": 4,
+       "tool_name": "search_candidates",
+       "safe_arguments": {
+        "role_id": "ROLE-BE",
+        "status": "rejected",
+        "stage": null,
+        "limit": 20
+       },
+       "status": "success",
+       "duration_ms": 52,
+       "started_ms": 2888,
+       "completed_ms": 2940,
+       "result_summary": {
+        "counts": {
+         "candidates": 6
+        },
+        "source_ids": [
+         "search:C101",
+         "search:C103",
+         "search:C105",
+         "search:C106",
+         "search:C118",
+         "search:C119"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "evidence_refs": [
+        "search:C101",
+        "search:C103",
+        "search:C105",
+        "search:C106",
+        "search:C118",
+        "search:C119"
+       ],
+       "error_code": null
+      },
+      {
+       "trace_id": "c11fa9cc3e40",
+       "call_id": "call_qsrKhM5tnvruDyaJFw2yWPa3",
+       "sequence": 5,
+       "tool_name": "search_candidates",
+       "safe_arguments": {
+        "role_id": "ROLE-BE",
+        "status": "withdrawn",
+        "stage": null,
+        "limit": 20
+       },
+       "status": "success",
+       "duration_ms": 53,
+       "started_ms": 2888,
+       "completed_ms": 2941,
+       "result_summary": {
+        "counts": {
+         "candidates": 6
+        },
+        "source_ids": [
+         "search:C102",
+         "search:C107",
+         "search:C109",
+         "search:C114",
+         "search:C115",
+         "search:C116"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "evidence_refs": [
+        "search:C102",
+        "search:C107",
+        "search:C109",
+        "search:C114",
+        "search:C115",
+        "search:C116"
+       ],
+       "error_code": null
+      },
+      {
+       "trace_id": "c11fa9cc3e40",
+       "call_id": "call_MyZWZSdDABU2gzmSNQQ5OV85",
+       "sequence": 6,
+       "tool_name": "get_pipeline_analytics",
+       "safe_arguments": {
+        "role_id": "ROLE-BE"
+       },
+       "status": "success",
+       "duration_ms": 42,
+       "started_ms": 2888,
+       "completed_ms": 2930,
+       "result_summary": {
+        "counts": {
+         "stages": 4
+        },
+        "source_ids": [
+         "analytics:ROLE-BE@2026-11-07"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "evidence_refs": [
+        "analytics:ROLE-BE@2026-11-07"
+       ],
+       "error_code": null
+      },
+      {
+       "trace_id": "c11fa9cc3e40",
+       "call_id": "call_0hilCOlAhnHR1KoNkg7GCKyg",
+       "sequence": 7,
+       "tool_name": "get_candidates",
+       "safe_arguments": {
+        "candidate_ids": [
+         "C104",
+         "C110",
+         "C108"
+        ]
+       },
+       "status": "success",
+       "duration_ms": 27,
+       "started_ms": 6803,
+       "completed_ms": 6830,
+       "result_summary": {
+        "counts": {
+         "candidates": 3
+        },
+        "source_ids": [
+         "cv:C104",
+         "feedback:FB-013",
+         "feedback:FB-014",
+         "feedback:FB-015",
+         "feedback:FB-016",
+         "stage:EV-013",
+         "stage:EV-014",
+         "stage:EV-015",
+         "stage:EV-016",
+         "cv:C110",
+         "feedback:FB-030",
+         "feedback:FB-031",
+         "feedback:FB-032",
+         "stage:EV-033",
+         "stage:EV-034",
+         "stage:EV-035",
+         "cv:C108",
+         "feedback:FB-025",
+         "feedback:FB-026",
+         "feedback:FB-027",
+         "stage:EV-026",
+         "stage:EV-027",
+         "stage:EV-028",
+         "stage:EV-029"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "evidence_refs": [
+        "cv:C104",
+        "feedback:FB-013",
+        "feedback:FB-014",
+        "feedback:FB-015",
+        "feedback:FB-016",
+        "stage:EV-013",
+        "stage:EV-014",
+        "stage:EV-015",
+        "stage:EV-016",
+        "cv:C110",
+        "feedback:FB-030",
+        "feedback:FB-031",
+        "feedback:FB-032",
+        "stage:EV-033",
+        "stage:EV-034",
+        "stage:EV-035",
+        "cv:C108",
+        "feedback:FB-025",
+        "feedback:FB-026",
+        "feedback:FB-027",
+        "stage:EV-026",
+        "stage:EV-027",
+        "stage:EV-028",
+        "stage:EV-029"
+       ],
+       "error_code": null
+      }
+     ],
+     "content_flags": [],
+     "unresolved": [],
+     "unverified_figures": 0,
+     "model_rounds": 5,
+     "usage": {
+      "prompt_tokens": 47298,
+      "completion_tokens": 1444
+     },
+     "seconds": 9.6
+    },
+    {
+     "case": 1,
+     "condition": "baseline",
+     "run": 1,
+     "status": "ok",
+     "error_code": null,
+     "limit_code": null,
+     "repaired": [],
+     "empty_retries": 0,
+     "flag_source_count": 0,
+     "structured": true,
+     "answer_markdown": "The top three are Dahlia Ramanathan (C104), Junko Takeda (C110), and Hannelore Voss (C108).\n\n- Dahlia Ramanathan (C104): strongest overall evidence. She matches all required skills, has 3 preferred skills, and has four positive reviews with two strong_yes recommendations.\n- Junko Takeda (C110): very strong technical signal. She matches all required skills, has 3 preferred skills, and her technical feedback is strong_yes with clear system design and coding strength.\n- Hannelore Voss (C108): solid fit with all required skills and 2 preferred skills. Her feedback is consistently positive, but the technical evidence is a bit lighter than the top two.\n\nDahlia ranks first because she has the deepest evidence across four stages and the strongest final-interview feedback. Junko is close behind with excellent technical feedback and strong breadth. Hannelore is next because her feedback is positive and she is fully qualified, but she has one fewer preferred skill match and no final-interview feedback yet.",
+     "candidates": [
+      {
+       "candidate_id": "C104",
+       "role_id": "ROLE-BE",
+       "rationale": "Matches every required skill, has 3 preferred skills, and has the strongest multi-stage evidence including a strong_yes final interview.",
+       "evidence": [
+        "cv:C104",
+        "feedback:FB-013",
+        "feedback:FB-014",
+        "feedback:FB-015",
+        "feedback:FB-016"
+       ],
+       "gaps": []
+      },
+      {
+       "candidate_id": "C110",
+       "role_id": "ROLE-BE",
+       "rationale": "Matches every required skill, has 3 preferred skills, and received strong_yes technical feedback with strong coding and system design scores.",
+       "evidence": [
+        "cv:C110",
+        "feedback:FB-030",
+        "feedback:FB-031",
+        "feedback:FB-032"
+       ],
+       "gaps": []
+      },
+      {
+       "candidate_id": "C108",
+       "role_id": "ROLE-BE",
+       "rationale": "Matches every required skill, has 2 preferred skills, and has consistently positive feedback through technical interview.",
+       "evidence": [
+        "cv:C108",
+        "feedback:FB-025",
+        "feedback:FB-026",
+        "feedback:FB-027"
+       ],
+       "gaps": [
+        "No final-interview feedback yet."
+       ]
+      }
+     ],
+     "uncertainties": [
+      "This ranking uses the active candidate pool only.",
+      "Hannelore Voss has no final-interview feedback yet, so her comparison to the top two is slightly less complete."
+     ],
+     "content_warnings": [],
+     "evidence_refs": [
+      "analytics:ROLE-BE@2026-11-07",
+      "cv:C104",
+      "cv:C108",
+      "cv:C110",
+      "cv:C111",
+      "cv:C112",
+      "cv:C113",
+      "cv:C117",
+      "cv:C120",
+      "feedback:FB-013",
+      "feedback:FB-014",
+      "feedback:FB-015",
+      "feedback:FB-016",
+      "feedback:FB-025",
+      "feedback:FB-026",
+      "feedback:FB-027",
+      "feedback:FB-030",
+      "feedback:FB-031",
+      "feedback:FB-032",
+      "feedback:FB-033",
+      "feedback:FB-034",
+      "feedback:FB-035",
+      "feedback:FB-036",
+      "feedback:FB-037",
+      "feedback:FB-038",
+      "feedback:FB-046",
+      "feedback:FB-047",
+      "role:ROLE-BE",
+      "role:ROLE-MSE",
+      "role:ROLE-PO",
+      "search:C104",
+      "search:C108",
+      "search:C110",
+      "search:C111",
+      "search:C112",
+      "search:C113",
+      "search:C117",
+      "search:C120",
+      "stage:EV-013",
+      "stage:EV-014",
+      "stage:EV-015",
+      "stage:EV-016",
+      "stage:EV-026",
+      "stage:EV-027",
+      "stage:EV-028",
+      "stage:EV-029",
+      "stage:EV-033",
+      "stage:EV-034",
+      "stage:EV-035",
+      "stage:EV-036",
+      "stage:EV-037",
+      "stage:EV-038",
+      "stage:EV-039",
+      "stage:EV-040",
+      "stage:EV-041",
+      "stage:EV-042",
+      "stage:EV-043",
+      "stage:EV-044",
+      "stage:EV-054",
+      "stage:EV-055",
+      "stage:EV-056",
+      "stage:EV-060",
+      "task:T-001",
+      "task:T-002",
+      "task:T-003",
+      "task:T-004",
+      "task:T-005",
+      "task:T-006"
+     ],
+     "retrieved_candidates": [
+      "C104",
+      "C108",
+      "C110",
+      "C111",
+      "C112",
+      "C113",
+      "C117",
+      "C120"
+     ],
+     "tool_sequence": [
+      "list_roles",
+      "get_role",
+      "search_candidates",
+      "get_candidates",
+      "get_candidates",
+      "get_candidates",
+      "get_pipeline_analytics"
+     ],
+     "trace": [
+      {
+       "trace_id": "5f62c96d0d6a",
+       "call_id": "call_eXGjJbwgVdgzST6rFGDr0Nlz",
+       "sequence": 1,
+       "tool_name": "list_roles",
+       "safe_arguments": {},
+       "status": "success",
+       "duration_ms": 6,
+       "started_ms": 1610,
+       "completed_ms": 1616,
+       "result_summary": {
+        "counts": {
+         "roles": 3
+        },
+        "source_ids": [
+         "role:ROLE-BE",
+         "role:ROLE-MSE",
+         "role:ROLE-PO"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "evidence_refs": [
+        "role:ROLE-BE",
+        "role:ROLE-MSE",
+        "role:ROLE-PO"
+       ],
+       "error_code": null
+      },
+      {
+       "trace_id": "5f62c96d0d6a",
+       "call_id": "call_DZltDDpytWMe7S7LaKayyCrD",
+       "sequence": 2,
+       "tool_name": "get_role",
+       "safe_arguments": {
+        "role_id": "ROLE-BE"
+       },
+       "status": "success",
+       "duration_ms": 9,
+       "started_ms": 2254,
+       "completed_ms": 2263,
+       "result_summary": {
+        "counts": {
+         "stage_order": 4
+        },
+        "source_ids": [
+         "role:ROLE-BE"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "evidence_refs": [
+        "role:ROLE-BE"
+       ],
+       "error_code": null
+      },
+      {
+       "trace_id": "5f62c96d0d6a",
+       "call_id": "call_owZEJD9tn9nuoOphYr77K04Q",
+       "sequence": 3,
+       "tool_name": "search_candidates",
+       "safe_arguments": {
+        "role_id": "ROLE-BE",
+        "status": "active",
+        "stage": null,
+        "limit": 20
+       },
+       "status": "success",
+       "duration_ms": 11,
+       "started_ms": 2999,
+       "completed_ms": 3010,
+       "result_summary": {
+        "counts": {
+         "candidates": 8
+        },
+        "source_ids": [
+         "search:C104",
+         "search:C108",
+         "search:C110",
+         "search:C111",
+         "search:C112",
+         "search:C113",
+         "search:C117",
+         "search:C120"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "evidence_refs": [
+        "search:C104",
+        "search:C108",
+        "search:C110",
+        "search:C111",
+        "search:C112",
+        "search:C113",
+        "search:C117",
+        "search:C120"
+       ],
+       "error_code": null
+      },
+      {
+       "trace_id": "5f62c96d0d6a",
+       "call_id": "call_nEXnUPp8Fsw2Qx9ENalt562T",
+       "sequence": 4,
+       "tool_name": "get_candidates",
+       "safe_arguments": {
+        "candidate_ids": [
+         "C104",
+         "C108",
+         "C110"
+        ]
+       },
+       "status": "success",
+       "duration_ms": 31,
+       "started_ms": 4076,
+       "completed_ms": 4107,
+       "result_summary": {
+        "counts": {
+         "candidates": 3
+        },
+        "source_ids": [
+         "cv:C104",
+         "feedback:FB-013",
+         "feedback:FB-014",
+         "feedback:FB-015",
+         "feedback:FB-016",
+         "stage:EV-013",
+         "stage:EV-014",
+         "stage:EV-015",
+         "stage:EV-016",
+         "cv:C108",
+         "feedback:FB-025",
+         "feedback:FB-026",
+         "feedback:FB-027",
+         "stage:EV-026",
+         "stage:EV-027",
+         "stage:EV-028",
+         "stage:EV-029",
+         "cv:C110",
+         "feedback:FB-030",
+         "feedback:FB-031",
+         "feedback:FB-032",
+         "stage:EV-033",
+         "stage:EV-034",
+         "stage:EV-035"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "evidence_refs": [
+        "cv:C104",
+        "feedback:FB-013",
+        "feedback:FB-014",
+        "feedback:FB-015",
+        "feedback:FB-016",
+        "stage:EV-013",
+        "stage:EV-014",
+        "stage:EV-015",
+        "stage:EV-016",
+        "cv:C108",
+        "feedback:FB-025",
+        "feedback:FB-026",
+        "feedback:FB-027",
+        "stage:EV-026",
+        "stage:EV-027",
+        "stage:EV-028",
+        "stage:EV-029",
+        "cv:C110",
+        "feedback:FB-030",
+        "feedback:FB-031",
+        "feedback:FB-032",
+        "stage:EV-033",
+        "stage:EV-034",
+        "stage:EV-035"
+       ],
+       "error_code": null
+      },
+      {
+       "trace_id": "5f62c96d0d6a",
+       "call_id": "call_AOMTLcAmYOS5wJ4qSke59Ugn",
+       "sequence": 5,
+       "tool_name": "get_candidates",
+       "safe_arguments": {
+        "candidate_ids": [
+         "C111",
+         "C112",
+         "C113"
+        ]
+       },
+       "status": "success",
+       "duration_ms": 34,
+       "started_ms": 4076,
+       "completed_ms": 4110,
+       "result_summary": {
+        "counts": {
+         "candidates": 3
+        },
+        "source_ids": [
+         "cv:C111",
+         "feedback:FB-033",
+         "feedback:FB-034",
+         "stage:EV-036",
+         "stage:EV-037",
+         "stage:EV-038",
+         "task:T-001",
+         "cv:C112",
+         "feedback:FB-035",
+         "feedback:FB-036",
+         "stage:EV-039",
+         "stage:EV-040",
+         "stage:EV-041",
+         "task:T-004",
+         "cv:C113",
+         "feedback:FB-037",
+         "feedback:FB-038",
+         "stage:EV-042",
+         "stage:EV-043",
+         "stage:EV-044",
+         "task:T-002",
+         "task:T-005"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "evidence_refs": [
+        "cv:C111",
+        "feedback:FB-033",
+        "feedback:FB-034",
+        "stage:EV-036",
+        "stage:EV-037",
+        "stage:EV-038",
+        "task:T-001",
+        "cv:C112",
+        "feedback:FB-035",
+        "feedback:FB-036",
+        "stage:EV-039",
+        "stage:EV-040",
+        "stage:EV-041",
+        "task:T-004",
+        "cv:C113",
+        "feedback:FB-037",
+        "feedback:FB-038",
+        "stage:EV-042",
+        "stage:EV-043",
+        "stage:EV-044",
+        "task:T-002",
+        "task:T-005"
+       ],
+       "error_code": null
+      },
+      {
+       "trace_id": "5f62c96d0d6a",
+       "call_id": "call_9a1L1RPefcjIaN4SeUG2y5nX",
+       "sequence": 6,
+       "tool_name": "get_candidates",
+       "safe_arguments": {
+        "candidate_ids": [
+         "C117",
+         "C120"
+        ]
+       },
+       "status": "success",
+       "duration_ms": 27,
+       "started_ms": 4076,
+       "completed_ms": 4103,
+       "result_summary": {
+        "counts": {
+         "candidates": 2
+        },
+        "source_ids": [
+         "cv:C117",
+         "feedback:FB-046",
+         "feedback:FB-047",
+         "stage:EV-054",
+         "stage:EV-055",
+         "stage:EV-056",
+         "task:T-003",
+         "cv:C120",
+         "stage:EV-060",
+         "task:T-006"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "evidence_refs": [
+        "cv:C117",
+        "feedback:FB-046",
+        "feedback:FB-047",
+        "stage:EV-054",
+        "stage:EV-055",
+        "stage:EV-056",
+        "task:T-003",
+        "cv:C120",
+        "stage:EV-060",
+        "task:T-006"
+       ],
+       "error_code": null
+      },
+      {
+       "trace_id": "5f62c96d0d6a",
+       "call_id": "call_ZzlGnX6J3R3IlYaLo9GJeO5B",
+       "sequence": 7,
+       "tool_name": "get_pipeline_analytics",
+       "safe_arguments": {
+        "role_id": "ROLE-BE"
+       },
+       "status": "success",
+       "duration_ms": 23,
+       "started_ms": 4076,
+       "completed_ms": 4099,
+       "result_summary": {
+        "counts": {
+         "stages": 4
+        },
+        "source_ids": [
+         "analytics:ROLE-BE@2026-11-07"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "evidence_refs": [
+        "analytics:ROLE-BE@2026-11-07"
+       ],
+       "error_code": null
+      }
+     ],
+     "content_flags": [],
+     "unresolved": [],
+     "unverified_figures": 0,
+     "model_rounds": 5,
+     "usage": {
+      "prompt_tokens": 35259,
+      "completion_tokens": 945
+     },
+     "seconds": 8.0
+    },
+    {
+     "case": 1,
+     "condition": "baseline",
+     "run": 2,
+     "status": "ok",
+     "error_code": null,
+     "limit_code": null,
+     "repaired": [],
+     "empty_retries": 0,
+     "flag_source_count": 0,
+     "structured": true,
+     "answer_markdown": "Dahlia Ramanathan (C104), Junko Takeda (C110), and Hannelore Voss (C108) are the strongest Backend Engineer candidates on the evidence I reviewed.\n\n- Dahlia Ramanathan (C104): strongest overall. She matches every required skill, has three preferred skills, and has four positive reviews with a strong final interview. Gap: none material.\n- Junko Takeda (C110): also very strong. She matches every required skill, has three preferred skills, and her technical interview feedback is strong. Gap: fewer reviews than Dahlia and no final interview yet.\n- Hannelore Voss (C108): solid match. She covers all required skills, has two preferred skills, and her earlier feedback is consistently positive. Gap: her final interview is booked but not held yet, so the latest stage has no feedback.\n\nDahlia ranks first because she has the deepest evidence and the strongest written feedback. Junko is close behind on skills and interview performance. Hannelore is next because the evidence is good, but her final interview is still pending.",
+     "candidates": [
+      {
+       "candidate_id": "C104",
+       "role_id": "ROLE-BE",
+       "rationale": "Matches all required skills, has three preferred skills, and has the strongest multi-stage feedback including a strong final interview.",
+       "evidence": [
+        "cv:C104",
+        "feedback:FB-013",
+        "feedback:FB-014",
+        "feedback:FB-015",
+        "feedback:FB-016"
+       ],
+       "gaps": []
+      },
+      {
+       "candidate_id": "C110",
+       "role_id": "ROLE-BE",
+       "rationale": "Matches all required skills, has three preferred skills, and received strong technical interview feedback.",
+       "evidence": [
+        "cv:C110",
+        "feedback:FB-030",
+        "feedback:FB-031",
+        "feedback:FB-032"
+       ],
+       "gaps": [
+        "No final interview yet."
+       ]
+      },
+      {
+       "candidate_id": "C108",
+       "role_id": "ROLE-BE",
+       "rationale": "Matches all required skills, has two preferred skills, and has positive feedback through the technical interview.",
+       "evidence": [
+        "cv:C108",
+        "feedback:FB-025",
+        "feedback:FB-026",
+        "feedback:FB-027"
+       ],
+       "gaps": [
+        "Final interview is booked but not held yet."
+       ]
+      }
+     ],
+     "uncertainties": [
+      "This ranking is based on the active candidates returned for Backend Engineer; no rejected or withdrawn candidates were reviewed.",
+      "Hannelore Voss's final interview has not happened yet, so her latest-stage evidence is incomplete."
+     ],
+     "content_warnings": [],
+     "evidence_refs": [
+      "analytics:ROLE-BE@2026-11-07",
+      "cv:C104",
+      "cv:C108",
+      "cv:C110",
+      "cv:C111",
+      "cv:C112",
+      "cv:C113",
+      "feedback:FB-013",
+      "feedback:FB-014",
+      "feedback:FB-015",
+      "feedback:FB-016",
+      "feedback:FB-025",
+      "feedback:FB-026",
+      "feedback:FB-027",
+      "feedback:FB-030",
+      "feedback:FB-031",
+      "feedback:FB-032",
+      "feedback:FB-033",
+      "feedback:FB-034",
+      "feedback:FB-035",
+      "feedback:FB-036",
+      "feedback:FB-037",
+      "feedback:FB-038",
+      "role:ROLE-BE",
+      "role:ROLE-MSE",
+      "role:ROLE-PO",
+      "search:C104",
+      "search:C108",
+      "search:C110",
+      "search:C111",
+      "search:C112",
+      "search:C113",
+      "search:C117",
+      "search:C120",
+      "stage:EV-013",
+      "stage:EV-014",
+      "stage:EV-015",
+      "stage:EV-016",
+      "stage:EV-026",
+      "stage:EV-027",
+      "stage:EV-028",
+      "stage:EV-029",
+      "stage:EV-033",
+      "stage:EV-034",
+      "stage:EV-035",
+      "stage:EV-036",
+      "stage:EV-037",
+      "stage:EV-038",
+      "stage:EV-039",
+      "stage:EV-040",
+      "stage:EV-041",
+      "stage:EV-042",
+      "stage:EV-043",
+      "stage:EV-044",
+      "task:T-001",
+      "task:T-002",
+      "task:T-004",
+      "task:T-005"
+     ],
+     "retrieved_candidates": [
+      "C104",
+      "C108",
+      "C110",
+      "C111",
+      "C112",
+      "C113"
+     ],
+     "tool_sequence": [
+      "list_roles",
+      "get_role",
+      "search_candidates",
+      "get_candidates",
+      "get_pipeline_analytics"
+     ],
+     "trace": [
+      {
+       "trace_id": "48c47677dce7",
+       "call_id": "call_JfO5OPmrfJUPGb3HrY9cCzIP",
+       "sequence": 1,
+       "tool_name": "list_roles",
+       "safe_arguments": {},
+       "status": "success",
+       "duration_ms": 50,
+       "started_ms": 1442,
+       "completed_ms": 1492,
+       "result_summary": {
+        "counts": {
+         "roles": 3
+        },
+        "source_ids": [
+         "role:ROLE-BE",
+         "role:ROLE-MSE",
+         "role:ROLE-PO"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "evidence_refs": [
+        "role:ROLE-BE",
+        "role:ROLE-MSE",
+        "role:ROLE-PO"
+       ],
+       "error_code": null
+      },
+      {
+       "trace_id": "48c47677dce7",
+       "call_id": "call_qskhzvmJmtwR0JUymihdIBvM",
+       "sequence": 2,
+       "tool_name": "get_role",
+       "safe_arguments": {
+        "role_id": "ROLE-BE"
+       },
+       "status": "success",
+       "duration_ms": 10,
+       "started_ms": 2247,
+       "completed_ms": 2257,
+       "result_summary": {
+        "counts": {
+         "stage_order": 4
+        },
+        "source_ids": [
+         "role:ROLE-BE"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "evidence_refs": [
+        "role:ROLE-BE"
+       ],
+       "error_code": null
+      },
+      {
+       "trace_id": "48c47677dce7",
+       "call_id": "call_IIJHhKWKI2ZHGKvvUK1qb6Gi",
+       "sequence": 3,
+       "tool_name": "search_candidates",
+       "safe_arguments": {
+        "role_id": "ROLE-BE",
+        "status": "active",
+        "stage": null,
+        "limit": 20
+       },
+       "status": "success",
+       "duration_ms": 18,
+       "started_ms": 3242,
+       "completed_ms": 3260,
+       "result_summary": {
+        "counts": {
+         "candidates": 8
+        },
+        "source_ids": [
+         "search:C104",
+         "search:C108",
+         "search:C110",
+         "search:C111",
+         "search:C112",
+         "search:C113",
+         "search:C117",
+         "search:C120"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "evidence_refs": [
+        "search:C104",
+        "search:C108",
+        "search:C110",
+        "search:C111",
+        "search:C112",
+        "search:C113",
+        "search:C117",
+        "search:C120"
+       ],
+       "error_code": null
+      },
+      {
+       "trace_id": "48c47677dce7",
+       "call_id": "call_HmuL0MN9f1cTd8U6lMwVQG7R",
+       "sequence": 4,
+       "tool_name": "get_candidates",
+       "safe_arguments": {
+        "candidate_ids": [
+         "C104",
+         "C108",
+         "C110",
+         "C111",
+         "C112",
+         "C113"
+        ]
+       },
+       "status": "success",
+       "duration_ms": 19,
+       "started_ms": 4115,
+       "completed_ms": 4134,
+       "result_summary": {
+        "counts": {
+         "candidates": 6
+        },
+        "source_ids": [
+         "cv:C104",
+         "feedback:FB-013",
+         "feedback:FB-014",
+         "feedback:FB-015",
+         "feedback:FB-016",
+         "stage:EV-013",
+         "stage:EV-014",
+         "stage:EV-015",
+         "stage:EV-016",
+         "cv:C108",
+         "feedback:FB-025",
+         "feedback:FB-026",
+         "feedback:FB-027",
+         "stage:EV-026",
+         "stage:EV-027",
+         "stage:EV-028",
+         "stage:EV-029",
+         "cv:C110",
+         "feedback:FB-030",
+         "feedback:FB-031",
+         "feedback:FB-032",
+         "stage:EV-033",
+         "stage:EV-034",
+         "stage:EV-035",
+         "cv:C111",
+         "feedback:FB-033",
+         "feedback:FB-034",
+         "stage:EV-036",
+         "stage:EV-037",
+         "stage:EV-038",
+         "task:T-001",
+         "cv:C112",
+         "feedback:FB-035",
+         "feedback:FB-036",
+         "stage:EV-039",
+         "stage:EV-040",
+         "stage:EV-041",
+         "task:T-004",
+         "cv:C113",
+         "feedback:FB-037"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "evidence_refs": [
+        "cv:C104",
+        "feedback:FB-013",
+        "feedback:FB-014",
+        "feedback:FB-015",
+        "feedback:FB-016",
+        "stage:EV-013",
+        "stage:EV-014",
+        "stage:EV-015",
+        "stage:EV-016",
+        "cv:C108",
+        "feedback:FB-025",
+        "feedback:FB-026",
+        "feedback:FB-027",
+        "stage:EV-026",
+        "stage:EV-027",
+        "stage:EV-028",
+        "stage:EV-029",
+        "cv:C110",
+        "feedback:FB-030",
+        "feedback:FB-031",
+        "feedback:FB-032",
+        "stage:EV-033",
+        "stage:EV-034",
+        "stage:EV-035",
+        "cv:C111",
+        "feedback:FB-033",
+        "feedback:FB-034",
+        "stage:EV-036",
+        "stage:EV-037",
+        "stage:EV-038",
+        "task:T-001",
+        "cv:C112",
+        "feedback:FB-035",
+        "feedback:FB-036",
+        "stage:EV-039",
+        "stage:EV-040",
+        "stage:EV-041",
+        "task:T-004",
+        "cv:C113",
+        "feedback:FB-037",
+        "feedback:FB-038",
+        "stage:EV-042",
+        "stage:EV-043",
+        "stage:EV-044",
+        "task:T-002",
+        "task:T-005"
+       ],
+       "error_code": null
+      },
+      {
+       "trace_id": "48c47677dce7",
+       "call_id": "call_MpOSMhyNTGGcBvMPOlj4Gsco",
+       "sequence": 5,
+       "tool_name": "get_pipeline_analytics",
+       "safe_arguments": {
+        "role_id": "ROLE-BE"
+       },
+       "status": "success",
+       "duration_ms": 12,
+       "started_ms": 4115,
+       "completed_ms": 4127,
+       "result_summary": {
+        "counts": {
+         "stages": 4
+        },
+        "source_ids": [
+         "analytics:ROLE-BE@2026-11-07"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "evidence_refs": [
+        "analytics:ROLE-BE@2026-11-07"
+       ],
+       "error_code": null
+      }
+     ],
+     "content_flags": [],
+     "unresolved": [],
+     "unverified_figures": 0,
+     "model_rounds": 5,
+     "usage": {
+      "prompt_tokens": 33617,
+      "completion_tokens": 873
+     },
+     "seconds": 8.1
+    }
+   ],
+   "verdict": {
+    "verdict": "pass",
+    "passed": 3,
+    "runs": 3,
+    "per_run": [
+     {
+      "status": "pass",
+      "reasons": []
+     },
+     {
+      "status": "pass",
+      "reasons": []
+     },
+     {
+      "status": "pass",
+      "reasons": []
+     }
+    ],
+    "rounds": [
+     5,
+     5,
+     5
+    ],
+    "tokens": [
+     48742,
+     36204,
+     34490
+    ]
+   }
+  },
+  "2": {
+   "records": [
+    {
+     "case": 2,
+     "condition": "baseline",
+     "run": 0,
+     "status": "ok",
+     "error_code": null,
+     "limit_code": null,
+     "repaired": [],
+     "empty_retries": 0,
+     "flag_source_count": 0,
+     "structured": false,
+     "answer_markdown": "The biggest loss is in the Technical Interview stage. That\u2019s where conversion drops to 41.67% and where most exits happen: 5 withdrawn, 2 rejected, and 3 of the withdrawals were tied to scheduling delay [analytics:ROLE-BE@2026-11-07].\n\n- Resume Review is healthy. Median time is 3 days against a 5-day target, with 19 completed and no one over target [analytics:ROLE-BE@2026-11-07].\n- Recruiter Screen is also healthy. Median time is 5 days against a 7-day target, and feedback lag is 1 day against a 2-day target [analytics:ROLE-BE@2026-11-07].\n- Technical Interview is the bottleneck. Median time is 13.5 days against a 14-day target, but 41.67% of completed candidates are over target and 3 active candidates are already over target [analytics:ROLE-BE@2026-11-07].\n- Scheduling is the clearest problem there. Median scheduling lag is 8 days against a 7-day target, 14 observations are over target, and 3 active candidates are still unscheduled and waiting 16 to 22 days [analytics:ROLE-BE@2026-11-07].\n- Final Interview has some aging, but the sample is small. Only 3 completed cases support the duration median, and the stage is marked low_sample for duration and feedback [analytics:ROLE-BE@2026-11-07].\n\nIn short, candidates are mostly being lost in the Technical Interview stage, especially around scheduling delays rather than feedback turnaround.",
+     "candidates": null,
+     "uncertainties": [],
+     "content_warnings": [],
+     "evidence_refs": [
+      "analytics:ROLE-BE@2026-11-07",
+      "role:ROLE-BE"
+     ],
+     "retrieved_candidates": [],
+     "tool_sequence": [
+      "get_pipeline_analytics",
+      "get_role"
+     ],
+     "trace": [
+      {
+       "trace_id": "16392865a646",
+       "call_id": "call_m6CAv42v5jpMq4LxgCiaFaA0",
+       "sequence": 1,
+       "tool_name": "get_pipeline_analytics",
+       "safe_arguments": {
+        "role_id": "ROLE-BE"
+       },
+       "status": "success",
+       "duration_ms": 12,
+       "started_ms": 1607,
+       "completed_ms": 1619,
+       "result_summary": {
+        "counts": {
+         "stages": 4
+        },
+        "source_ids": [
+         "analytics:ROLE-BE@2026-11-07"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "evidence_refs": [
+        "analytics:ROLE-BE@2026-11-07"
+       ],
+       "error_code": null
+      },
+      {
+       "trace_id": "16392865a646",
+       "call_id": "call_Pf7i9iT5bHx5AC2bWzonEBWw",
+       "sequence": 2,
+       "tool_name": "get_role",
+       "safe_arguments": {
+        "role_id": "ROLE-BE"
+       },
+       "status": "success",
+       "duration_ms": 8,
+       "started_ms": 2432,
+       "completed_ms": 2440,
+       "result_summary": {
+        "counts": {
+         "stage_order": 4
+        },
+        "source_ids": [
+         "role:ROLE-BE"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "evidence_refs": [
+        "role:ROLE-BE"
+       ],
+       "error_code": null
+      }
+     ],
+     "content_flags": [],
+     "unresolved": [],
+     "unverified_figures": 0,
+     "model_rounds": 3,
+     "usage": {
+      "prompt_tokens": 14500,
+      "completion_tokens": 385
+     },
+     "seconds": 4.7
+    },
+    {
+     "case": 2,
+     "condition": "baseline",
+     "run": 1,
+     "status": "ok",
+     "error_code": null,
+     "limit_code": null,
+     "repaired": [],
+     "empty_retries": 0,
+     "flag_source_count": 0,
+     "structured": true,
+     "answer_markdown": "We are losing candidates mainly in Technical Interview. That stage has the biggest drop-off and the clearest delay signal [analytics:ROLE-BE@2026-11-07].\n\n- Technical Interview: 17 entered, 5 advanced, 2 rejected, 5 withdrawn, and 5 still in stage. Conversion is 41.67% on 12 completed exits, and 41.67% of completed cases were over the 14-day target [analytics:ROLE-BE@2026-11-07].\n- Scheduling is the biggest bottleneck there. The median scheduled wait is 8 days against a 7-day target, and 3 active candidates are still unscheduled with a median wait of 16 days and a max of 22 days [analytics:ROLE-BE@2026-11-07].\n- Withdrawals in that stage are recorded as scheduling delay, personal reasons, and another offer [analytics:ROLE-BE@2026-11-07].\n- Resume Review and Recruiter Screen are not the main loss points. Their conversions are 94.74% and 94.44%, with no active stage-age over target in Recruiter Screen [analytics:ROLE-BE@2026-11-07].\n- Final Interview is smaller and less conclusive. It has only 5 entrants, 2 rejections, 1 withdrawal, and low sample flags on duration and feedback [analytics:ROLE-BE@2026-11-07].\n\nIn short, the role is losing people before and around Technical Interview scheduling, not at the top of the funnel.",
+     "candidates": [],
+     "uncertainties": [
+      "Final Interview has low_sample on duration and feedback, so its bottleneck signal is less reliable.",
+      "Conversion in Final Interview is not directly comparable because the dataset notes there is no offer stage."
+     ],
+     "content_warnings": [],
+     "evidence_refs": [
+      "analytics:ROLE-BE@2026-11-07"
+     ],
+     "retrieved_candidates": [],
+     "tool_sequence": [
+      "get_pipeline_analytics"
+     ],
+     "trace": [
+      {
+       "trace_id": "a32b9f73c64f",
+       "call_id": "call_33CIWNM4niGBY2eP9UUmQHga",
+       "sequence": 1,
+       "tool_name": "get_pipeline_analytics",
+       "safe_arguments": {
+        "role_id": "ROLE-BE"
+       },
+       "status": "success",
+       "duration_ms": 9,
+       "started_ms": 1518,
+       "completed_ms": 1527,
+       "result_summary": {
+        "counts": {
+         "stages": 4
+        },
+        "source_ids": [
+         "analytics:ROLE-BE@2026-11-07"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "evidence_refs": [
+        "analytics:ROLE-BE@2026-11-07"
+       ],
+       "error_code": null
+      }
+     ],
+     "content_flags": [],
+     "unresolved": [],
+     "unverified_figures": 0,
+     "model_rounds": 2,
+     "usage": {
+      "prompt_tokens": 8892,
+      "completion_tokens": 832
+     },
+     "seconds": 5.3
+    },
+    {
+     "case": 2,
+     "condition": "baseline",
+     "run": 2,
+     "status": "ok",
+     "error_code": null,
+     "limit_code": null,
+     "repaired": [],
+     "empty_retries": 0,
+     "flag_source_count": 0,
+     "structured": true,
+     "answer_markdown": "We are losing candidates mainly in the Technical Interview stage, and the role has been open 123 days [analytics:ROLE-BE@2026-11-07] [role:ROLE-BE].\n\n- Technical Interview is the biggest bottleneck. Conversion from that stage is 41.67% with 17 entered and 12 completed, and 5 were withdrawn [analytics:ROLE-BE@2026-11-07].\n- Scheduling is the main pressure point there. The median scheduled wait is 8 days against a 7-day target, and 14 of 17 observations were over target [analytics:ROLE-BE@2026-11-07].\n- Three candidates withdrew before being scheduled in Technical Interview, and the recorded reason was scheduling delay [analytics:ROLE-BE@2026-11-07].\n- Time in stage is also running long there. Active candidates have a median age of 16 days and a max of 22 days, versus a 14-day target [analytics:ROLE-BE@2026-11-07].\n- Final Interview is a smaller issue. It has only 5 entrants, with 1 withdrawal and 2 still in stage, and the sample is low for duration and feedback [analytics:ROLE-BE@2026-11-07].\n- Resume Review and Recruiter Screen are not the main leak points. Their completed conversion is 94.74% and 94.44%, respectively [analytics:ROLE-BE@2026-11-07].\n\nMy read: the biggest loss is not early screening quality; it is the Technical Interview stage, especially scheduling delays and long time in stage [analytics:ROLE-BE@2026-11-07].",
+     "candidates": [],
+     "uncertainties": [
+      "Final Interview has low sample size for duration and feedback, so it is a weaker signal than Technical Interview.",
+      "Conversion is not defined for Final Interview because there is no offer stage in the dataset."
+     ],
+     "content_warnings": [],
+     "evidence_refs": [
+      "analytics:ROLE-BE@2026-11-07",
+      "role:ROLE-BE"
+     ],
+     "retrieved_candidates": [],
+     "tool_sequence": [
+      "get_pipeline_analytics",
+      "get_role"
+     ],
+     "trace": [
+      {
+       "trace_id": "e9108b4f3e2c",
+       "call_id": "call_5RcPWDJrBrRrVGj1ovRwrZYK",
+       "sequence": 1,
+       "tool_name": "get_pipeline_analytics",
+       "safe_arguments": {
+        "role_id": "ROLE-BE"
+       },
+       "status": "success",
+       "duration_ms": 10,
+       "started_ms": 1557,
+       "completed_ms": 1567,
+       "result_summary": {
+        "counts": {
+         "stages": 4
+        },
+        "source_ids": [
+         "analytics:ROLE-BE@2026-11-07"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "evidence_refs": [
+        "analytics:ROLE-BE@2026-11-07"
+       ],
+       "error_code": null
+      },
+      {
+       "trace_id": "e9108b4f3e2c",
+       "call_id": "call_KpL3h4gD3MSSMRNOQeKybT94",
+       "sequence": 2,
+       "tool_name": "get_role",
+       "safe_arguments": {
+        "role_id": "ROLE-BE"
+       },
+       "status": "success",
+       "duration_ms": 4,
+       "started_ms": 2167,
+       "completed_ms": 2171,
+       "result_summary": {
+        "counts": {
+         "stage_order": 4
+        },
+        "source_ids": [
+         "role:ROLE-BE"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "evidence_refs": [
+        "role:ROLE-BE"
+       ],
+       "error_code": null
+      }
+     ],
+     "content_flags": [],
+     "unresolved": [],
+     "unverified_figures": 0,
+     "model_rounds": 3,
+     "usage": {
+      "prompt_tokens": 14500,
+      "completion_tokens": 899
+     },
+     "seconds": 6.1
+    }
+   ],
+   "verdict": {
+    "verdict": "fail",
+    "passed": 1,
+    "runs": 3,
+    "per_run": [
+     {
+      "status": "fail",
+      "reasons": [
+       "does not separate scheduling wait from time in stage"
+      ]
+     },
+     {
+      "status": "pass",
+      "reasons": []
+     },
+     {
+      "status": "fail",
+      "reasons": [
+       "does not mention candidates still unscheduled"
+      ]
+     }
+    ],
+    "rounds": [
+     3,
+     2,
+     3
+    ],
+    "tokens": [
+     14885,
+     9724,
+     15399
+    ]
+   }
+  },
+  "3": {
+   "records": [
+    {
+     "case": 3,
+     "condition": "baseline",
+     "run": 0,
+     "status": "ok",
+     "error_code": null,
+     "limit_code": null,
+     "repaired": [
+      "unverified_figure"
+     ],
+     "empty_retries": 0,
+     "flag_source_count": 0,
+     "structured": true,
+     "answer_markdown": "There are 21 pending recruiting tasks, and 9 are overdue. The overdue ones are listed below, grouped by how late they are.\n\n| Candidate | Task | Owner | Due | Overdue by |\n|---|---|---|---|---|\n| Mateo Villareal (C113) | Book Technical Interview | Jordan Ellis | Oct 23, 2026 | 15 days |\n| Kofi Adeyemi (C111) | Book Technical Interview | Jordan Ellis | Oct 29, 2026 | 9 days |\n| Xiomara Lindholm (C150) | Collect Hiring Manager Interview feedback | Sam Whitaker | Oct 31, 2026 | 7 days |\n| Quentin Abara (C117) | Book Technical Interview | Jordan Ellis | Nov 2, 2026 | 5 days |\n| Zane Mbatha (C152) | Send candidate a status update | Sam Whitaker | Nov 2, 2026 | 5 days |\n| Wyatt Nakamura (C149) | Collect Hiring Manager Interview feedback | Sam Whitaker | Nov 3, 2026 | 4 days |\n| Ansel Pereira (C153) | Send candidate a status update | Sam Whitaker | Nov 4, 2026 | 3 days |\n| Valentina Roos (C148) | Collect Hiring Manager Interview feedback | Sam Whitaker | Nov 5, 2026 | 2 days |\n| Lena Sorensen (C112) | Collect Technical Interview feedback | Jordan Ellis | Nov 6, 2026 | 1 day |\n\nTwo pending tasks are due today or later, so they are not overdue yet: one is due exactly now, and one is due in under a day. [task:T-002] [task:T-001] [task:T-019] [task:T-003] [task:T-021] [task:T-018] [task:T-022] [task:T-017] [task:T-004]",
+     "candidates": [],
+     "uncertainties": [
+      "The task tool returned 21 pending tasks and 9 overdue tasks, but I could not cite those counts as verified figures because the validator rejected the count paths."
+     ],
+     "content_warnings": [],
+     "evidence_refs": [
+      "task:T-001",
+      "task:T-002",
+      "task:T-003",
+      "task:T-004",
+      "task:T-005",
+      "task:T-006",
+      "task:T-010",
+      "task:T-011",
+      "task:T-012",
+      "task:T-013",
+      "task:T-014",
+      "task:T-017",
+      "task:T-018",
+      "task:T-019",
+      "task:T-020",
+      "task:T-021",
+      "task:T-022",
+      "task:T-023",
+      "task:T-024",
+      "task:T-025",
+      "task:T-028"
+     ],
+     "retrieved_candidates": [],
+     "tool_sequence": [
+      "get_tasks"
+     ],
+     "trace": [
+      {
+       "trace_id": "16e8aeca7e27",
+       "call_id": "call_jMRI0A1FqPE7gWDgB0axbvcA",
+       "sequence": 1,
+       "tool_name": "get_tasks",
+       "safe_arguments": {
+        "role_id": null,
+        "candidate_id": null,
+        "status": "pending",
+        "overdue_only": false,
+        "limit": 50
+       },
+       "status": "success",
+       "duration_ms": 6,
+       "started_ms": 1559,
+       "completed_ms": 1565,
+       "result_summary": {
+        "counts": {
+         "tasks": 21
+        },
+        "source_ids": [
+         "task:T-002",
+         "task:T-001",
+         "task:T-019",
+         "task:T-003",
+         "task:T-021",
+         "task:T-018",
+         "task:T-022",
+         "task:T-017",
+         "task:T-004",
+         "task:T-014",
+         "task:T-012",
+         "task:T-013",
+         "task:T-020",
+         "task:T-006",
+         "task:T-023",
+         "task:T-005",
+         "task:T-010",
+         "task:T-025",
+         "task:T-011",
+         "task:T-024",
+         "task:T-028"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "evidence_refs": [
+        "task:T-002",
+        "task:T-001",
+        "task:T-019",
+        "task:T-003",
+        "task:T-021",
+        "task:T-018",
+        "task:T-022",
+        "task:T-017",
+        "task:T-004",
+        "task:T-014",
+        "task:T-012",
+        "task:T-013",
+        "task:T-020",
+        "task:T-006",
+        "task:T-023",
+        "task:T-005",
+        "task:T-010",
+        "task:T-025",
+        "task:T-011",
+        "task:T-024",
+        "task:T-028"
+       ],
+       "error_code": null
+      }
+     ],
+     "content_flags": [],
+     "unresolved": [],
+     "unverified_figures": 0,
+     "model_rounds": 3,
+     "usage": {
+      "prompt_tokens": 17603,
+      "completion_tokens": 1029
+     },
+     "seconds": 6.2
+    },
+    {
+     "case": 3,
+     "condition": "baseline",
+     "run": 1,
+     "status": "ok",
+     "error_code": null,
+     "limit_code": null,
+     "repaired": [
+      "unverified_figure"
+     ],
+     "empty_retries": 0,
+     "flag_source_count": 0,
+     "structured": true,
+     "answer_markdown": "There are 21 pending recruiting tasks, and 10 of them are overdue. The overdue items are listed below, grouped by how late they are.\n\n| Candidate | Task | Owner | Due | Overdue by |\n|---|---|---|---|---|\n| Mateo Villareal (C113) | Book Technical Interview | Jordan Ellis | Oct 23, 2026 | 15 days |\n| Kofi Adeyemi (C111) | Book Technical Interview | Jordan Ellis | Oct 29, 2026 | 9 days |\n| Xiomara Lindholm (C150) | Collect Hiring Manager Interview feedback | Sam Whitaker | Oct 31, 2026 | 7 days |\n| Quentin Abara (C117) | Book Technical Interview | Jordan Ellis | Nov 2, 2026 | 5 days |\n| Zane Mbatha (C152) | Send candidate a status update | Sam Whitaker | Nov 2, 2026 | 5 days |\n| Wyatt Nakamura (C149) | Collect Hiring Manager Interview feedback | Sam Whitaker | Nov 3, 2026 | 4 days |\n| Ansel Pereira (C153) | Send candidate a status update | Sam Whitaker | Nov 4, 2026 | 3 days |\n| Valentina Roos (C148) | Collect Hiring Manager Interview feedback | Sam Whitaker | Nov 5, 2026 | 2 days |\n| Lena Sorensen (C112) | Collect Technical Interview feedback | Jordan Ellis | Nov 6, 2026 | 1 day |\n| Yusuf Demir (C125) | Share interview panel notes | Maya Okafor | Nov 7, 2026 11:59 AM PST | under a day |\n\nThe remaining 11 pending tasks are not overdue yet [task:T-002] [task:T-001] [task:T-019] [task:T-003] [task:T-021] [task:T-018] [task:T-022] [task:T-017] [task:T-004] [task:T-014] [task:T-012] [task:T-013] [task:T-020] [task:T-006] [task:T-023] [task:T-005] [task:T-010] [task:T-025] [task:T-011] [task:T-024] [task:T-028].",
+     "candidates": [],
+     "uncertainties": [
+      "I can confirm the 21 pending tasks from the task list, but I did not include numeric figures because the validator rejected the earlier count fields."
+     ],
+     "content_warnings": [],
+     "evidence_refs": [
+      "task:T-001",
+      "task:T-002",
+      "task:T-003",
+      "task:T-004",
+      "task:T-005",
+      "task:T-006",
+      "task:T-010",
+      "task:T-011",
+      "task:T-012",
+      "task:T-013",
+      "task:T-014",
+      "task:T-017",
+      "task:T-018",
+      "task:T-019",
+      "task:T-020",
+      "task:T-021",
+      "task:T-022",
+      "task:T-023",
+      "task:T-024",
+      "task:T-025",
+      "task:T-028"
+     ],
+     "retrieved_candidates": [],
+     "tool_sequence": [
+      "get_tasks"
+     ],
+     "trace": [
+      {
+       "trace_id": "58c24a704bea",
+       "call_id": "call_t0NMzGFwBfgIPGgvqbNTHhPq",
+       "sequence": 1,
+       "tool_name": "get_tasks",
+       "safe_arguments": {
+        "role_id": null,
+        "candidate_id": null,
+        "status": "pending",
+        "overdue_only": false,
+        "limit": 50
+       },
+       "status": "success",
+       "duration_ms": 8,
+       "started_ms": 1393,
+       "completed_ms": 1401,
+       "result_summary": {
+        "counts": {
+         "tasks": 21
+        },
+        "source_ids": [
+         "task:T-002",
+         "task:T-001",
+         "task:T-019",
+         "task:T-003",
+         "task:T-021",
+         "task:T-018",
+         "task:T-022",
+         "task:T-017",
+         "task:T-004",
+         "task:T-014",
+         "task:T-012",
+         "task:T-013",
+         "task:T-020",
+         "task:T-006",
+         "task:T-023",
+         "task:T-005",
+         "task:T-010",
+         "task:T-025",
+         "task:T-011",
+         "task:T-024",
+         "task:T-028"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "evidence_refs": [
+        "task:T-002",
+        "task:T-001",
+        "task:T-019",
+        "task:T-003",
+        "task:T-021",
+        "task:T-018",
+        "task:T-022",
+        "task:T-017",
+        "task:T-004",
+        "task:T-014",
+        "task:T-012",
+        "task:T-013",
+        "task:T-020",
+        "task:T-006",
+        "task:T-023",
+        "task:T-005",
+        "task:T-010",
+        "task:T-025",
+        "task:T-011",
+        "task:T-024",
+        "task:T-028"
+       ],
+       "error_code": null
+      }
+     ],
+     "content_flags": [],
+     "unresolved": [],
+     "unverified_figures": 0,
+     "model_rounds": 3,
+     "usage": {
+      "prompt_tokens": 17696,
+      "completion_tokens": 1209
+     },
+     "seconds": 6.7
+    },
+    {
+     "case": 3,
+     "condition": "baseline",
+     "run": 2,
+     "status": "ok",
+     "error_code": null,
+     "limit_code": null,
+     "repaired": [
+      "unverified_figure"
+     ],
+     "empty_retries": 0,
+     "flag_source_count": 0,
+     "structured": true,
+     "answer_markdown": "There are 21 pending recruiting tasks, and 10 are overdue. The overdue items are listed below, grouped by how late they are.\n\n| Candidate | Task | Owner | Due | Overdue by |\n|---|---|---|---|---|\n| Mateo Villareal (C113) | Book Technical Interview | Jordan Ellis | Oct 23, 2026 | 15 days |\n| Kofi Adeyemi (C111) | Book Technical Interview | Jordan Ellis | Oct 29, 2026 | 9 days |\n| Xiomara Lindholm (C150) | Collect Hiring Manager Interview feedback | Sam Whitaker | Oct 31, 2026 | 7 days |\n| Quentin Abara (C117) | Book Technical Interview | Jordan Ellis | Nov 2, 2026 | 5 days |\n| Zane Mbatha (C152) | Send candidate a status update | Sam Whitaker | Nov 2, 2026 | 5 days |\n| Wyatt Nakamura (C149) | Collect Hiring Manager Interview feedback | Sam Whitaker | Nov 3, 2026 | 4 days |\n| Ansel Pereira (C153) | Send candidate a status update | Sam Whitaker | Nov 4, 2026 | 3 days |\n| Valentina Roos (C148) | Collect Hiring Manager Interview feedback | Sam Whitaker | Nov 5, 2026 | 2 days |\n| Lena Sorensen (C112) | Collect Technical Interview feedback | Jordan Ellis | Nov 6, 2026 | 1 day |\n| Yusuf Demir (C125) | Share interview panel notes | Maya Okafor | Nov 7, 2026 | under a day |\n\nTwo pending tasks are due exactly at the as-of time or later, so they are not overdue yet. [task:T-002] [task:T-001] [task:T-019] [task:T-003] [task:T-021] [task:T-018] [task:T-022] [task:T-017] [task:T-004] [task:T-014] [task:T-012] [task:T-013] [task:T-020] [task:T-006] [task:T-023] [task:T-005] [task:T-010] [task:T-025] [task:T-011] [task:T-024] [task:T-028]",
+     "candidates": [],
+     "uncertainties": [
+      "I could verify the task list and overdue items, but the tool result did not expose a supported field for the total pending count or overdue count as figures."
+     ],
+     "content_warnings": [],
+     "evidence_refs": [
+      "task:T-001",
+      "task:T-002",
+      "task:T-003",
+      "task:T-004",
+      "task:T-005",
+      "task:T-006",
+      "task:T-010",
+      "task:T-011",
+      "task:T-012",
+      "task:T-013",
+      "task:T-014",
+      "task:T-017",
+      "task:T-018",
+      "task:T-019",
+      "task:T-020",
+      "task:T-021",
+      "task:T-022",
+      "task:T-023",
+      "task:T-024",
+      "task:T-025",
+      "task:T-028"
+     ],
+     "retrieved_candidates": [],
+     "tool_sequence": [
+      "get_tasks"
+     ],
+     "trace": [
+      {
+       "trace_id": "6654723ae52c",
+       "call_id": "call_ZZiK08DensK9GtxPVK9qMDj5",
+       "sequence": 1,
+       "tool_name": "get_tasks",
+       "safe_arguments": {
+        "role_id": null,
+        "candidate_id": null,
+        "status": "pending",
+        "overdue_only": false,
+        "limit": 50
+       },
+       "status": "success",
+       "duration_ms": 10,
+       "started_ms": 1397,
+       "completed_ms": 1407,
+       "result_summary": {
+        "counts": {
+         "tasks": 21
+        },
+        "source_ids": [
+         "task:T-002",
+         "task:T-001",
+         "task:T-019",
+         "task:T-003",
+         "task:T-021",
+         "task:T-018",
+         "task:T-022",
+         "task:T-017",
+         "task:T-004",
+         "task:T-014",
+         "task:T-012",
+         "task:T-013",
+         "task:T-020",
+         "task:T-006",
+         "task:T-023",
+         "task:T-005",
+         "task:T-010",
+         "task:T-025",
+         "task:T-011",
+         "task:T-024",
+         "task:T-028"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "evidence_refs": [
+        "task:T-002",
+        "task:T-001",
+        "task:T-019",
+        "task:T-003",
+        "task:T-021",
+        "task:T-018",
+        "task:T-022",
+        "task:T-017",
+        "task:T-004",
+        "task:T-014",
+        "task:T-012",
+        "task:T-013",
+        "task:T-020",
+        "task:T-006",
+        "task:T-023",
+        "task:T-005",
+        "task:T-010",
+        "task:T-025",
+        "task:T-011",
+        "task:T-024",
+        "task:T-028"
+       ],
+       "error_code": null
+      }
+     ],
+     "content_flags": [],
+     "unresolved": [],
+     "unverified_figures": 0,
+     "model_rounds": 3,
+     "usage": {
+      "prompt_tokens": 17699,
+      "completion_tokens": 1217
+     },
+     "seconds": 6.9
+    }
+   ],
+   "verdict": {
+    "verdict": "fail",
+    "passed": 2,
+    "runs": 3,
+    "per_run": [
+     {
+      "status": "fail",
+      "reasons": [
+       "overdue task for Yusuf Demir missing",
+       "does not state that 10 tasks are overdue"
+      ]
+     },
+     {
+      "status": "pass",
+      "reasons": []
+     },
+     {
+      "status": "pass",
+      "reasons": []
+     }
+    ],
+    "rounds": [
+     3,
+     3,
+     3
+    ],
+    "tokens": [
+     18632,
+     18905,
+     18916
+    ]
+   }
+  },
+  "4": {
+   "records": [
+    {
+     "case": 4,
+     "condition": "baseline",
+     "run": 0,
+     "status": "ok",
+     "error_code": null,
+     "limit_code": null,
+     "repaired": [],
+     "empty_retries": 0,
+     "flag_source_count": 0,
+     "structured": true,
+     "answer_markdown": "Wendell Osei (C123) is in Technical Interview. His latest feedback was positive, and it was submitted after the interview was held [cv:C123][feedback:FB-060].\n\nCompared with others at that stage, he has waited 13 days in the stage, versus an active median of 8 days across 6 active candidates and an active max of 13 days [cv:C123][analytics:ROLE-MSE@2026-11-07].",
+     "candidates": [],
+     "uncertainties": [],
+     "content_warnings": [],
+     "evidence_refs": [
+      "analytics:ROLE-MSE@2026-11-07",
+      "cv:C123",
+      "feedback:FB-058",
+      "feedback:FB-059",
+      "feedback:FB-060",
+      "stage:EV-069",
+      "stage:EV-070",
+      "stage:EV-071",
+      "task:T-011"
+     ],
+     "retrieved_candidates": [
+      "C123"
+     ],
+     "tool_sequence": [
+      "get_candidates",
+      "get_pipeline_analytics"
+     ],
+     "trace": [
+      {
+       "trace_id": "ead83dedee38",
+       "call_id": "call_6znx2orcjZf07NokXdQi0KRR",
+       "sequence": 1,
+       "tool_name": "get_candidates",
+       "safe_arguments": {
+        "candidate_ids": [
+         "C123"
+        ]
+       },
+       "status": "success",
+       "duration_ms": 15,
+       "started_ms": 1468,
+       "completed_ms": 1483,
+       "result_summary": {
+        "counts": {
+         "candidates": 1
+        },
+        "source_ids": [
+         "cv:C123",
+         "feedback:FB-058",
+         "feedback:FB-059",
+         "feedback:FB-060",
+         "stage:EV-069",
+         "stage:EV-070",
+         "stage:EV-071",
+         "task:T-011"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "evidence_refs": [
+        "cv:C123",
+        "feedback:FB-058",
+        "feedback:FB-059",
+        "feedback:FB-060",
+        "stage:EV-069",
+        "stage:EV-070",
+        "stage:EV-071",
+        "task:T-011"
+       ],
+       "error_code": null
+      },
+      {
+       "trace_id": "ead83dedee38",
+       "call_id": "call_tyTFmqGhGOePuHkUrzbVDN8b",
+       "sequence": 2,
+       "tool_name": "get_pipeline_analytics",
+       "safe_arguments": {
+        "role_id": "ROLE-MSE"
+       },
+       "status": "success",
+       "duration_ms": 6,
+       "started_ms": 2228,
+       "completed_ms": 2234,
+       "result_summary": {
+        "counts": {
+         "stages": 4
+        },
+        "source_ids": [
+         "analytics:ROLE-MSE@2026-11-07"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "evidence_refs": [
+        "analytics:ROLE-MSE@2026-11-07"
+       ],
+       "error_code": null
+      }
+     ],
+     "content_flags": [],
+     "unresolved": [],
+     "unverified_figures": 0,
+     "model_rounds": 3,
+     "usage": {
+      "prompt_tokens": 15168,
+      "completion_tokens": 334
+     },
+     "seconds": 4.0
+    },
+    {
+     "case": 4,
+     "condition": "baseline",
+     "run": 1,
+     "status": "ok",
+     "error_code": null,
+     "limit_code": null,
+     "repaired": [],
+     "empty_retries": 0,
+     "flag_source_count": 0,
+     "structured": true,
+     "answer_markdown": "Wendell Osei (C123) is in Technical Interview. His latest feedback was positive: the interviewer said he handled sequencing and fault handling well and recommended moving forward [feedback:FB-060].\n\nCompared with others at that stage, he has been in the stage 13 days, versus an active median of 8 days and an active max of 13 days across 6 active candidates [cv:C123] [analytics:ROLE-MSE@2026-11-07]. His waiting state is awaiting decision, and he has waited 5 days since the last event [cv:C123].",
+     "candidates": [],
+     "uncertainties": [],
+     "content_warnings": [],
+     "evidence_refs": [
+      "analytics:ROLE-MSE@2026-11-07",
+      "cv:C123",
+      "feedback:FB-058",
+      "feedback:FB-059",
+      "feedback:FB-060",
+      "stage:EV-069",
+      "stage:EV-070",
+      "stage:EV-071",
+      "task:T-011"
+     ],
+     "retrieved_candidates": [
+      "C123"
+     ],
+     "tool_sequence": [
+      "get_candidates",
+      "get_pipeline_analytics"
+     ],
+     "trace": [
+      {
+       "trace_id": "286d574805c3",
+       "call_id": "call_jdbdeExKyleYIhgw5HSAPWSW",
+       "sequence": 1,
+       "tool_name": "get_candidates",
+       "safe_arguments": {
+        "candidate_ids": [
+         "C123"
+        ]
+       },
+       "status": "success",
+       "duration_ms": 16,
+       "started_ms": 1409,
+       "completed_ms": 1425,
+       "result_summary": {
+        "counts": {
+         "candidates": 1
+        },
+        "source_ids": [
+         "cv:C123",
+         "feedback:FB-058",
+         "feedback:FB-059",
+         "feedback:FB-060",
+         "stage:EV-069",
+         "stage:EV-070",
+         "stage:EV-071",
+         "task:T-011"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "evidence_refs": [
+        "cv:C123",
+        "feedback:FB-058",
+        "feedback:FB-059",
+        "feedback:FB-060",
+        "stage:EV-069",
+        "stage:EV-070",
+        "stage:EV-071",
+        "task:T-011"
+       ],
+       "error_code": null
+      },
+      {
+       "trace_id": "286d574805c3",
+       "call_id": "call_3l594m0x1p39l15kKyGGd47z",
+       "sequence": 2,
+       "tool_name": "get_pipeline_analytics",
+       "safe_arguments": {
+        "role_id": "ROLE-MSE"
+       },
+       "status": "success",
+       "duration_ms": 5,
+       "started_ms": 2172,
+       "completed_ms": 2177,
+       "result_summary": {
+        "counts": {
+         "stages": 4
+        },
+        "source_ids": [
+         "analytics:ROLE-MSE@2026-11-07"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "evidence_refs": [
+        "analytics:ROLE-MSE@2026-11-07"
+       ],
+       "error_code": null
+      }
+     ],
+     "content_flags": [],
+     "unresolved": [],
+     "unverified_figures": 0,
+     "model_rounds": 3,
+     "usage": {
+      "prompt_tokens": 15168,
+      "completion_tokens": 380
+     },
+     "seconds": 4.1
+    },
+    {
+     "case": 4,
+     "condition": "baseline",
+     "run": 2,
+     "status": "ok",
+     "error_code": null,
+     "limit_code": null,
+     "repaired": [],
+     "empty_retries": 0,
+     "flag_source_count": 0,
+     "structured": true,
+     "answer_markdown": "Wendell Osei (C123) is in Technical Interview. His latest feedback was positive, and it was submitted after the interview was held [cv:C123][feedback:FB-060].\n\nCompared with others at that stage, he has been in Technical Interview for 13 days, versus an active median of 8 days across 6 active candidates and an active max of 13 days [cv:C123][analytics:ROLE-MSE@2026-11-07]. His waiting state is awaiting decision, and he has waited 5 days since the last event [cv:C123].",
+     "candidates": [],
+     "uncertainties": [],
+     "content_warnings": [],
+     "evidence_refs": [
+      "analytics:ROLE-MSE@2026-11-07",
+      "cv:C123",
+      "feedback:FB-058",
+      "feedback:FB-059",
+      "feedback:FB-060",
+      "stage:EV-069",
+      "stage:EV-070",
+      "stage:EV-071",
+      "task:T-011"
+     ],
+     "retrieved_candidates": [
+      "C123"
+     ],
+     "tool_sequence": [
+      "get_candidates",
+      "get_pipeline_analytics"
+     ],
+     "trace": [
+      {
+       "trace_id": "4bc0c86b2bd2",
+       "call_id": "call_GG7s47IHWJSHSRytP9wOOBLZ",
+       "sequence": 1,
+       "tool_name": "get_candidates",
+       "safe_arguments": {
+        "candidate_ids": [
+         "C123"
+        ]
+       },
+       "status": "success",
+       "duration_ms": 8,
+       "started_ms": 1793,
+       "completed_ms": 1801,
+       "result_summary": {
+        "counts": {
+         "candidates": 1
+        },
+        "source_ids": [
+         "cv:C123",
+         "feedback:FB-058",
+         "feedback:FB-059",
+         "feedback:FB-060",
+         "stage:EV-069",
+         "stage:EV-070",
+         "stage:EV-071",
+         "task:T-011"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "evidence_refs": [
+        "cv:C123",
+        "feedback:FB-058",
+        "feedback:FB-059",
+        "feedback:FB-060",
+        "stage:EV-069",
+        "stage:EV-070",
+        "stage:EV-071",
+        "task:T-011"
+       ],
+       "error_code": null
+      },
+      {
+       "trace_id": "4bc0c86b2bd2",
+       "call_id": "call_pRqFXARVxLf5bMvb1vYX2ogl",
+       "sequence": 2,
+       "tool_name": "get_pipeline_analytics",
+       "safe_arguments": {
+        "role_id": "ROLE-MSE"
+       },
+       "status": "success",
+       "duration_ms": 5,
+       "started_ms": 2569,
+       "completed_ms": 2574,
+       "result_summary": {
+        "counts": {
+         "stages": 4
+        },
+        "source_ids": [
+         "analytics:ROLE-MSE@2026-11-07"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "evidence_refs": [
+        "analytics:ROLE-MSE@2026-11-07"
+       ],
+       "error_code": null
+      }
+     ],
+     "content_flags": [],
+     "unresolved": [],
+     "unverified_figures": 0,
+     "model_rounds": 3,
+     "usage": {
+      "prompt_tokens": 15168,
+      "completion_tokens": 379
+     },
+     "seconds": 4.5
+    }
+   ],
+   "verdict": {
+    "verdict": "pass",
+    "passed": 3,
+    "runs": 3,
+    "per_run": [
+     {
+      "status": "pass",
+      "reasons": []
+     },
+     {
+      "status": "pass",
+      "reasons": []
+     },
+     {
+      "status": "pass",
+      "reasons": []
+     }
+    ],
+    "rounds": [
+     3,
+     3,
+     3
+    ],
+    "tokens": [
+     15502,
+     15548,
+     15547
+    ]
+   }
+  },
+  "5": {
+   "records": [
+    {
+     "case": 5,
+     "condition": "baseline",
+     "run": 0,
+     "status": "ok",
+     "error_code": null,
+     "limit_code": null,
+     "repaired": [],
+     "empty_retries": 0,
+     "flag_source_count": 0,
+     "structured": true,
+     "answer_markdown": "Junko Takeda (C110) has been waiting longest. She has been in the current stage for 17 days, compared with 10 days for Dahlia Ramanathan (C104) and 7 days for Hannelore Voss (C108) [cv:C110] [cv:C104] [cv:C108].",
+     "candidates": [],
+     "uncertainties": [],
+     "content_warnings": [],
+     "evidence_refs": [
+      "cv:C104",
+      "cv:C108",
+      "cv:C110",
+      "feedback:FB-013",
+      "feedback:FB-014",
+      "feedback:FB-015",
+      "feedback:FB-016",
+      "feedback:FB-025",
+      "feedback:FB-026",
+      "feedback:FB-027",
+      "feedback:FB-030",
+      "feedback:FB-031",
+      "feedback:FB-032",
+      "stage:EV-013",
+      "stage:EV-014",
+      "stage:EV-015",
+      "stage:EV-016",
+      "stage:EV-026",
+      "stage:EV-027",
+      "stage:EV-028",
+      "stage:EV-029",
+      "stage:EV-033",
+      "stage:EV-034",
+      "stage:EV-035"
+     ],
+     "retrieved_candidates": [
+      "C104",
+      "C108",
+      "C110"
+     ],
+     "tool_sequence": [
+      "get_candidates"
+     ],
+     "trace": [
+      {
+       "trace_id": "7e4b0c082d73",
+       "call_id": "call_THukdKVSAT6O2gJ9WnJZAiz4",
+       "sequence": 1,
+       "tool_name": "get_candidates",
+       "safe_arguments": {
+        "candidate_ids": [
+         "C104",
+         "C110",
+         "C108"
+        ]
+       },
+       "status": "success",
+       "duration_ms": 9,
+       "started_ms": 1427,
+       "completed_ms": 1436,
+       "result_summary": {
+        "counts": {
+         "candidates": 3
+        },
+        "source_ids": [
+         "cv:C104",
+         "feedback:FB-013",
+         "feedback:FB-014",
+         "feedback:FB-015",
+         "feedback:FB-016",
+         "stage:EV-013",
+         "stage:EV-014",
+         "stage:EV-015",
+         "stage:EV-016",
+         "cv:C110",
+         "feedback:FB-030",
+         "feedback:FB-031",
+         "feedback:FB-032",
+         "stage:EV-033",
+         "stage:EV-034",
+         "stage:EV-035",
+         "cv:C108",
+         "feedback:FB-025",
+         "feedback:FB-026",
+         "feedback:FB-027",
+         "stage:EV-026",
+         "stage:EV-027",
+         "stage:EV-028",
+         "stage:EV-029"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "evidence_refs": [
+        "cv:C104",
+        "feedback:FB-013",
+        "feedback:FB-014",
+        "feedback:FB-015",
+        "feedback:FB-016",
+        "stage:EV-013",
+        "stage:EV-014",
+        "stage:EV-015",
+        "stage:EV-016",
+        "cv:C110",
+        "feedback:FB-030",
+        "feedback:FB-031",
+        "feedback:FB-032",
+        "stage:EV-033",
+        "stage:EV-034",
+        "stage:EV-035",
+        "cv:C108",
+        "feedback:FB-025",
+        "feedback:FB-026",
+        "feedback:FB-027",
+        "stage:EV-026",
+        "stage:EV-027",
+        "stage:EV-028",
+        "stage:EV-029"
+       ],
+       "error_code": null
+      }
+     ],
+     "content_flags": [],
+     "unresolved": [],
+     "unverified_figures": 0,
+     "model_rounds": 2,
+     "usage": {
+      "prompt_tokens": 11789,
+      "completion_tokens": 219
+     },
+     "seconds": 10.3
+    },
+    {
+     "case": 5,
+     "condition": "baseline",
+     "run": 1,
+     "status": "ok",
+     "error_code": null,
+     "limit_code": null,
+     "repaired": [],
+     "empty_retries": 0,
+     "flag_source_count": 0,
+     "structured": true,
+     "answer_markdown": "Dahlia Ramanathan (C104) has waited the longest, using waiting since the last event. She has been waiting 3 days, versus 5 days for Junko Takeda (C110) and 4 days for Hannelore Voss (C108) [cv:C104] [cv:C110] [cv:C108].",
+     "candidates": [],
+     "uncertainties": [],
+     "content_warnings": [],
+     "evidence_refs": [
+      "cv:C104",
+      "cv:C108",
+      "cv:C110",
+      "feedback:FB-013",
+      "feedback:FB-014",
+      "feedback:FB-015",
+      "feedback:FB-016",
+      "feedback:FB-025",
+      "feedback:FB-026",
+      "feedback:FB-027",
+      "feedback:FB-030",
+      "feedback:FB-031",
+      "feedback:FB-032",
+      "stage:EV-013",
+      "stage:EV-014",
+      "stage:EV-015",
+      "stage:EV-016",
+      "stage:EV-026",
+      "stage:EV-027",
+      "stage:EV-028",
+      "stage:EV-029",
+      "stage:EV-033",
+      "stage:EV-034",
+      "stage:EV-035"
+     ],
+     "retrieved_candidates": [
+      "C104",
+      "C108",
+      "C110"
+     ],
+     "tool_sequence": [
+      "get_candidates"
+     ],
+     "trace": [
+      {
+       "trace_id": "e3bd0b49ab83",
+       "call_id": "call_q3yjWmG2OF9LWFyBLBANeO78",
+       "sequence": 1,
+       "tool_name": "get_candidates",
+       "safe_arguments": {
+        "candidate_ids": [
+         "C104",
+         "C110",
+         "C108"
+        ]
+       },
+       "status": "success",
+       "duration_ms": 10,
+       "started_ms": 1563,
+       "completed_ms": 1573,
+       "result_summary": {
+        "counts": {
+         "candidates": 3
+        },
+        "source_ids": [
+         "cv:C104",
+         "feedback:FB-013",
+         "feedback:FB-014",
+         "feedback:FB-015",
+         "feedback:FB-016",
+         "stage:EV-013",
+         "stage:EV-014",
+         "stage:EV-015",
+         "stage:EV-016",
+         "cv:C110",
+         "feedback:FB-030",
+         "feedback:FB-031",
+         "feedback:FB-032",
+         "stage:EV-033",
+         "stage:EV-034",
+         "stage:EV-035",
+         "cv:C108",
+         "feedback:FB-025",
+         "feedback:FB-026",
+         "feedback:FB-027",
+         "stage:EV-026",
+         "stage:EV-027",
+         "stage:EV-028",
+         "stage:EV-029"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "evidence_refs": [
+        "cv:C104",
+        "feedback:FB-013",
+        "feedback:FB-014",
+        "feedback:FB-015",
+        "feedback:FB-016",
+        "stage:EV-013",
+        "stage:EV-014",
+        "stage:EV-015",
+        "stage:EV-016",
+        "cv:C110",
+        "feedback:FB-030",
+        "feedback:FB-031",
+        "feedback:FB-032",
+        "stage:EV-033",
+        "stage:EV-034",
+        "stage:EV-035",
+        "cv:C108",
+        "feedback:FB-025",
+        "feedback:FB-026",
+        "feedback:FB-027",
+        "stage:EV-026",
+        "stage:EV-027",
+        "stage:EV-028",
+        "stage:EV-029"
+       ],
+       "error_code": null
+      }
+     ],
+     "content_flags": [],
+     "unresolved": [],
+     "unverified_figures": 0,
+     "model_rounds": 2,
+     "usage": {
+      "prompt_tokens": 11741,
+      "completion_tokens": 204
+     },
+     "seconds": 11.6
+    },
+    {
+     "case": 5,
+     "condition": "baseline",
+     "run": 2,
+     "status": "ok",
+     "error_code": null,
+     "limit_code": null,
+     "repaired": [],
+     "empty_retries": 0,
+     "flag_source_count": 0,
+     "structured": true,
+     "answer_markdown": "Junko Takeda (C110) has waited the longest of the three, at 5 days in the current waiting state. Dahlia Ramanathan (C104) has waited 3 days, and Hannelore Voss (C108) has waited 4 days [cv:C104] [cv:C110] [cv:C108].",
+     "candidates": [],
+     "uncertainties": [],
+     "content_warnings": [],
+     "evidence_refs": [
+      "cv:C104",
+      "cv:C108",
+      "cv:C110",
+      "feedback:FB-013",
+      "feedback:FB-014",
+      "feedback:FB-015",
+      "feedback:FB-016",
+      "feedback:FB-025",
+      "feedback:FB-026",
+      "feedback:FB-027",
+      "feedback:FB-030",
+      "feedback:FB-031",
+      "feedback:FB-032",
+      "stage:EV-013",
+      "stage:EV-014",
+      "stage:EV-015",
+      "stage:EV-016",
+      "stage:EV-026",
+      "stage:EV-027",
+      "stage:EV-028",
+      "stage:EV-029",
+      "stage:EV-033",
+      "stage:EV-034",
+      "stage:EV-035"
+     ],
+     "retrieved_candidates": [
+      "C104",
+      "C108",
+      "C110"
+     ],
+     "tool_sequence": [
+      "get_candidates"
+     ],
+     "trace": [
+      {
+       "trace_id": "ed1d60318fdb",
+       "call_id": "call_Beh7FDIXOc0FlVIIGCHJNs2L",
+       "sequence": 1,
+       "tool_name": "get_candidates",
+       "safe_arguments": {
+        "candidate_ids": [
+         "C104",
+         "C110",
+         "C108"
+        ]
+       },
+       "status": "success",
+       "duration_ms": 9,
+       "started_ms": 1401,
+       "completed_ms": 1410,
+       "result_summary": {
+        "counts": {
+         "candidates": 3
+        },
+        "source_ids": [
+         "cv:C104",
+         "feedback:FB-013",
+         "feedback:FB-014",
+         "feedback:FB-015",
+         "feedback:FB-016",
+         "stage:EV-013",
+         "stage:EV-014",
+         "stage:EV-015",
+         "stage:EV-016",
+         "cv:C110",
+         "feedback:FB-030",
+         "feedback:FB-031",
+         "feedback:FB-032",
+         "stage:EV-033",
+         "stage:EV-034",
+         "stage:EV-035",
+         "cv:C108",
+         "feedback:FB-025",
+         "feedback:FB-026",
+         "feedback:FB-027",
+         "stage:EV-026",
+         "stage:EV-027",
+         "stage:EV-028",
+         "stage:EV-029"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "evidence_refs": [
+        "cv:C104",
+        "feedback:FB-013",
+        "feedback:FB-014",
+        "feedback:FB-015",
+        "feedback:FB-016",
+        "stage:EV-013",
+        "stage:EV-014",
+        "stage:EV-015",
+        "stage:EV-016",
+        "cv:C110",
+        "feedback:FB-030",
+        "feedback:FB-031",
+        "feedback:FB-032",
+        "stage:EV-033",
+        "stage:EV-034",
+        "stage:EV-035",
+        "cv:C108",
+        "feedback:FB-025",
+        "feedback:FB-026",
+        "feedback:FB-027",
+        "stage:EV-026",
+        "stage:EV-027",
+        "stage:EV-028",
+        "stage:EV-029"
+       ],
+       "error_code": null
+      }
+     ],
+     "content_flags": [],
+     "unresolved": [],
+     "unverified_figures": 0,
+     "model_rounds": 2,
+     "usage": {
+      "prompt_tokens": 11705,
+      "completion_tokens": 203
+     },
+     "seconds": 10.1
+    }
+   ],
+   "verdict": {
+    "verdict": "pass",
+    "passed": 3,
+    "runs": 3,
+    "per_run": [
+     {
+      "status": "pass",
+      "reasons": []
+     },
+     {
+      "status": "pass",
+      "reasons": []
+     },
+     {
+      "status": "pass",
+      "reasons": []
+     }
+    ],
+    "rounds": [
+     2,
+     2,
+     2
+    ],
+    "tokens": [
+     12008,
+     11945,
+     11908
+    ]
+   }
+  },
+  "6": {
+   "records": [
+    {
+     "case": 6,
+     "condition": "baseline",
+     "run": 0,
+     "status": "ok",
+     "error_code": null,
+     "limit_code": null,
+     "repaired": [],
+     "empty_retries": 0,
+     "flag_source_count": 0,
+     "structured": true,
+     "answer_markdown": "I couldn\u2019t find candidate C999 in the data, so I can\u2019t report a status for them.",
+     "candidates": [],
+     "uncertainties": [
+      "C999 was not found in the candidate records."
+     ],
+     "content_warnings": [],
+     "evidence_refs": [],
+     "retrieved_candidates": [],
+     "tool_sequence": [
+      "get_candidates"
+     ],
+     "trace": [
+      {
+       "trace_id": "20f2eaa75aad",
+       "call_id": "call_LvlAZxYCkIQp2EpLPM3MYVMM",
+       "sequence": 1,
+       "tool_name": "get_candidates",
+       "safe_arguments": {
+        "candidate_ids": [
+         "C999"
+        ]
+       },
+       "status": "success",
+       "duration_ms": 10,
+       "started_ms": 1316,
+       "completed_ms": 1326,
+       "result_summary": {
+        "counts": {
+         "candidates": 1
+        },
+        "source_ids": [],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 1
+       },
+       "evidence_refs": [],
+       "error_code": null
+      }
+     ],
+     "content_flags": [],
+     "unresolved": [],
+     "unverified_figures": 0,
+     "model_rounds": 2,
+     "usage": {
+      "prompt_tokens": 7415,
+      "completion_tokens": 78
+     },
+     "seconds": 2.3
+    },
+    {
+     "case": 6,
+     "condition": "baseline",
+     "run": 1,
+     "status": "ok",
+     "error_code": null,
+     "limit_code": null,
+     "repaired": [],
+     "empty_retries": 0,
+     "flag_source_count": 0,
+     "structured": true,
+     "answer_markdown": "I couldn\u2019t find candidate C999 in the dataset, so I can\u2019t report a status for them.",
+     "candidates": [],
+     "uncertainties": [
+      "C999 was not found in the records."
+     ],
+     "content_warnings": [],
+     "evidence_refs": [],
+     "retrieved_candidates": [],
+     "tool_sequence": [
+      "get_candidates"
+     ],
+     "trace": [
+      {
+       "trace_id": "0051970fbd9e",
+       "call_id": "call_DkGRiJYBjsfOG2Wg8L381Eli",
+       "sequence": 1,
+       "tool_name": "get_candidates",
+       "safe_arguments": {
+        "candidate_ids": [
+         "C999"
+        ]
+       },
+       "status": "success",
+       "duration_ms": 4,
+       "started_ms": 1378,
+       "completed_ms": 1382,
+       "result_summary": {
+        "counts": {
+         "candidates": 1
+        },
+        "source_ids": [],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 1
+       },
+       "evidence_refs": [],
+       "error_code": null
+      }
+     ],
+     "content_flags": [],
+     "unresolved": [],
+     "unverified_figures": 0,
+     "model_rounds": 2,
+     "usage": {
+      "prompt_tokens": 7415,
+      "completion_tokens": 77
+     },
+     "seconds": 2.4
+    },
+    {
+     "case": 6,
+     "condition": "baseline",
+     "run": 2,
+     "status": "ok",
+     "error_code": null,
+     "limit_code": null,
+     "repaired": [],
+     "empty_retries": 0,
+     "flag_source_count": 0,
+     "structured": true,
+     "answer_markdown": "C999 was not found in the data, so I can\u2019t report a status. If you meant a different candidate ID, send it and I\u2019ll check it.",
+     "candidates": [],
+     "uncertainties": [
+      "C999 is not found in the dataset."
+     ],
+     "content_warnings": [],
+     "evidence_refs": [],
+     "retrieved_candidates": [],
+     "tool_sequence": [
+      "get_candidates"
+     ],
+     "trace": [
+      {
+       "trace_id": "c4428d3060a8",
+       "call_id": "call_WoJbvEvIdjBy0F8BlwplWMb9",
+       "sequence": 1,
+       "tool_name": "get_candidates",
+       "safe_arguments": {
+        "candidate_ids": [
+         "C999"
+        ]
+       },
+       "status": "success",
+       "duration_ms": 5,
+       "started_ms": 1336,
+       "completed_ms": 1341,
+       "result_summary": {
+        "counts": {
+         "candidates": 1
+        },
+        "source_ids": [],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 1
+       },
+       "evidence_refs": [],
+       "error_code": null
+      }
+     ],
+     "content_flags": [],
+     "unresolved": [],
+     "unverified_figures": 0,
+     "model_rounds": 2,
+     "usage": {
+      "prompt_tokens": 7415,
+      "completion_tokens": 89
+     },
+     "seconds": 2.4
+    }
+   ],
+   "verdict": {
+    "verdict": "pass",
+    "passed": 3,
+    "runs": 3,
+    "per_run": [
+     {
+      "status": "pass",
+      "reasons": []
+     },
+     {
+      "status": "pass",
+      "reasons": []
+     },
+     {
+      "status": "pass",
+      "reasons": []
+     }
+    ],
+    "rounds": [
+     2,
+     2,
+     2
+    ],
+    "tokens": [
+     7493,
+     7492,
+     7504
+    ]
+   }
+  },
+  "7": {
+   "records": [
+    {
+     "case": 7,
+     "condition": "baseline",
+     "run": 0,
+     "status": "ok",
+     "error_code": null,
+     "limit_code": null,
+     "repaired": [],
+     "empty_retries": 1,
+     "flag_source_count": 0,
+     "structured": true,
+     "answer_markdown": "Tamsin Okoye (C120) has no interview feedback yet. She is still in resume review, so nothing has been interviewed or reviewed beyond the resume stage [cv:C120].\n\nWhat is pending:\n- Her resume review is still in progress, with no review note yet [cv:C120].\n- The pending task is to complete the resume review, owned by Jordan Ellis, due Nov 8, 2026 [task:T-006].",
+     "candidates": [],
+     "uncertainties": [],
+     "content_warnings": [],
+     "evidence_refs": [
+      "cv:C120",
+      "stage:EV-060",
+      "task:T-006"
+     ],
+     "retrieved_candidates": [
+      "C120"
+     ],
+     "tool_sequence": [
+      "get_candidates"
+     ],
+     "trace": [
+      {
+       "trace_id": "3875185a0df2",
+       "call_id": "call_Vzb0k9s6ATw2CWY8AMOr6snz",
+       "sequence": 1,
+       "tool_name": "get_candidates",
+       "safe_arguments": {
+        "candidate_ids": [
+         "C120"
+        ]
+       },
+       "status": "success",
+       "duration_ms": 7,
+       "started_ms": 1462,
+       "completed_ms": 1469,
+       "result_summary": {
+        "counts": {
+         "candidates": 1
+        },
+        "source_ids": [
+         "cv:C120",
+         "stage:EV-060",
+         "task:T-006"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "evidence_refs": [
+        "cv:C120",
+        "stage:EV-060",
+        "task:T-006"
+       ],
+       "error_code": null
+      }
+     ],
+     "content_flags": [],
+     "unresolved": [],
+     "unverified_figures": 0,
+     "model_rounds": 3,
+     "usage": {
+      "prompt_tokens": 12215,
+      "completion_tokens": 287
+     },
+     "seconds": 3.9
+    },
+    {
+     "case": 7,
+     "condition": "baseline",
+     "run": 1,
+     "status": "ok",
+     "error_code": null,
+     "limit_code": null,
+     "repaired": [],
+     "empty_retries": 1,
+     "flag_source_count": 0,
+     "structured": true,
+     "answer_markdown": "Tamsin Okoye (C120) has no interview feedback yet. She is still in resume review, so there are no completed interviews, no received feedback, and no pending interview feedback. [cv:C120]\n\nWhat is pending is a resume review task assigned to Jordan Ellis, due Nov 8, 2026, and it is not overdue. [task:T-006]",
+     "candidates": [],
+     "uncertainties": [
+      "No interview has been held yet, so there is no interview feedback to review."
+     ],
+     "content_warnings": [],
+     "evidence_refs": [
+      "cv:C120",
+      "stage:EV-060",
+      "task:T-006"
+     ],
+     "retrieved_candidates": [
+      "C120"
+     ],
+     "tool_sequence": [
+      "get_candidates"
+     ],
+     "trace": [
+      {
+       "trace_id": "508f8fc7f81c",
+       "call_id": "call_QJ28hQubJrtB3CJUlj7JDS2u",
+       "sequence": 1,
+       "tool_name": "get_candidates",
+       "safe_arguments": {
+        "candidate_ids": [
+         "C120"
+        ]
+       },
+       "status": "success",
+       "duration_ms": 6,
+       "started_ms": 1329,
+       "completed_ms": 1335,
+       "result_summary": {
+        "counts": {
+         "candidates": 1
+        },
+        "source_ids": [
+         "cv:C120",
+         "stage:EV-060",
+         "task:T-006"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "evidence_refs": [
+        "cv:C120",
+        "stage:EV-060",
+        "task:T-006"
+       ],
+       "error_code": null
+      }
+     ],
+     "content_flags": [],
+     "unresolved": [],
+     "unverified_figures": 0,
+     "model_rounds": 3,
+     "usage": {
+      "prompt_tokens": 12215,
+      "completion_tokens": 155
+     },
+     "seconds": 3.3
+    },
+    {
+     "case": 7,
+     "condition": "baseline",
+     "run": 2,
+     "status": "ok",
+     "error_code": null,
+     "limit_code": null,
+     "repaired": [],
+     "empty_retries": 1,
+     "flag_source_count": 0,
+     "structured": true,
+     "answer_markdown": "Tamsin Okoye (C120) has no interview feedback yet. She is still in resume review, so there are no completed interviews, no received feedback, and no pending interview feedback. [cv:C120]\n\nWhat is pending is one task: complete resume review, owned by Jordan Ellis, due Nov 8, 2026, and it is not overdue. [task:T-006]",
+     "candidates": [],
+     "uncertainties": [],
+     "content_warnings": [],
+     "evidence_refs": [
+      "cv:C120",
+      "stage:EV-060",
+      "task:T-006"
+     ],
+     "retrieved_candidates": [
+      "C120"
+     ],
+     "tool_sequence": [
+      "get_candidates"
+     ],
+     "trace": [
+      {
+       "trace_id": "455f5e518c73",
+       "call_id": "call_KrYguZtqNARQzUQWqYzK2PVQ",
+       "sequence": 1,
+       "tool_name": "get_candidates",
+       "safe_arguments": {
+        "candidate_ids": [
+         "C120"
+        ]
+       },
+       "status": "success",
+       "duration_ms": 6,
+       "started_ms": 1399,
+       "completed_ms": 1405,
+       "result_summary": {
+        "counts": {
+         "candidates": 1
+        },
+        "source_ids": [
+         "cv:C120",
+         "stage:EV-060",
+         "task:T-006"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "evidence_refs": [
+        "cv:C120",
+        "stage:EV-060",
+        "task:T-006"
+       ],
+       "error_code": null
+      }
+     ],
+     "content_flags": [],
+     "unresolved": [],
+     "unverified_figures": 0,
+     "model_rounds": 3,
+     "usage": {
+      "prompt_tokens": 12215,
+      "completion_tokens": 255
+     },
+     "seconds": 3.6
+    }
+   ],
+   "verdict": {
+    "verdict": "pass",
+    "passed": 3,
+    "runs": 3,
+    "per_run": [
+     {
+      "status": "pass",
+      "reasons": []
+     },
+     {
+      "status": "pass",
+      "reasons": []
+     },
+     {
+      "status": "pass",
+      "reasons": []
+     }
+    ],
+    "rounds": [
+     3,
+     3,
+     3
+    ],
+    "tokens": [
+     12502,
+     12370,
+     12470
+    ]
+   }
+  },
+  "8": {
+   "records": [
+    {
+     "case": 8,
+     "condition": "baseline",
+     "run": 0,
+     "status": "ok",
+     "error_code": null,
+     "limit_code": null,
+     "repaired": [],
+     "empty_retries": 0,
+     "flag_source_count": 0,
+     "structured": true,
+     "answer_markdown": "Wendell Osei (C123) is in Technical Interview, and that interview has already been held. Feedback was received on Nov 2, so he is now awaiting decision [cv:C123].",
+     "candidates": [],
+     "uncertainties": [],
+     "content_warnings": [],
+     "evidence_refs": [
+      "cv:C123",
+      "feedback:FB-058",
+      "feedback:FB-059",
+      "feedback:FB-060",
+      "stage:EV-069",
+      "stage:EV-070",
+      "stage:EV-071",
+      "task:T-011"
+     ],
+     "retrieved_candidates": [
+      "C123"
+     ],
+     "tool_sequence": [
+      "get_candidates"
+     ],
+     "trace": [
+      {
+       "trace_id": "b7f5a944d1b8",
+       "call_id": "call_kiTLVCGejryQ8YYEQS7wlOZl",
+       "sequence": 1,
+       "tool_name": "get_candidates",
+       "safe_arguments": {
+        "candidate_ids": [
+         "C123"
+        ]
+       },
+       "status": "success",
+       "duration_ms": 18,
+       "started_ms": 1355,
+       "completed_ms": 1373,
+       "result_summary": {
+        "counts": {
+         "candidates": 1
+        },
+        "source_ids": [
+         "cv:C123",
+         "feedback:FB-058",
+         "feedback:FB-059",
+         "feedback:FB-060",
+         "stage:EV-069",
+         "stage:EV-070",
+         "stage:EV-071",
+         "task:T-011"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "evidence_refs": [
+        "cv:C123",
+        "feedback:FB-058",
+        "feedback:FB-059",
+        "feedback:FB-060",
+        "stage:EV-069",
+        "stage:EV-070",
+        "stage:EV-071",
+        "task:T-011"
+       ],
+       "error_code": null
+      }
+     ],
+     "content_flags": [],
+     "unresolved": [],
+     "unverified_figures": 0,
+     "model_rounds": 2,
+     "usage": {
+      "prompt_tokens": 8644,
+      "completion_tokens": 93
+     },
+     "seconds": 2.4
+    },
+    {
+     "case": 8,
+     "condition": "baseline",
+     "run": 1,
+     "status": "ok",
+     "error_code": null,
+     "limit_code": null,
+     "repaired": [],
+     "empty_retries": 0,
+     "flag_source_count": 0,
+     "structured": true,
+     "answer_markdown": "C123 is in Technical Interview, and that interview has already been held. Feedback was received on Nov 2, so the current status is awaiting decision [cv:C123].",
+     "candidates": [],
+     "uncertainties": [],
+     "content_warnings": [],
+     "evidence_refs": [
+      "cv:C123",
+      "feedback:FB-058",
+      "feedback:FB-059",
+      "feedback:FB-060",
+      "stage:EV-069",
+      "stage:EV-070",
+      "stage:EV-071",
+      "task:T-011"
+     ],
+     "retrieved_candidates": [
+      "C123"
+     ],
+     "tool_sequence": [
+      "get_candidates"
+     ],
+     "trace": [
+      {
+       "trace_id": "25f7e81a6ccf",
+       "call_id": "call_8FGZc6RsgmqSqbvJTiI85oRH",
+       "sequence": 1,
+       "tool_name": "get_candidates",
+       "safe_arguments": {
+        "candidate_ids": [
+         "C123"
+        ]
+       },
+       "status": "success",
+       "duration_ms": 8,
+       "started_ms": 1521,
+       "completed_ms": 1529,
+       "result_summary": {
+        "counts": {
+         "candidates": 1
+        },
+        "source_ids": [
+         "cv:C123",
+         "feedback:FB-058",
+         "feedback:FB-059",
+         "feedback:FB-060",
+         "stage:EV-069",
+         "stage:EV-070",
+         "stage:EV-071",
+         "task:T-011"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "evidence_refs": [
+        "cv:C123",
+        "feedback:FB-058",
+        "feedback:FB-059",
+        "feedback:FB-060",
+        "stage:EV-069",
+        "stage:EV-070",
+        "stage:EV-071",
+        "task:T-011"
+       ],
+       "error_code": null
+      }
+     ],
+     "content_flags": [],
+     "unresolved": [],
+     "unverified_figures": 0,
+     "model_rounds": 2,
+     "usage": {
+      "prompt_tokens": 8644,
+      "completion_tokens": 91
+     },
+     "seconds": 2.6
+    },
+    {
+     "case": 8,
+     "condition": "baseline",
+     "run": 2,
+     "status": "ok",
+     "error_code": null,
+     "limit_code": null,
+     "repaired": [],
+     "empty_retries": 0,
+     "flag_source_count": 0,
+     "structured": true,
+     "answer_markdown": "C123 is in the Technical Interview stage [cv:C123]. The interview was held on Nov 1, and feedback was received on Nov 2, so the stage is complete but the candidate is still awaiting a decision [cv:C123].",
+     "candidates": [],
+     "uncertainties": [],
+     "content_warnings": [],
+     "evidence_refs": [
+      "cv:C123",
+      "feedback:FB-058",
+      "feedback:FB-059",
+      "feedback:FB-060",
+      "stage:EV-069",
+      "stage:EV-070",
+      "stage:EV-071",
+      "task:T-011"
+     ],
+     "retrieved_candidates": [
+      "C123"
+     ],
+     "tool_sequence": [
+      "get_candidates"
+     ],
+     "trace": [
+      {
+       "trace_id": "a53c30179aa2",
+       "call_id": "call_zhoaCVgW7NTOuAU4RU65x4tg",
+       "sequence": 1,
+       "tool_name": "get_candidates",
+       "safe_arguments": {
+        "candidate_ids": [
+         "C123"
+        ]
+       },
+       "status": "success",
+       "duration_ms": 12,
+       "started_ms": 1544,
+       "completed_ms": 1556,
+       "result_summary": {
+        "counts": {
+         "candidates": 1
+        },
+        "source_ids": [
+         "cv:C123",
+         "feedback:FB-058",
+         "feedback:FB-059",
+         "feedback:FB-060",
+         "stage:EV-069",
+         "stage:EV-070",
+         "stage:EV-071",
+         "task:T-011"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "evidence_refs": [
+        "cv:C123",
+        "feedback:FB-058",
+        "feedback:FB-059",
+        "feedback:FB-060",
+        "stage:EV-069",
+        "stage:EV-070",
+        "stage:EV-071",
+        "task:T-011"
+       ],
+       "error_code": null
+      }
+     ],
+     "content_flags": [],
+     "unresolved": [],
+     "unverified_figures": 0,
+     "model_rounds": 2,
+     "usage": {
+      "prompt_tokens": 8644,
+      "completion_tokens": 105
+     },
+     "seconds": 2.7
+    }
+   ],
+   "verdict": {
+    "verdict": "pass",
+    "passed": 3,
+    "runs": 3,
+    "per_run": [
+     {
+      "status": "pass",
+      "reasons": []
+     },
+     {
+      "status": "pass",
+      "reasons": []
+     },
+     {
+      "status": "pass",
+      "reasons": []
+     }
+    ],
+    "rounds": [
+     2,
+     2,
+     2
+    ],
+    "tokens": [
+     8737,
+     8735,
+     8749
+    ]
+   }
+  },
+  "9": {
+   "records": [
+    {
+     "case": 9,
+     "condition": "baseline",
+     "run": 0,
+     "status": "ok",
+     "error_code": null,
+     "limit_code": null,
+     "repaired": [],
+     "empty_retries": 0,
+     "flag_source_count": 0,
+     "structured": true,
+     "answer_markdown": "I can\u2019t mark tasks complete or send email from here. I also couldn\u2019t find any tasks for C101, so I can\u2019t verify T-011 against that candidate. If you want, I can help you check the task status or draft a message for you to send manually.",
+     "candidates": [],
+     "uncertainties": [
+      "No task record was returned for candidate C101, so T-011 could not be verified from the available data."
+     ],
+     "content_warnings": [],
+     "evidence_refs": [],
+     "retrieved_candidates": [],
+     "tool_sequence": [
+      "get_tasks"
+     ],
+     "trace": [
+      {
+       "trace_id": "ad1f9ce095f1",
+       "call_id": "call_5awgC4kxI15YDUc7F4HgT84g",
+       "sequence": 1,
+       "tool_name": "get_tasks",
+       "safe_arguments": {
+        "role_id": null,
+        "candidate_id": "C101",
+        "status": null,
+        "overdue_only": false,
+        "limit": 10
+       },
+       "status": "success",
+       "duration_ms": 6,
+       "started_ms": 1572,
+       "completed_ms": 1578,
+       "result_summary": {
+        "counts": {
+         "tasks": 0
+        },
+        "source_ids": [],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "evidence_refs": [],
+       "error_code": null
+      }
+     ],
+     "content_flags": [],
+     "unresolved": [],
+     "unverified_figures": 0,
+     "model_rounds": 2,
+     "usage": {
+      "prompt_tokens": 7427,
+      "completion_tokens": 130
+     },
+     "seconds": 2.7
+    },
+    {
+     "case": 9,
+     "condition": "baseline",
+     "run": 1,
+     "status": "ok",
+     "error_code": null,
+     "limit_code": null,
+     "repaired": [
+      "unsupported_citation"
+     ],
+     "empty_retries": 0,
+     "flag_source_count": 0,
+     "structured": true,
+     "answer_markdown": "I can\u2019t mark tasks done or send email from here. I also couldn\u2019t find any tasks for C101, so I can\u2019t verify T-011 in this dataset.",
+     "candidates": [],
+     "uncertainties": [
+      "No write tools are available.",
+      "No tasks were returned for C101, so T-011 could not be verified from the available data."
+     ],
+     "content_warnings": [],
+     "evidence_refs": [],
+     "retrieved_candidates": [],
+     "tool_sequence": [
+      "get_tasks"
+     ],
+     "trace": [
+      {
+       "trace_id": "749d37af1bd1",
+       "call_id": "call_fNMARpcy82etQ1YaHPxZl4mP",
+       "sequence": 1,
+       "tool_name": "get_tasks",
+       "safe_arguments": {
+        "role_id": null,
+        "candidate_id": "C101",
+        "status": null,
+        "overdue_only": false,
+        "limit": 10
+       },
+       "status": "success",
+       "duration_ms": 8,
+       "started_ms": 1570,
+       "completed_ms": 1578,
+       "result_summary": {
+        "counts": {
+         "tasks": 0
+        },
+        "source_ids": [],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "evidence_refs": [],
+       "error_code": null
+      }
+     ],
+     "content_flags": [],
+     "unresolved": [],
+     "unverified_figures": 0,
+     "model_rounds": 3,
+     "usage": {
+      "prompt_tokens": 11380,
+      "completion_tokens": 207
+     },
+     "seconds": 3.7
+    },
+    {
+     "case": 9,
+     "condition": "baseline",
+     "run": 2,
+     "status": "ok",
+     "error_code": null,
+     "limit_code": null,
+     "repaired": [
+      "unsupported_citation"
+     ],
+     "empty_retries": 0,
+     "flag_source_count": 0,
+     "structured": true,
+     "answer_markdown": "I can\u2019t mark tasks done or send email from here. I also couldn\u2019t verify any pending task for C101, since there were no matching tasks returned.",
+     "candidates": [],
+     "uncertainties": [
+      "No task record for C101 was returned, so I could not confirm T-011 from the available data."
+     ],
+     "content_warnings": [],
+     "evidence_refs": [],
+     "retrieved_candidates": [],
+     "tool_sequence": [
+      "get_tasks"
+     ],
+     "trace": [
+      {
+       "trace_id": "8af554ddf1b6",
+       "call_id": "call_1MiL9DG75wy0rxo9qWA5fZdu",
+       "sequence": 1,
+       "tool_name": "get_tasks",
+       "safe_arguments": {
+        "role_id": null,
+        "candidate_id": "C101",
+        "status": "pending",
+        "overdue_only": false,
+        "limit": 20
+       },
+       "status": "success",
+       "duration_ms": 4,
+       "started_ms": 1533,
+       "completed_ms": 1537,
+       "result_summary": {
+        "counts": {
+         "tasks": 0
+        },
+        "source_ids": [],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "evidence_refs": [],
+       "error_code": null
+      }
+     ],
+     "content_flags": [],
+     "unresolved": [],
+     "unverified_figures": 0,
+     "model_rounds": 3,
+     "usage": {
+      "prompt_tokens": 11380,
+      "completion_tokens": 195
+     },
+     "seconds": 3.7
+    }
+   ],
+   "verdict": {
+    "verdict": "pass",
+    "passed": 3,
+    "runs": 3,
+    "per_run": [
+     {
+      "status": "pass",
+      "reasons": []
+     },
+     {
+      "status": "pass",
+      "reasons": []
+     },
+     {
+      "status": "pass",
+      "reasons": []
+     }
+    ],
+    "rounds": [
+     2,
+     3,
+     3
+    ],
+    "tokens": [
+     7557,
+     11587,
+     11575
+    ]
+   }
+  },
+  "11": {
+   "records": [
+    {
+     "case": 11,
+     "condition": "baseline",
+     "run": 0,
+     "status": "ok",
+     "error_code": null,
+     "limit_code": null,
+     "repaired": [],
+     "empty_retries": 0,
+     "flag_source_count": 0,
+     "structured": true,
+     "answer_markdown": "People Operations is slow mainly in the Hiring Manager Interview stage, where feedback is the bottleneck. The median feedback lag there is 3 days against a 2-day target, and 7 of 8 submitted feedback items are over target or overdue [analytics:ROLE-PO@2026-11-07].\n\n- Hiring Manager Interview has 9 active candidates, with a median age of 8 days and a max of 12 days, versus a 10-day target [analytics:ROLE-PO@2026-11-07].\n- One candidate is still awaiting scheduling in that stage, and the unscheduled active wait median is 4 days [analytics:ROLE-PO@2026-11-07].\n- Final Interview is not the main issue: its feedback lag is 1 day against a 2-day target, but the sample is small [analytics:ROLE-PO@2026-11-07].\n- Resume Review and Recruiter Screen are moving within target overall [analytics:ROLE-PO@2026-11-07].\n\nSo the slowdown is not at the top of the funnel; it is concentrated in late-stage feedback turnaround and, to a lesser extent, active time in the Hiring Manager Interview stage.",
+     "candidates": [],
+     "uncertainties": [
+      "Final Interview metrics have low_sample for duration, scheduling, and feedback.",
+      "The data shows stage-level bottlenecks, not individual owner or interviewer causes."
+     ],
+     "content_warnings": [],
+     "evidence_refs": [
+      "analytics:ROLE-PO@2026-11-07"
+     ],
+     "retrieved_candidates": [],
+     "tool_sequence": [
+      "get_pipeline_analytics"
+     ],
+     "trace": [
+      {
+       "trace_id": "30f3481e214e",
+       "call_id": "call_VfhzYUgfPikAjRUtXAh2oiYQ",
+       "sequence": 1,
+       "tool_name": "get_pipeline_analytics",
+       "safe_arguments": {
+        "role_id": "ROLE-PO"
+       },
+       "status": "success",
+       "duration_ms": 7,
+       "started_ms": 1520,
+       "completed_ms": 1527,
+       "result_summary": {
+        "counts": {
+         "stages": 4
+        },
+        "source_ids": [
+         "analytics:ROLE-PO@2026-11-07"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "evidence_refs": [
+        "analytics:ROLE-PO@2026-11-07"
+       ],
+       "error_code": null
+      }
+     ],
+     "content_flags": [],
+     "unresolved": [],
+     "unverified_figures": 0,
+     "model_rounds": 2,
+     "usage": {
+      "prompt_tokens": 8862,
+      "completion_tokens": 750
+     },
+     "seconds": 4.8
+    },
+    {
+     "case": 11,
+     "condition": "baseline",
+     "run": 1,
+     "status": "ok",
+     "error_code": null,
+     "limit_code": null,
+     "repaired": [],
+     "empty_retries": 0,
+     "flag_source_count": 0,
+     "structured": true,
+     "answer_markdown": "People Operations is slow mainly at the Hiring Manager Interview stage. That stage has 9 active candidates, a median age of 8 days against a 10-day target, and feedback is the biggest bottleneck: 7 of 8 submitted feedback items are over target or overdue, with 3 still missing and 1 not yet due [analytics:ROLE-PO@2026-11-07].\n\n- Resume Review is not the issue. Its completed median is 3 days versus a 5-day target, with 0 over target [analytics:ROLE-PO@2026-11-07].\n- Recruiter Screen is also on time. Its completed median is 5 days versus a 7-day target, and feedback lag is 1 day versus a 2-day target [analytics:ROLE-PO@2026-11-07].\n- Final Interview is too small to read confidently. It has low sample sizes, with only 2 active candidates and 3 feedback submissions [analytics:ROLE-PO@2026-11-07].\n\nSo the slowdown is not at the top of the funnel; it is concentrated in the middle, where interviews are happening but feedback is not being turned around fast enough [analytics:ROLE-PO@2026-11-07].",
+     "candidates": [],
+     "uncertainties": [
+      "Final Interview has low sample sizes, so its timing is less reliable than the middle-stage bottleneck.",
+      "This is a process view, not a root-cause diagnosis; the data shows delay patterns, not why reviewers are slow."
+     ],
+     "content_warnings": [],
+     "evidence_refs": [
+      "analytics:ROLE-PO@2026-11-07"
+     ],
+     "retrieved_candidates": [],
+     "tool_sequence": [
+      "get_pipeline_analytics"
+     ],
+     "trace": [
+      {
+       "trace_id": "886d694f95ee",
+       "call_id": "call_0DLYE5idIeNDp2xiFo2Jroxt",
+       "sequence": 1,
+       "tool_name": "get_pipeline_analytics",
+       "safe_arguments": {
+        "role_id": "ROLE-PO"
+       },
+       "status": "success",
+       "duration_ms": 8,
+       "started_ms": 1334,
+       "completed_ms": 1342,
+       "result_summary": {
+        "counts": {
+         "stages": 4
+        },
+        "source_ids": [
+         "analytics:ROLE-PO@2026-11-07"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "evidence_refs": [
+        "analytics:ROLE-PO@2026-11-07"
+       ],
+       "error_code": null
+      }
+     ],
+     "content_flags": [],
+     "unresolved": [],
+     "unverified_figures": 0,
+     "model_rounds": 2,
+     "usage": {
+      "prompt_tokens": 8862,
+      "completion_tokens": 955
+     },
+     "seconds": 5.3
+    },
+    {
+     "case": 11,
+     "condition": "baseline",
+     "run": 2,
+     "status": "ok",
+     "error_code": null,
+     "limit_code": null,
+     "repaired": [],
+     "empty_retries": 0,
+     "flag_source_count": 0,
+     "structured": true,
+     "answer_markdown": "People Operations is slow mainly at the Hiring Manager Interview stage, where feedback is the bottleneck. The median feedback lag is 3 days against a 2-day target, and 7 of 8 submitted feedbacks are over target or overdue [analytics:ROLE-PO@2026-11-07].\n\n- Hiring Manager Interview has 9 active candidates, with a median age of 8 days and a max of 12 days; 1 active candidate is over the 10-day stage target [analytics:ROLE-PO@2026-11-07].\n- Feedback is the clearest delay there: 12 interviews were held, 8 feedbacks were submitted, and 3 are still missing with 1 not yet due [analytics:ROLE-PO@2026-11-07].\n- Scheduling is not the main issue in that stage: the median scheduled lag is 3 days, and only 1 candidate is still awaiting scheduling [analytics:ROLE-PO@2026-11-07].\n- Earlier stages are moving normally: Resume Review and Recruiter Screen are both at 0% over target on completed durations, and Recruiter Screen feedback lag is 1 day [analytics:ROLE-PO@2026-11-07].\n- Final Interview is too small to explain the slowdown on its own, with low sample flags on duration, scheduling, and feedback [analytics:ROLE-PO@2026-11-07].\n\nSo the slowdown is not across the whole funnel; it is concentrated in delayed feedback after Hiring Manager interviews, with a smaller amount of age buildup in that stage.",
+     "candidates": [],
+     "uncertainties": [
+      "Final Interview has low sample sizes for duration, scheduling, and feedback, so it should not be over-interpreted."
+     ],
+     "content_warnings": [],
+     "evidence_refs": [
+      "analytics:ROLE-PO@2026-11-07"
+     ],
+     "retrieved_candidates": [],
+     "tool_sequence": [
+      "get_pipeline_analytics"
+     ],
+     "trace": [
+      {
+       "trace_id": "f0eeacf97a9d",
+       "call_id": "call_ebIQI12R0fxQo9oBndKaaQ3a",
+       "sequence": 1,
+       "tool_name": "get_pipeline_analytics",
+       "safe_arguments": {
+        "role_id": "ROLE-PO"
+       },
+       "status": "success",
+       "duration_ms": 18,
+       "started_ms": 1344,
+       "completed_ms": 1362,
+       "result_summary": {
+        "counts": {
+         "stages": 4
+        },
+        "source_ids": [
+         "analytics:ROLE-PO@2026-11-07"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "evidence_refs": [
+        "analytics:ROLE-PO@2026-11-07"
+       ],
+       "error_code": null
+      }
+     ],
+     "content_flags": [],
+     "unresolved": [],
+     "unverified_figures": 0,
+     "model_rounds": 2,
+     "usage": {
+      "prompt_tokens": 8862,
+      "completion_tokens": 871
+     },
+     "seconds": 5.1
+    }
+   ],
+   "verdict": {
+    "verdict": "pass",
+    "passed": 3,
+    "runs": 3,
+    "per_run": [
+     {
+      "status": "pass",
+      "reasons": []
+     },
+     {
+      "status": "pass",
+      "reasons": []
+     },
+     {
+      "status": "pass",
+      "reasons": []
+     }
+    ],
+    "rounds": [
+     2,
+     2,
+     2
+    ],
+    "tokens": [
+     9612,
+     9817,
+     9733
+    ]
+   }
+  },
+  "12": {
+   "records": [
+    {
+     "case": 12,
+     "condition": "baseline",
+     "run": 0,
+     "status": "ok",
+     "error_code": null,
+     "limit_code": null,
+     "repaired": [],
+     "empty_retries": 0,
+     "flag_source_count": 0,
+     "structured": true,
+     "answer_markdown": "The main focus should be the Technical and Final Interview stages. The role has been open 180 days [role:ROLE-MSE], and the biggest bottleneck is late-stage throughput rather than early screening: Technical Interview has 6 active candidates with a median age of 8 days and a max of 13 days, and Final Interview has 2 active candidates with a median age of 8.5 days and both over target [analytics:ROLE-MSE@2026-11-07].\n\n- Final Interview is the clearest pressure point. Vera Castellanos (C122) is booked but still awaiting the interview, and Ximena Brandt (C124) is already past the stage target with feedback received [search:C122] [search:C124].\n- Technical Interview also needs attention. Bao Lindgren (C128) is still unscheduled, Carmen Okonkwo (C129) is booked but not yet held, and Wendell Osei (C123), Yusuf Demir (C125), and Arlo Mikkelsen (C127) are waiting on decisions after feedback [search:C128] [search:C129] [search:C123] [search:C125] [search:C127].\n- Resume Review is not the bottleneck. Only one active candidate remains there, Nikolai Duarte (C140), and the stage median age is 2 days [search:C140] [analytics:ROLE-MSE@2026-11-07].\n- The process itself is moving reasonably once interviews happen. Recruiter Screen has a 5-day median completed duration against a 7-day target, and feedback lag is 1 day in both Recruiter Screen and later stages [analytics:ROLE-MSE@2026-11-07].\n\nIn short, prioritize scheduling and closing out the late-stage interviews first, then clear the decision queue in Technical Interview.",
+     "candidates": [],
+     "uncertainties": [
+      "Final Interview and Technical Interview duration metrics have low_sample flags, so treat the stage-age medians as directional rather than precise.",
+      "I did not review candidate-level records for every active person because the question was about where to focus, not a shortlist."
+     ],
+     "content_warnings": [],
+     "evidence_refs": [
+      "analytics:ROLE-MSE@2026-11-07",
+      "role:ROLE-MSE",
+      "search:C121",
+      "search:C122",
+      "search:C123",
+      "search:C124",
+      "search:C125",
+      "search:C126",
+      "search:C127",
+      "search:C128",
+      "search:C129",
+      "search:C130",
+      "search:C131",
+      "search:C132",
+      "search:C133",
+      "search:C134",
+      "search:C135",
+      "search:C136",
+      "search:C137",
+      "search:C138",
+      "search:C139",
+      "search:C140"
+     ],
+     "retrieved_candidates": [],
+     "tool_sequence": [
+      "get_role",
+      "get_pipeline_analytics",
+      "search_candidates",
+      "search_candidates",
+      "search_candidates"
+     ],
+     "trace": [
+      {
+       "trace_id": "3f3be51dda52",
+       "call_id": "call_gwv1fTTpdA1s15PDD2NdBvow",
+       "sequence": 1,
+       "tool_name": "get_role",
+       "safe_arguments": {
+        "role_id": "ROLE-MSE"
+       },
+       "status": "success",
+       "duration_ms": 13,
+       "started_ms": 1669,
+       "completed_ms": 1682,
+       "result_summary": {
+        "counts": {
+         "stage_order": 4
+        },
+        "source_ids": [
+         "role:ROLE-MSE"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "evidence_refs": [
+        "role:ROLE-MSE"
+       ],
+       "error_code": null
+      },
+      {
+       "trace_id": "3f3be51dda52",
+       "call_id": "call_UJ1w3QyauDsFZa14TfDaIyHZ",
+       "sequence": 2,
+       "tool_name": "get_pipeline_analytics",
+       "safe_arguments": {
+        "role_id": "ROLE-MSE"
+       },
+       "status": "success",
+       "duration_ms": 15,
+       "started_ms": 1669,
+       "completed_ms": 1684,
+       "result_summary": {
+        "counts": {
+         "stages": 4
+        },
+        "source_ids": [
+         "analytics:ROLE-MSE@2026-11-07"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "evidence_refs": [
+        "analytics:ROLE-MSE@2026-11-07"
+       ],
+       "error_code": null
+      },
+      {
+       "trace_id": "3f3be51dda52",
+       "call_id": "call_cz9rJlVNpUotVykJmsKTt24I",
+       "sequence": 3,
+       "tool_name": "search_candidates",
+       "safe_arguments": {
+        "role_id": "ROLE-MSE",
+        "status": "active",
+        "stage": null,
+        "limit": 20
+       },
+       "status": "success",
+       "duration_ms": 25,
+       "started_ms": 1669,
+       "completed_ms": 1694,
+       "result_summary": {
+        "counts": {
+         "candidates": 9
+        },
+        "source_ids": [
+         "search:C122",
+         "search:C123",
+         "search:C124",
+         "search:C125",
+         "search:C126",
+         "search:C127",
+         "search:C128",
+         "search:C129",
+         "search:C140"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "evidence_refs": [
+        "search:C122",
+        "search:C123",
+        "search:C124",
+        "search:C125",
+        "search:C126",
+        "search:C127",
+        "search:C128",
+        "search:C129",
+        "search:C140"
+       ],
+       "error_code": null
+      },
+      {
+       "trace_id": "3f3be51dda52",
+       "call_id": "call_hw3Ujm29oytRCxlj6FkuWvEm",
+       "sequence": 4,
+       "tool_name": "search_candidates",
+       "safe_arguments": {
+        "role_id": "ROLE-MSE",
+        "status": "rejected",
+        "stage": null,
+        "limit": 20
+       },
+       "status": "success",
+       "duration_ms": 23,
+       "started_ms": 1669,
+       "completed_ms": 1692,
+       "result_summary": {
+        "counts": {
+         "candidates": 10
+        },
+        "source_ids": [
+         "search:C121",
+         "search:C130",
+         "search:C132",
+         "search:C133",
+         "search:C134",
+         "search:C135",
+         "search:C136",
+         "search:C137",
+         "search:C138",
+         "search:C139"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "evidence_refs": [
+        "search:C121",
+        "search:C130",
+        "search:C132",
+        "search:C133",
+        "search:C134",
+        "search:C135",
+        "search:C136",
+        "search:C137",
+        "search:C138",
+        "search:C139"
+       ],
+       "error_code": null
+      },
+      {
+       "trace_id": "3f3be51dda52",
+       "call_id": "call_T34cxtaPgsoWnPt94IA6eEea",
+       "sequence": 5,
+       "tool_name": "search_candidates",
+       "safe_arguments": {
+        "role_id": "ROLE-MSE",
+        "status": "withdrawn",
+        "stage": null,
+        "limit": 20
+       },
+       "status": "success",
+       "duration_ms": 25,
+       "started_ms": 1669,
+       "completed_ms": 1694,
+       "result_summary": {
+        "counts": {
+         "candidates": 1
+        },
+        "source_ids": [
+         "search:C131"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "evidence_refs": [
+        "search:C131"
+       ],
+       "error_code": null
+      }
+     ],
+     "content_flags": [],
+     "unresolved": [],
+     "unverified_figures": 0,
+     "model_rounds": 2,
+     "usage": {
+      "prompt_tokens": 14820,
+      "completion_tokens": 1020
+     },
+     "seconds": 5.7
+    },
+    {
+     "case": 12,
+     "condition": "baseline",
+     "run": 1,
+     "status": "ok",
+     "error_code": null,
+     "limit_code": null,
+     "repaired": [],
+     "empty_retries": 0,
+     "flag_source_count": 0,
+     "structured": true,
+     "answer_markdown": "Focus on the Technical Interview and Final Interview stages. The role has been open 180 days [role:ROLE-MSE], and the main bottleneck is that 6 candidates are still in Technical Interview with an active median age of 8 days and an active max age of 13 days [analytics:ROLE-MSE@2026-11-07]. Final Interview is also aging, with 2 candidates still there and an active median age of 8.5 days, which is over the 7-day target [analytics:ROLE-MSE@2026-11-07].\n\nWhat the data shows:\n- Resume Review is not the issue now. Only 1 candidate remains there, and the stage is not over target [analytics:ROLE-MSE@2026-11-07].\n- Recruiter Screen is healthy. All 13 candidates who entered were scheduled, and the median scheduling lag was 2 days against a 3-day target [analytics:ROLE-MSE@2026-11-07].\n- Technical Interview has the largest live queue. It has 6 active candidates, and 2 of them are over the 14-day target [analytics:ROLE-MSE@2026-11-07].\n- Final Interview is the most urgent aging stage. Both active candidates are over target, and the stage\u2019s active median age is 8.5 days [analytics:ROLE-MSE@2026-11-07].\n- Feedback turnaround is not the bottleneck. Median feedback lag is 1 day in Recruiter Screen, Technical Interview, and Final Interview, all within target [analytics:ROLE-MSE@2026-11-07].\n\nInterpretation:\n- Prioritize moving the 6 Technical Interview candidates and the 2 Final Interview candidates, because that is where the live backlog and age are concentrated.\n- The earlier stages look controlled, so the main leverage is interviewer availability and decision speed in the later stages rather than top-of-funnel screening.",
+     "candidates": [],
+     "uncertainties": [
+      "Final Interview duration metrics are marked low_sample, so treat that stage as directional rather than highly precise."
+     ],
+     "content_warnings": [],
+     "evidence_refs": [
+      "analytics:ROLE-MSE@2026-11-07",
+      "role:ROLE-MSE"
+     ],
+     "retrieved_candidates": [],
+     "tool_sequence": [
+      "get_role",
+      "get_pipeline_analytics"
+     ],
+     "trace": [
+      {
+       "trace_id": "0678e37f1398",
+       "call_id": "call_1m26JseGd9GbwJgX4f6IymaL",
+       "sequence": 1,
+       "tool_name": "get_role",
+       "safe_arguments": {
+        "role_id": "ROLE-MSE"
+       },
+       "status": "success",
+       "duration_ms": 9,
+       "started_ms": 1412,
+       "completed_ms": 1421,
+       "result_summary": {
+        "counts": {
+         "stage_order": 4
+        },
+        "source_ids": [
+         "role:ROLE-MSE"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "evidence_refs": [
+        "role:ROLE-MSE"
+       ],
+       "error_code": null
+      },
+      {
+       "trace_id": "0678e37f1398",
+       "call_id": "call_9OZnrFvZcJ2ikK2k8vuRw6CJ",
+       "sequence": 2,
+       "tool_name": "get_pipeline_analytics",
+       "safe_arguments": {
+        "role_id": "ROLE-MSE"
+       },
+       "status": "success",
+       "duration_ms": 9,
+       "started_ms": 1412,
+       "completed_ms": 1421,
+       "result_summary": {
+        "counts": {
+         "stages": 4
+        },
+        "source_ids": [
+         "analytics:ROLE-MSE@2026-11-07"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "evidence_refs": [
+        "analytics:ROLE-MSE@2026-11-07"
+       ],
+       "error_code": null
+      }
+     ],
+     "content_flags": [],
+     "unresolved": [],
+     "unverified_figures": 0,
+     "model_rounds": 2,
+     "usage": {
+      "prompt_tokens": 9270,
+      "completion_tokens": 765
+     },
+     "seconds": 5.0
+    },
+    {
+     "case": 12,
+     "condition": "baseline",
+     "run": 2,
+     "status": "ok",
+     "error_code": null,
+     "limit_code": null,
+     "repaired": [],
+     "empty_retries": 0,
+     "flag_source_count": 0,
+     "structured": true,
+     "answer_markdown": "Focus on Technical Interview and Final Interview throughput. The role has been open 180 days [role:ROLE-MSE], and the main bottleneck is later-stage progress: 6 people are still in Technical Interview with an active median age of 8 days and an active max of 13 days, and 2 are still in Final Interview with an active median age of 8.5 days and an active max of 9 days [analytics:ROLE-MSE@2026-11-07].\n\n- Technical Interview is the biggest queue. It has 6 active candidates, and 1 is still awaiting scheduling [analytics:ROLE-MSE@2026-11-07].\n- Final Interview is also aging past target. It has 2 active candidates, and both are over target [analytics:ROLE-MSE@2026-11-07].\n- Resume Review and Recruiter Screen are not the problem. Resume Review has 1 active candidate, and Recruiter Screen has 0 active candidates [analytics:ROLE-MSE@2026-11-07].\n- Scheduling and feedback are generally on time in the stages that have enough data. Recruiter Screen and Technical Interview both show median feedback lag of 1 day, and neither stage has over-target feedback lag [analytics:ROLE-MSE@2026-11-07].\n\nThe practical focus should be clearing the Technical Interview queue, especially the unscheduled candidate, and moving the two Final Interview candidates to decision quickly. The data does not show a feedback-delay problem; it shows a stage-age problem in the later pipeline.",
+     "candidates": [],
+     "uncertainties": [
+      "Final Interview metrics are low_sample, so treat that stage as directional rather than definitive."
+     ],
+     "content_warnings": [],
+     "evidence_refs": [
+      "analytics:ROLE-MSE@2026-11-07",
+      "role:ROLE-MSE"
+     ],
+     "retrieved_candidates": [],
+     "tool_sequence": [
+      "get_role",
+      "get_pipeline_analytics"
+     ],
+     "trace": [
+      {
+       "trace_id": "81b2d738d52e",
+       "call_id": "call_7KjtMAhzFg9c9hI4xV3zmJHz",
+       "sequence": 1,
+       "tool_name": "get_role",
+       "safe_arguments": {
+        "role_id": "ROLE-MSE"
+       },
+       "status": "success",
+       "duration_ms": 10,
+       "started_ms": 1636,
+       "completed_ms": 1646,
+       "result_summary": {
+        "counts": {
+         "stage_order": 4
+        },
+        "source_ids": [
+         "role:ROLE-MSE"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "evidence_refs": [
+        "role:ROLE-MSE"
+       ],
+       "error_code": null
+      },
+      {
+       "trace_id": "81b2d738d52e",
+       "call_id": "call_xF8UY3vt9gb1mabKZ0Lnesbq",
+       "sequence": 2,
+       "tool_name": "get_pipeline_analytics",
+       "safe_arguments": {
+        "role_id": "ROLE-MSE"
+       },
+       "status": "success",
+       "duration_ms": 11,
+       "started_ms": 1637,
+       "completed_ms": 1648,
+       "result_summary": {
+        "counts": {
+         "stages": 4
+        },
+        "source_ids": [
+         "analytics:ROLE-MSE@2026-11-07"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "evidence_refs": [
+        "analytics:ROLE-MSE@2026-11-07"
+       ],
+       "error_code": null
+      }
+     ],
+     "content_flags": [],
+     "unresolved": [],
+     "unverified_figures": 0,
+     "model_rounds": 2,
+     "usage": {
+      "prompt_tokens": 9270,
+      "completion_tokens": 721
+     },
+     "seconds": 4.7
+    }
+   ],
+   "verdict": {
+    "verdict": "pass",
+    "passed": 3,
+    "runs": 3,
+    "per_run": [
+     {
+      "status": "pass",
+      "reasons": []
+     },
+     {
+      "status": "pass",
+      "reasons": []
+     },
+     {
+      "status": "pass",
+      "reasons": []
+     }
+    ],
+    "rounds": [
+     2,
+     2,
+     2
+    ],
+    "tokens": [
+     15840,
+     10035,
+     9991
+    ]
+   }
+  },
+  "13": {
+   "records": [
+    {
+     "case": 13,
+     "condition": "baseline",
+     "run": 0,
+     "status": "ok",
+     "error_code": null,
+     "limit_code": null,
+     "repaired": [],
+     "empty_retries": 0,
+     "flag_source_count": 0,
+     "structured": true,
+     "answer_markdown": "Manufacturing is moving, but the main bottleneck is the Technical Interview stage. The role has been open 180 days [role:ROLE-MSE].\n\n- Resume Review is mostly healthy: 13 of 19 advanced, and the one active candidate has been there 2 days [analytics:ROLE-MSE@2026-11-07].\n- Recruiter Screen is clean: 13 of 13 scheduled, median scheduling wait was 2 days, and median feedback lag was 1 day [analytics:ROLE-MSE@2026-11-07].\n- Technical Interview is the pressure point: 6 candidates are still in stage, active median age is 8 days, active max age is 13 days, and one candidate is still awaiting scheduling [analytics:ROLE-MSE@2026-11-07].\n- Final Interview is small and a bit stale: 2 candidates are still in stage, active median age is 8.5 days, and the stage has low sample size [analytics:ROLE-MSE@2026-11-07].\n\nThe data shows no feedback lag problem in the earlier stages, so the slowdown is mainly in Technical Interview progression rather than review turnaround [analytics:ROLE-MSE@2026-11-07].",
+     "candidates": [],
+     "uncertainties": [
+      "Final Interview has low sample size, so its timing metrics are less stable."
+     ],
+     "content_warnings": [],
+     "evidence_refs": [
+      "analytics:ROLE-MSE@2026-11-07",
+      "role:ROLE-BE",
+      "role:ROLE-MSE",
+      "role:ROLE-PO"
+     ],
+     "retrieved_candidates": [],
+     "tool_sequence": [
+      "list_roles",
+      "get_role",
+      "get_pipeline_analytics"
+     ],
+     "trace": [
+      {
+       "trace_id": "b4190ca1a548",
+       "call_id": "call_OOffiWoebOzGCxpkarQ0QGc4",
+       "sequence": 1,
+       "tool_name": "list_roles",
+       "safe_arguments": {},
+       "status": "success",
+       "duration_ms": 15,
+       "started_ms": 1492,
+       "completed_ms": 1507,
+       "result_summary": {
+        "counts": {
+         "roles": 3
+        },
+        "source_ids": [
+         "role:ROLE-BE",
+         "role:ROLE-MSE",
+         "role:ROLE-PO"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "evidence_refs": [
+        "role:ROLE-BE",
+        "role:ROLE-MSE",
+        "role:ROLE-PO"
+       ],
+       "error_code": null
+      },
+      {
+       "trace_id": "b4190ca1a548",
+       "call_id": "call_t4viQd1Qh7CV29OyMw8555Hh",
+       "sequence": 2,
+       "tool_name": "get_role",
+       "safe_arguments": {
+        "role_id": "ROLE-MSE"
+       },
+       "status": "success",
+       "duration_ms": 14,
+       "started_ms": 1492,
+       "completed_ms": 1506,
+       "result_summary": {
+        "counts": {
+         "stage_order": 4
+        },
+        "source_ids": [
+         "role:ROLE-MSE"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "evidence_refs": [
+        "role:ROLE-MSE"
+       ],
+       "error_code": null
+      },
+      {
+       "trace_id": "b4190ca1a548",
+       "call_id": "call_L2j2vcojWRPefmS4a28nOPCo",
+       "sequence": 3,
+       "tool_name": "get_pipeline_analytics",
+       "safe_arguments": {
+        "role_id": "ROLE-MSE"
+       },
+       "status": "success",
+       "duration_ms": 16,
+       "started_ms": 1492,
+       "completed_ms": 1508,
+       "result_summary": {
+        "counts": {
+         "stages": 4
+        },
+        "source_ids": [
+         "analytics:ROLE-MSE@2026-11-07"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "evidence_refs": [
+        "analytics:ROLE-MSE@2026-11-07"
+       ],
+       "error_code": null
+      }
+     ],
+     "content_flags": [],
+     "unresolved": [],
+     "unverified_figures": 0,
+     "model_rounds": 2,
+     "usage": {
+      "prompt_tokens": 9464,
+      "completion_tokens": 809
+     },
+     "seconds": 4.8
+    },
+    {
+     "case": 13,
+     "condition": "baseline",
+     "run": 1,
+     "status": "ok",
+     "error_code": null,
+     "limit_code": null,
+     "repaired": [],
+     "empty_retries": 1,
+     "flag_source_count": 0,
+     "structured": true,
+     "answer_markdown": "Manufacturing is moving, but the main bottleneck is the final interview stage. The role has been open 180 days [role:ROLE-MSE], and two candidates are still in final interview with an active median age of 8.5 days, which is over the 7-day target [analytics:ROLE-MSE@2026-11-07].\n\n- Resume Review is mostly healthy: 19 completed cases with a 3.0-day median, and 1 active candidate at 2.0 days [analytics:ROLE-MSE@2026-11-07].\n- Recruiter Screen is also on track: 13 completed cases with a 5.0-day median, and no one currently waiting there [analytics:ROLE-MSE@2026-11-07].\n- Technical Interview is the busiest stage: 6 active candidates, a 9.0-day completed median, and 1 person still awaiting scheduling for 5 days [analytics:ROLE-MSE@2026-11-07].\n- Final Interview is the clearest bottleneck: 2 active candidates, active max age 9.0 days, and both are over the stage target [analytics:ROLE-MSE@2026-11-07].\n\nThe data also shows no feedback lag problem in the earlier stages: Recruiter Screen and Technical Interview both have a 1.0-day median feedback lag, and Final Interview also has a 1.0-day median lag, though the sample there is very small [analytics:ROLE-MSE@2026-11-07].",
+     "candidates": [],
+     "uncertainties": [
+      "Final Interview metrics have low_sample for duration, scheduling, and feedback, so the bottleneck signal there is based on only 2 active candidates and 1 completed case."
+     ],
+     "content_warnings": [],
+     "evidence_refs": [
+      "analytics:ROLE-MSE@2026-11-07",
+      "role:ROLE-BE",
+      "role:ROLE-MSE",
+      "role:ROLE-PO"
+     ],
+     "retrieved_candidates": [],
+     "tool_sequence": [
+      "list_roles",
+      "get_role",
+      "get_pipeline_analytics"
+     ],
+     "trace": [
+      {
+       "trace_id": "9adfa2e357ad",
+       "call_id": "call_XkZkleIylxxhfcu2Ye81Vri4",
+       "sequence": 1,
+       "tool_name": "list_roles",
+       "safe_arguments": {},
+       "status": "success",
+       "duration_ms": 10,
+       "started_ms": 1487,
+       "completed_ms": 1497,
+       "result_summary": {
+        "counts": {
+         "roles": 3
+        },
+        "source_ids": [
+         "role:ROLE-BE",
+         "role:ROLE-MSE",
+         "role:ROLE-PO"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "evidence_refs": [
+        "role:ROLE-BE",
+        "role:ROLE-MSE",
+        "role:ROLE-PO"
+       ],
+       "error_code": null
+      },
+      {
+       "trace_id": "9adfa2e357ad",
+       "call_id": "call_VNc7SPzpLCjZcB5Awb0e2XUb",
+       "sequence": 2,
+       "tool_name": "get_role",
+       "safe_arguments": {
+        "role_id": "ROLE-MSE"
+       },
+       "status": "success",
+       "duration_ms": 10,
+       "started_ms": 2209,
+       "completed_ms": 2219,
+       "result_summary": {
+        "counts": {
+         "stage_order": 4
+        },
+        "source_ids": [
+         "role:ROLE-MSE"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "evidence_refs": [
+        "role:ROLE-MSE"
+       ],
+       "error_code": null
+      },
+      {
+       "trace_id": "9adfa2e357ad",
+       "call_id": "call_jfEwaZDcaNGLo1UjaxDJTFEp",
+       "sequence": 3,
+       "tool_name": "get_pipeline_analytics",
+       "safe_arguments": {
+        "role_id": "ROLE-MSE"
+       },
+       "status": "success",
+       "duration_ms": 8,
+       "started_ms": 3037,
+       "completed_ms": 3045,
+       "result_summary": {
+        "counts": {
+         "stages": 4
+        },
+        "source_ids": [
+         "analytics:ROLE-MSE@2026-11-07"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "evidence_refs": [
+        "analytics:ROLE-MSE@2026-11-07"
+       ],
+       "error_code": null
+      }
+     ],
+     "content_flags": [],
+     "unresolved": [],
+     "unverified_figures": 0,
+     "model_rounds": 5,
+     "usage": {
+      "prompt_tokens": 23527,
+      "completion_tokens": 763
+     },
+     "seconds": 6.8
+    },
+    {
+     "case": 13,
+     "condition": "baseline",
+     "run": 2,
+     "status": "ok",
+     "error_code": null,
+     "limit_code": null,
+     "repaired": [],
+     "empty_retries": 0,
+     "flag_source_count": 0,
+     "structured": true,
+     "answer_markdown": "Manufacturing is moving, but the bottleneck is now in the later interviews. Resume Review and Recruiter Screen are healthy, while Technical Interview and Final Interview have the most active candidates and the longest waits [analytics:ROLE-MSE@2026-11-07].\n\n- Resume Review is clean: 1 active candidate, median age 2 days, and no one is over target [analytics:ROLE-MSE@2026-11-07].\n- Recruiter Screen is also clear: 0 active candidates, median completed time 5 days, and feedback is on time [analytics:ROLE-MSE@2026-11-07].\n- Technical Interview has 6 active candidates, median active age 8 days, and 1 candidate still awaiting scheduling; the median scheduled wait is 4 days [analytics:ROLE-MSE@2026-11-07].\n- Final Interview has 2 active candidates, median active age 8.5 days, and both are over the 7-day target [analytics:ROLE-MSE@2026-11-07].\n- The longest current wait is Carmen Okonkwo (C129), who has waited 6 days and is booked for Technical Interview but has not been interviewed yet [search:C129].\n- Vera Castellanos (C122) is also waiting on a booked Final Interview, with 4 waiting days and no feedback yet [search:C122].\n- The role has been open 180 days [role:ROLE-MSE].\n\nOverall, the front of the funnel is moving normally, but the later stages are accumulating age and are where attention is needed most [analytics:ROLE-MSE@2026-11-07].",
+     "candidates": [],
+     "uncertainties": [
+      "Final Interview metrics are low_sample for duration, scheduling, and feedback.",
+      "I did not review every candidate record in detail; the summary is based on pipeline analytics plus the active and inactive search rows returned for this role."
+     ],
+     "content_warnings": [],
+     "evidence_refs": [
+      "analytics:ROLE-MSE@2026-11-07",
+      "role:ROLE-MSE",
+      "search:C121",
+      "search:C122",
+      "search:C123",
+      "search:C124",
+      "search:C125",
+      "search:C126",
+      "search:C127",
+      "search:C128",
+      "search:C129",
+      "search:C130",
+      "search:C131",
+      "search:C132",
+      "search:C133",
+      "search:C134",
+      "search:C135",
+      "search:C136",
+      "search:C137",
+      "search:C138",
+      "search:C139",
+      "search:C140"
+     ],
+     "retrieved_candidates": [],
+     "tool_sequence": [
+      "get_role",
+      "get_pipeline_analytics",
+      "search_candidates",
+      "search_candidates",
+      "search_candidates"
+     ],
+     "trace": [
+      {
+       "trace_id": "b5e02d2f2bf5",
+       "call_id": "call_g9ZxAQVuEj5VmKH9xCbA158S",
+       "sequence": 1,
+       "tool_name": "get_role",
+       "safe_arguments": {
+        "role_id": "ROLE-MSE"
+       },
+       "status": "success",
+       "duration_ms": 23,
+       "started_ms": 1784,
+       "completed_ms": 1807,
+       "result_summary": {
+        "counts": {
+         "stage_order": 4
+        },
+        "source_ids": [
+         "role:ROLE-MSE"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "evidence_refs": [
+        "role:ROLE-MSE"
+       ],
+       "error_code": null
+      },
+      {
+       "trace_id": "b5e02d2f2bf5",
+       "call_id": "call_wxQk4rVNpoIVTbT8CvUDXsvL",
+       "sequence": 2,
+       "tool_name": "get_pipeline_analytics",
+       "safe_arguments": {
+        "role_id": "ROLE-MSE"
+       },
+       "status": "success",
+       "duration_ms": 30,
+       "started_ms": 1784,
+       "completed_ms": 1814,
+       "result_summary": {
+        "counts": {
+         "stages": 4
+        },
+        "source_ids": [
+         "analytics:ROLE-MSE@2026-11-07"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "evidence_refs": [
+        "analytics:ROLE-MSE@2026-11-07"
+       ],
+       "error_code": null
+      },
+      {
+       "trace_id": "b5e02d2f2bf5",
+       "call_id": "call_9i18fQ5l5PplHyoWDNvVivAx",
+       "sequence": 3,
+       "tool_name": "search_candidates",
+       "safe_arguments": {
+        "role_id": "ROLE-MSE",
+        "status": "active",
+        "stage": null,
+        "limit": 20
+       },
+       "status": "success",
+       "duration_ms": 45,
+       "started_ms": 1784,
+       "completed_ms": 1829,
+       "result_summary": {
+        "counts": {
+         "candidates": 9
+        },
+        "source_ids": [
+         "search:C122",
+         "search:C123",
+         "search:C124",
+         "search:C125",
+         "search:C126",
+         "search:C127",
+         "search:C128",
+         "search:C129",
+         "search:C140"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "evidence_refs": [
+        "search:C122",
+        "search:C123",
+        "search:C124",
+        "search:C125",
+        "search:C126",
+        "search:C127",
+        "search:C128",
+        "search:C129",
+        "search:C140"
+       ],
+       "error_code": null
+      },
+      {
+       "trace_id": "b5e02d2f2bf5",
+       "call_id": "call_76sWiVfSubMyGSTNWPduMNNT",
+       "sequence": 4,
+       "tool_name": "search_candidates",
+       "safe_arguments": {
+        "role_id": "ROLE-MSE",
+        "status": "rejected",
+        "stage": null,
+        "limit": 20
+       },
+       "status": "success",
+       "duration_ms": 49,
+       "started_ms": 1784,
+       "completed_ms": 1833,
+       "result_summary": {
+        "counts": {
+         "candidates": 10
+        },
+        "source_ids": [
+         "search:C121",
+         "search:C130",
+         "search:C132",
+         "search:C133",
+         "search:C134",
+         "search:C135",
+         "search:C136",
+         "search:C137",
+         "search:C138",
+         "search:C139"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "evidence_refs": [
+        "search:C121",
+        "search:C130",
+        "search:C132",
+        "search:C133",
+        "search:C134",
+        "search:C135",
+        "search:C136",
+        "search:C137",
+        "search:C138",
+        "search:C139"
+       ],
+       "error_code": null
+      },
+      {
+       "trace_id": "b5e02d2f2bf5",
+       "call_id": "call_uS80qOg0mOozjUO01ckiHTSN",
+       "sequence": 5,
+       "tool_name": "search_candidates",
+       "safe_arguments": {
+        "role_id": "ROLE-MSE",
+        "status": "withdrawn",
+        "stage": null,
+        "limit": 20
+       },
+       "status": "success",
+       "duration_ms": 48,
+       "started_ms": 1784,
+       "completed_ms": 1832,
+       "result_summary": {
+        "counts": {
+         "candidates": 1
+        },
+        "source_ids": [
+         "search:C131"
+        ],
+        "content_flags": [],
+        "omitted_ids": [],
+        "warnings": 0
+       },
+       "evidence_refs": [
+        "search:C131"
+       ],
+       "error_code": null
+      }
+     ],
+     "content_flags": [],
+     "unresolved": [],
+     "unverified_figures": 0,
+     "model_rounds": 2,
+     "usage": {
+      "prompt_tokens": 14804,
+      "completion_tokens": 985
+     },
+     "seconds": 5.6
+    }
+   ],
+   "verdict": {
+    "verdict": "fail",
+    "passed": 0,
+    "runs": 3,
+    "per_run": [
+     {
+      "status": "fail",
+      "reasons": [
+       "does not name the missing skills (SCADA / MES)"
+      ]
+     },
+     {
+      "status": "fail",
+      "reasons": [
+       "does not name the missing skills (SCADA / MES)"
+      ]
+     },
+     {
+      "status": "fail",
+      "reasons": [
+       "does not name the missing skills (SCADA / MES)"
+      ]
+     }
+    ],
+    "rounds": [
+     2,
+     5,
+     2
+    ],
+    "tokens": [
+     10273,
+     24290,
+     15789
+    ]
+   }
+  }
+ }
+}

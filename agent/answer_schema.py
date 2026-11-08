@@ -24,7 +24,7 @@ class CandidateEntry(_Strict):
 class Figure(_Strict):
     label: Annotated[str, Field(max_length=120)]
     value: StrictInt | StrictFloat          # a real number copied exactly from the tool result (booleans are rejected)
-    evidence: Annotated[str, Field(max_length=60, description="Source of the number: analytics:ROLE-BE@2026-11-07, task:T-004, or cv:C104 for a candidate's own numbers")]
+    evidence: Annotated[str, Field(max_length=60, description="Source of the number: analytics:ROLE-BE@<date>, task:T-004, or cv:C104 for a candidate's own numbers")]
     field_path: Annotated[str, Field(max_length=200, description="Where the exact value sits, e.g. stages[Technical Interview].scheduling.lag_median_scheduled_days, days_overdue, feedback_count, days_in_current_stage, fit_signals.avg_criteria_score")]
 
 
@@ -33,7 +33,7 @@ class SubmittedAnswer(_Strict):
     candidates: Annotated[list[CandidateEntry], Field(max_length=10)] = []
     figures: Annotated[list[Figure], Field(max_length=20)] = []
     uncertainties: Annotated[list[Annotated[str, Field(max_length=400)]], Field(max_length=10)] = []
-    content_warnings: Annotated[list[Annotated[str, Field(max_length=400)]], Field(max_length=10)] = []
+    content_warnings: Annotated[list[Annotated[str, Field(max_length=400)]], Field(max_length=10, description="Unused: leave empty. The application reports flagged content itself.")] = []
 
 
 DESCRIPTION = (
