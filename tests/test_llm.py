@@ -27,10 +27,10 @@ def run(llm, **kw):
 
 
 def test_parses_text_tool_calls_and_usage():
-    client, create = fake_client(NS(content=None, tool_calls=[tc("a", "get_role", '{"role_id": "ROLE-BE"}'), tc("b", "x", "{oops")]))
+    client, create = fake_client(NS(content=None, tool_calls=[tc("a", "get_pipeline_analytics", '{"role": "ROLE-BE"}'), tc("b", "x", "{oops")]))
     r = run(OpenAILLM("m", client=client), tools=[{"type": "function"}])
-    assert [(c.id, c.name, c.arguments) for c in r.tool_calls] == [("a", "get_role", {"role_id": "ROLE-BE"}), ("b", "x", None)]
-    assert r.message["tool_calls"][0]["function"]["arguments"] == '{"role_id": "ROLE-BE"}'     # sent back unchanged
+    assert [(c.id, c.name, c.arguments) for c in r.tool_calls] == [("a", "get_pipeline_analytics", {"role": "ROLE-BE"}), ("b", "x", None)]
+    assert r.message["tool_calls"][0]["function"]["arguments"] == '{"role": "ROLE-BE"}'     # sent back unchanged
     assert r.usage == {"prompt_tokens": 7, "completion_tokens": 3}
     assert create.kwargs["model"] == "m" and "temperature" not in create.kwargs and create.kwargs["tools"]
 

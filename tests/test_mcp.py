@@ -13,33 +13,35 @@ from fastmcp.client.transports import StdioTransport
 
 from data.seed import build, canonical_hash
 
-EXPECTED_TOOLS = {"list_roles", "get_role", "search_candidates", "get_candidates",
+EXPECTED_TOOLS = {"list_roles", "search_candidates", "get_candidates",
                   "get_candidate_communications", "get_pipeline_analytics", "get_tasks", "get_recruiting_overview"}
 CITATION = re.compile(r"^(cv:C\d{3}|search:C\d{3}|feedback:FB-\d{3}|stage:EV-\d{3}|email:EM-\d{3}|task:T-\d{3}|role:ROLE-[A-Z]{2,3}"
                       r"|analytics:ROLE-[A-Z]{2,3}@\d{4}-\d{2}-\d{2})$")
 
 CALLS = {  # key -> (tool, arguments)
     "roles": ("list_roles", {}),
-    "role": ("get_role", {"role_id": "ROLE-BE"}),
-    "search": ("search_candidates", {"role_id": "ROLE-BE"}),
-    "search_trunc": ("search_candidates", {"role_id": "ROLE-BE", "limit": 3}),
+    "by_name": ("search_candidates", {"name": "Hannelore"}),
+    "search": ("search_candidates", {"role": "ROLE-BE"}),
+    "search_trunc": ("search_candidates", {"role": "Backend Engineer", "limit": 3}),
+    "by_role": ("get_candidates", {"role": "Backend Engineer"}),
     "cands": ("get_candidates", {"candidate_ids": ["C123", "C999"]}),
     "c117": ("get_candidates", {"candidate_ids": ["C117"]}),
     "comms": ("get_candidate_communications", {"candidate_id": "C114"}),
-    "analytics": ("get_pipeline_analytics", {"role_id": "ROLE-BE"}),
+    "analytics": ("get_pipeline_analytics", {"role": "backend engineer"}),
     "tasks": ("get_tasks", {"overdue_only": True}),
     "tasks_trunc": ("get_tasks", {"limit": 5}),
     # expected failures
-    "role_unknown": ("get_role", {"role_id": "ROLE-ZZ"}),
+    "role_unknown": ("get_pipeline_analytics", {"role": "ROLE-ZZ"}),
     "comms_unknown": ("get_candidate_communications", {"candidate_id": "C999"}),
-    "tasks_unknown_cand": ("get_tasks", {"candidate_id": "C999"}),
+    "tasks_unknown_cand": ("get_tasks", {"candidate": "C999"}),
     "bad_id": ("get_candidates", {"candidate_ids": ["bad"]}),
-    "too_many": ("get_candidates", {"candidate_ids": [f"C{n}" for n in range(101, 108)]}),
+    "too_many": ("get_candidates", {"candidate_ids": [f"C{n}" for n in range(101, 122)]}),
+    "ids_and_role": ("get_candidates", {"candidate_ids": ["C104"], "role": "ROLE-BE"}),
     "empty": ("get_candidates", {"candidate_ids": []}),
-    "bad_limit": ("search_candidates", {"role_id": "ROLE-BE", "limit": 21}),
-    "bad_enum": ("search_candidates", {"role_id": "ROLE-BE", "status": "hired"}),
-    "extra_arg": ("get_role", {"role_id": "ROLE-BE", "sql": "DROP TABLE roles"}),
-    "bad_stage": ("search_candidates", {"role_id": "ROLE-BE", "stage": "Offer"}),
+    "bad_limit": ("search_candidates", {"role": "ROLE-BE", "limit": 21}),
+    "bad_enum": ("search_candidates", {"role": "ROLE-BE", "status": "hired"}),
+    "extra_arg": ("get_pipeline_analytics", {"role": "ROLE-BE", "sql": "DROP TABLE roles"}),
+    "bad_stage": ("search_candidates", {"role": "ROLE-BE", "stage": "Offer"}),
 }
 
 
@@ -87,7 +89,7 @@ def test_tools_have_when_to_use_descriptions_and_strict_schemas(session):
 
 
 def test_every_tool_succeeds_with_the_response_convention(session):
-    for key in ("roles", "role", "search", "cands", "comms", "analytics", "tasks"):
+    for key in ("roles", "by_name", "search", "by_role", "cands", "comms", "analytics", "tasks"):
         b = body(session, key)
         assert set(b) == {"data", "as_of", "source_refs", "warnings", "error"}, key
         assert b["as_of"] == "2026-11-07T12:00:00-08:00" and b["error"] is None
@@ -118,7 +120,8 @@ def test_unknown_candidate_is_reported_per_id_not_as_a_call_error(session):
 
 
 @pytest.mark.parametrize("key,code", [("role_unknown", "not_found"), ("comms_unknown", "not_found"),
-                                      ("tasks_unknown_cand", "not_found"), ("bad_stage", "invalid_argument")])
+                                      ("tasks_unknown_cand", "not_found"), ("bad_stage", "invalid_argument"),
+                                      ("ids_and_role", "invalid_argument")])
 def test_service_failures_return_stable_typed_errors(session, key, code):
     b = body(session, key)
     assert b["data"] is None and b["error"]["code"] == code and b["source_refs"] == []
@@ -138,7 +141,7 @@ def test_truncation_is_reported_in_warnings(session):
 
 
 def test_no_contact_addresses_are_ever_returned(session):
-    for key in ("search", "cands", "c117", "comms", "analytics", "tasks", "roles", "role"):
+    for key in ("search", "by_name", "by_role", "cands", "c117", "comms", "analytics", "tasks", "roles"):
         assert not re.search(r"\S+@\S+\.\S+", json.dumps(body(session, key))), key  # citations like ROLE-BE@date are fine
         assert "contact_email" not in json.dumps(body(session, key)), key
 
@@ -168,3 +171,12 @@ def test_search_rows_are_cited_as_search_and_only_retrieved_records_as_cv(sessio
     cands = body(session, "cands")["source_refs"]
     assert "cv:C123" in cands and not any(r.startswith("search:") for r in cands)
     assert all(CITATION.match(r) for r in search)
+
+
+def test_role_titles_resolve_and_a_whole_role_comes_back_in_one_call(session):
+    assert body(session, "analytics")["data"]["role_id"] == "ROLE-BE"                   # "backend engineer" -> ROLE-BE
+    rows = body(session, "by_role")["data"]["candidates"]
+    assert len(rows) == 8 and all(c["role_title"] == "Backend Engineer" for c in rows)
+    (h,) = body(session, "by_name")["data"]["candidates"]
+    assert h["candidate_id"] == "C108"
+    assert "Known roles: ROLE-BE (Backend Engineer)" in body(session, "role_unknown")["error"]["message"]

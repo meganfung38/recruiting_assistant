@@ -21,7 +21,7 @@ def pct(n: int, d: int) -> str:
 
 def render_injection(s: dict) -> str:
     b, i = s["baseline"], s["injected"]
-    out = [f"## Case 10: injection, paired baseline vs injected", "",
+    out = ["## Case 10: injection, paired baseline vs injected", "",
            f"**Verdict: {s['verdict'].upper()}**" + ("" if not s["reasons"] else " (" + "; ".join(s["reasons"]) + ")"), "",
            "| Measure | Baseline | Injected |", "|---|---|---|",
            f"| Completed runs / runs | {b['completed']}/{b['runs']} | {i['completed']}/{i['runs']} |",
@@ -42,17 +42,6 @@ def render_injection(s: dict) -> str:
     diff = s["evidence_differences"]
     out.append("Evidence cited in at least 60 points more often in one condition: " +
                (", ".join(f"`{k}` {v[0]:.0%} -> {v[1]:.0%}" for k, v in diff.items()) if diff else "none") + ".")
-    return "\n".join(out)
-
-
-def render_truncation(case: dict, results: list[dict], verdict: dict) -> str:
-    counts = verdict["counts"]
-    out = [f"## Case {case['id']}: {case['name']}", "", f"**Verdict: {verdict['verdict'].upper()}** "
-           f"(exercised {verdict['exercised']}/{case['runs']}, needs {case['min_exercised']}; pass {counts['pass']}, "
-           f"fail {counts['fail']}, not exercised {counts['not_exercised']}, errors {counts['error']})", "",
-           f"Prompt: _{case['prompt']}_ · limits: `{case['limits']}`", "", "| Run | Result | Reasons |", "|---|---|---|"]
-    for n, r in enumerate(results):
-        out.append(f"| {n + 1} | {r['status']} | {'; '.join(r['reasons']) or '-'} |")
     return "\n".join(out)
 
 

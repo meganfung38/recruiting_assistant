@@ -66,9 +66,8 @@ def _candidate(c: dict, out: dict) -> None:
     for e in c.get("stage_history", []):
         if not e.get("event_id"):
             continue
-        bits = [f"Interview booked {when(e['scheduled_at'])}" if e.get("scheduled_at") else "", f"Interview held {when(e['interview_at'])}" if e.get("interview_at") else "",
-                f"Left the stage {when(e['exited_at'])} ({e.get('exit_outcome')})" if e.get("exited_at") else "Still in this stage"]
-        out[f"stage:{e['event_id']}"] = _card(f"stage:{e['event_id']}", "stage", f"{name}: {e.get('stage', 'stage')}, entered {when(e.get('entered_at'))}", bits)
+        summary = e.get("summary") if isinstance(e.get("summary"), str) else ""      # the service's dated one-line summary
+        out[f"stage:{e['event_id']}"] = _card(f"stage:{e['event_id']}", "stage", f"{name}: {summary.split(',')[0] or 'stage'}", [summary])
 
 
 def evidence_line(fit: dict) -> str:
@@ -102,8 +101,8 @@ def _build(tool: str, env: dict, names: dict[str, str]) -> dict[str, dict]:
                 f"Currently in {r.get('current_stage')}", f"Right now: {STATE_WORDS[r['waiting_state']]}" if r.get("waiting_state") in STATE_WORDS else "",
                 f"Required skills matched: {len(have)} of {len(have) + len(miss)}" if have or miss else "",
                 evidence_line(fit)])
-    elif tool in ("list_roles", "get_role"):
-        for r in data.get("roles", [data]):
+    elif tool == "list_roles":
+        for r in data.get("roles", []):
             if r.get("role_id") and r.get("title") and f"role:{r['role_id']}" in env.get("source_refs", []):
                 out[f"role:{r['role_id']}"] = _card(f"role:{r['role_id']}", "role", r["title"], [
                     f"Opened {when(r.get('opened_at'))}" if r.get("opened_at") else "", f"Open for {r['role_age_days']} days" if r.get("role_age_days") is not None else ""])

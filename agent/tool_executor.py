@@ -5,6 +5,7 @@ budget -> MCP call with timeout -> projection -> size cap -> evidence + trace. `
 for model-attributable problems; it returns a ToolOutcome whose `content` is safe to show the model.
 """
 import asyncio
+import json
 from dataclasses import dataclass, field
 
 from pydantic import ValidationError
@@ -23,6 +24,8 @@ ERROR_MESSAGES = {
     "tool_timeout": "The tool took too long to respond.",
     "upstream_error": "The data service is unavailable right now.",
 }
+ID_HINT = ("Candidate IDs look like C104. To work from a person's name, call get_candidates(names=[...]) "
+           "(their record, including pending tasks) or search_candidates(name=...).")
 STATUS_FOR = {"tool_not_allowed": "validation_error", "invalid_arguments": "validation_error",
               "tool_timeout": "timeout", "turn_timeout": "timeout"}
 
@@ -80,8 +83,6 @@ class ToolExecutor:
         name = call.name if isinstance(call.name, str) else ""
 
         def fail(code: str, message: str | None = None, args: dict | None = None) -> ToolOutcome:
-            if name == "get_candidates" and args and code in ("call_budget_exceeded", "turn_timeout", "tool_timeout", "upstream_error"):
-                ctx.evidence.note_unfulfilled(args.get("candidate_ids", []))     # wanted, but could not be retrieved
             ctx.trace.record(call_id=call.id, sequence=seq, tool_name=name, started_ms=t0, error_code=code,
                              safe_arguments=args if args is not None else {},
                              status=STATUS_FOR.get(code, "error"))
@@ -95,6 +96,8 @@ class ToolExecutor:
             args = ARG_MODELS[name].model_validate(raw_args)
         except ValidationError as exc:
             problems = "; ".join(f"{'.'.join(map(str, e['loc'])) or 'arguments'}: {e['msg']}" for e in exc.errors())
+            if any(str(e["loc"][0]) in ("candidate_id", "candidate_ids") for e in exc.errors() if e["loc"]):
+                problems += ". " + ID_HINT
             # Values are never echoed or traced: only argument names are kept.
             return fail("invalid_arguments", f"Invalid arguments: {problems}"[:600], {"_arg_names": sorted(map(str, raw_args))})
         safe_args = args.model_dump(mode="json")
@@ -118,5 +121,6 @@ class ToolExecutor:
             return ToolOutcome(call.id, name, False, safe, code)
         ctx.evidence.add(name, safe, aggregates(name, raw))
         ctx.trace.record(call_id=call.id, sequence=seq, tool_name=name, safe_arguments=safe_args, status="success",
-                         started_ms=t0, result_summary=summarize(safe), evidence_refs=safe["source_refs"])
+                         started_ms=t0, result_summary=summarize(safe), evidence_refs=safe["source_refs"],
+                         result_chars=len(json.dumps(safe, ensure_ascii=False)))
         return ToolOutcome(call.id, name, True, safe)

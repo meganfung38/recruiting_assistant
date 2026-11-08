@@ -11,6 +11,9 @@ from agent.orchestrator import Orchestrator
 from services.db import db_path
 
 
+TURN_LOG = Path(__file__).resolve().parent.parent / "logs" / "turns.jsonl"   # one JSON line per answered question (gitignored)
+
+
 class NotConfigured(Exception):
     """A setup problem the user can fix; the message is safe to show."""
 
@@ -31,4 +34,4 @@ def make_orchestrator() -> Orchestrator:
     problem = preflight()
     if problem:
         raise NotConfigured(problem)
-    return Orchestrator(OpenAILLM(), limits=Limits())
+    return Orchestrator(OpenAILLM(), limits=Limits(), log_path=os.environ.get("RECRUITING_TURN_LOG") or TURN_LOG)

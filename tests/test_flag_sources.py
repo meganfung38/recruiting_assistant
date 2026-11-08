@@ -47,7 +47,7 @@ def test_a_retrieved_flagged_cv_yields_its_original_excerpt_but_the_model_and_tr
 
 
 def test_a_search_only_flag_is_inspectable_without_retrieving_the_record_and_is_not_model_visible(dbs):
-    outs, ctx = run_calls(dbs["injected"], [("search_candidates", {"role_id": "ROLE-BE"})])
+    outs, ctx = run_calls(dbs["injected"], [("search_candidates", {"role": "ROLE-BE"})])
     assert [s["candidate_id"] for s in ctx.flag_sources] == ["C117"] and ctx.flag_sources[0]["excerpt"] == PAYLOAD
     assert not ctx.evidence.retrieved("C117")
     assert "flag_sources" not in json.dumps(outs[0].content) and not any(b in json.dumps(outs[0].content) for b in BITS)  # allowlist drops it
@@ -70,7 +70,7 @@ def test_flags_in_emails_and_feedback_are_captured_with_their_own_labels(dbs):
 
 
 def test_a_clean_database_captures_nothing(dbs):
-    _, ctx = run_calls(dbs["baseline"], [("search_candidates", {"role_id": "ROLE-BE"}), ("get_candidates", {"candidate_ids": ["C117", "C104"]})])
+    _, ctx = run_calls(dbs["baseline"], [("search_candidates", {"role": "ROLE-BE"}), ("get_candidates", {"candidate_ids": ["C117", "C104"]})])
     assert ctx.flag_sources == []
 
 

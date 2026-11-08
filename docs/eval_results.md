@@ -396,3 +396,10 @@ Full eval regression after these changes (3 runs per scenario case, then reruns 
   fields, requiring role-labelled counts, and giving the model a single overview. "How many at the final stage" initially dropped a candidate because the model
   treated a list of waiting people as a list of everyone; the overview now includes everyone, grouped.
 - **Caveat on sample size:** 3 to 5 runs per case, same model, prompts tuned on the failing cases. Treat pass rates as indicators.
+
+### Simplification (2026-11-08, hand-written)
+Cases 14-16 (truncation recovery and disclosure) were retired together with the recovery path they tested: `get_candidates(role=...)`
+now returns every active candidate of a role in one result under the cap, so truncation does not occur for normal questions. Truncation
+itself (whole records cut, omitted IDs named, nothing omitted counted as evidence) stays covered by deterministic tests in
+`tests/test_executor.py`. The `check_top3` scenario no longer requires `search_candidates`, since one `get_candidates(role=...)` call is
+now the expected path. The evals have not been re-run since this change; the demo-set results are in `docs/demo_questions.md`.

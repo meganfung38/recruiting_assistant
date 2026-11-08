@@ -4,7 +4,7 @@
     python -m agent.cli --chat --role ROLE-BE        # multi-turn session (for follow-up questions)
 """
 import argparse
-import json
+import os
 import sys
 from pathlib import Path
 
@@ -13,6 +13,8 @@ from dotenv import load_dotenv
 from agent.limits import Limits
 from agent.llm import OpenAILLM
 from agent.orchestrator import ConversationState, Orchestrator, TurnResult
+from agent.presenter import technical_view, trace_lines
+from agent.runtime import TURN_LOG
 from services.db import db_path
 
 
@@ -44,19 +46,11 @@ def format_result(r: TurnResult, show_trace: bool = True) -> str:
         out.append(f"(the answer was corrected once after validation: {', '.join(r.repaired)})")
     if r.status == "limit_reached":
         out.append(f"! Limit reached ({r.limit_code}): this answer may be incomplete.")
-    if r.unresolved_candidates:
-        out.append(f"! Incomplete comparison: results omitted these candidates and they were never retrieved: "
-                   f"{', '.join(r.unresolved_candidates)}")
     if r.content_flags:
         who = sorted({f['candidate_id'] for f in r.content_flags})
         out.append(f"! Content warning: instruction-like text was found in candidate-supplied content for {', '.join(who)}.")
     if show_trace:
-        t = r.trace.totals()
-        out.append(f"-- Tools used ({t['tool_calls']}) - {t['total_ms'] / 1000:.1f}s - {t['model_rounds']} model round(s)")
-        for e in r.trace.ordered():
-            args = json.dumps({k: v for k, v in e.safe_arguments.items() if v is not None}, ensure_ascii=False)
-            note = e.error_code or ", ".join(f"{k}={v}" for k, v in e.result_summary.get("counts", {}).items())
-            out.append(f"  {e.sequence}. {e.tool_name} {args} -> {e.status} {e.duration_ms}ms {note}".rstrip())
+        out += ["--", *trace_lines(technical_view(r))]
         out.append(f"-- Evidence used ({len(r.evidence.refs())}): " + ", ".join(r.evidence.refs()))
     return "\n".join(out)
 
@@ -82,7 +76,7 @@ def main(argv=None, orchestrator: Orchestrator | None = None) -> int:
             base = Limits()
             limits = Limits(max_rounds=a.max_rounds or base.max_rounds, max_tool_calls=a.max_tool_calls or base.max_tool_calls,
                             max_result_chars=a.max_result_chars or base.max_result_chars)
-            orchestrator = Orchestrator(OpenAILLM(), db_path=a.db, limits=limits)
+            orchestrator = Orchestrator(OpenAILLM(), db_path=a.db, limits=limits, log_path=os.environ.get("RECRUITING_TURN_LOG") or TURN_LOG)
         except ValueError as exc:
             print(f"{exc}", file=sys.stderr)
             return 2

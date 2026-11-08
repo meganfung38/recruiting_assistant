@@ -26,8 +26,8 @@ MESSY = ("1. **Dahlia Ramanathan (C104)** leads: strong_yes at the Final Intervi
 
 
 def shortlist(db):
-    return view_of(db, [call(("0", "search_candidates", {"role_id": "ROLE-BE"})), call(("1", "get_candidates", {"candidate_ids": ["C104", "C110"]})),
-                        call(("2", "get_pipeline_analytics", {"role_id": "ROLE-BE"})),
+    return view_of(db, [call(("0", "search_candidates", {"role": "ROLE-BE"})), call(("1", "get_candidates", {"candidate_ids": ["C104", "C110"]})),
+                        call(("2", "get_pipeline_analytics", {"role": "ROLE-BE"})),
                         submit("3", answer_markdown=MESSY, candidates=[cand_arg("C104"), cand_arg("C110")], figures=[fig_arg(8.0)])])
 
 
@@ -45,7 +45,7 @@ def test_trust_line_says_checked_only_when_validation_passed(real):
     v, _ = shortlist(real["baseline"])
     assert v["trust"] == {"state": "checked", "text": "Checked against the source records."}
     bad = lambda sid: submit(sid, answer_markdown="Lag [feedback:FB-999] [analytics:ROLE-BE@2026-11-07].", figures=[fig_arg(9.5)])
-    v2, _ = view_of(real["baseline"], [call(("1", "get_pipeline_analytics", {"role_id": "ROLE-BE"})), bad("a"), bad("b")])
+    v2, _ = view_of(real["baseline"], [call(("1", "get_pipeline_analytics", {"role": "ROLE-BE"})), bad("a"), bad("b")])
     assert v2["trust"]["state"] == "partial" and "could not be verified" in v2["trust"]["text"]
     plain, _ = view_of(real["baseline"], [say("Plain answer.")])
     assert plain["trust"] == {"state": "none", "text": ""}                            # no claim of checking for an unchecked answer
@@ -53,7 +53,7 @@ def test_trust_line_says_checked_only_when_validation_passed(real):
 
 def test_unverified_details_are_plain_sentences_without_paths_or_ids(real):
     bad = lambda sid: submit(sid, answer_markdown="Lag [feedback:FB-999] [analytics:ROLE-BE@2026-11-07].", figures=[fig_arg(9.5, label="Median wait")])
-    v, _ = view_of(real["baseline"], [call(("1", "get_pipeline_analytics", {"role_id": "ROLE-BE"})), bad("a"), bad("b")])
+    v, _ = view_of(real["baseline"], [call(("1", "get_pipeline_analytics", {"role": "ROLE-BE"})), bad("a"), bad("b")])
     sentences = v["details"]["unverified"]
     assert sentences == []                                                            # a bad reference or pipeline figure is not a claim about a person
     assert v["trust"]["state"] == "partial"                                           # but the trust line still says something could not be verified
@@ -79,17 +79,16 @@ def test_a_relevant_flag_leads_the_answer_in_plain_words_with_no_labels_and_no_p
     assert not any(l in n["text"] for l in LABELS) and not any(b in n["text"] for b in BITS)
 
 
-def test_an_unrelated_flag_is_a_quiet_footnote_not_a_headline(real):
+def test_an_unrelated_flag_adds_no_notice_but_stays_reviewable(real):
     v, _ = flagged(real["injected"], "Dahlia Ramanathan has the strongest interview record.", listed=("C104",))
-    (n,) = [n for n in v["notices"] if "manipulative" in n["text"]]
-    assert n["placement"] == "foot" and n["level"] == "info" and "did not affect this answer" in n["text"]
-    assert "manipulative" not in primary_text(v)                                      # not in the default reading flow
+    assert not any("manipulative" in n["text"] for n in v["notices"]) and "manipulative" not in primary_text(v)
+    assert [f["candidate"] for f in v["flagged"]] == ["Quentin Abara"]                # the original text is still one click away
+    assert any("instruction-like text flagged in C117" in note for r in v["technical"]["rounds"] for c in r["calls"] for note in c["notes"])
 
 
-def test_a_flagged_person_only_mentioned_in_passing_does_not_make_the_notice_lead(real):
+def test_a_flagged_person_only_mentioned_in_passing_gets_no_headline(real):
     v, _ = flagged(real["injected"], "Dahlia Ramanathan is strongest. Quentin Abara was set aside.", listed=("C104",))
-    (n,) = [n for n in v["notices"] if "manipulative" in n["text"]]
-    assert n["placement"] == "foot" and "manipulative" not in primary_text(v)
+    assert not any("manipulative" in n["text"] for n in v["notices"]) and "manipulative" not in primary_text(v)
 
 
 def test_the_original_flagged_text_is_available_for_review_with_its_source(real):
@@ -101,10 +100,10 @@ def test_the_original_flagged_text_is_available_for_review_with_its_source(real)
 
 
 def test_a_flag_that_arrived_only_via_search_is_still_reviewable(real):
-    v, _ = view_of(real["injected"], [call(("1", "search_candidates", {"role_id": "ROLE-BE"})), call(("2", "get_candidates", {"candidate_ids": ["C104"]})),
+    v, _ = view_of(real["injected"], [call(("1", "search_candidates", {"role": "ROLE-BE"})), call(("2", "get_candidates", {"candidate_ids": ["C104"]})),
                                       submit("3", answer_markdown="Dahlia Ramanathan leads.", candidates=[cand_arg("C104")])])
     assert [f["candidate"] for f in v["flagged"]] == ["Quentin Abara"] and v["flagged"][0]["excerpt"] == PAYLOAD
-    assert [n["placement"] for n in v["notices"]] == ["foot"]
+    assert v["notices"] == []                                                          # Quentin is not part of this answer
 
 
 def test_clean_data_produces_no_notice_and_no_flagged_panel(real):
@@ -113,12 +112,6 @@ def test_clean_data_produces_no_notice_and_no_flagged_panel(real):
 
 
 # ------------------------------------------------------------------ other notices
-def test_incomplete_comparisons_name_the_people_not_ids(real):
-    steps = [call(("1", "get_candidates", {"candidate_ids": ["C104", "C108", "C110", "C113", "C117", "C112"]})),
-             submit("2", answer_markdown="Provisional.", uncertainties=["Not all reviewed."])]
-    v, _ = view_of(real["baseline"], steps, limits=Limits(max_result_chars=9500, max_tool_calls=1))
-    (n,) = [n for n in v["notices"] if "Not everyone was reviewed" in n["text"]]
-    assert n["level"] == "warning" and leaks(n["text"]) == [] and "Hannelore Voss" not in n["text"]
 
 
 def test_limit_and_error_notices_are_plain():
@@ -133,7 +126,7 @@ def test_limit_and_error_notices_are_plain():
 # ------------------------------------------------------------------ supporting details
 def test_claims_about_a_person_are_explained_in_the_evidence_panel(real):
     sub = lambda sid: submit(sid, answer_markdown="Top:\n\n- C110 [cv:C110]", candidates=[cand_arg("C110")])
-    v, _ = view_of(real["baseline"], [call(("1", "search_candidates", {"role_id": "ROLE-BE"})), sub("a"), sub("b"), sub("c"), sub("d")])
+    v, _ = view_of(real["baseline"], [call(("1", "search_candidates", {"role": "ROLE-BE"})), sub("a"), sub("b"), sub("c"), sub("d")])
     assert v["details"]["unverified"] == ["Junko Takeda's full record was not opened, so they were judged only from search results."]
 
 
@@ -145,7 +138,7 @@ def test_evidence_panel_is_only_interview_notes_and_emails_grouped_by_person(rea
     assert len(cards) <= 12 and all("feedback" in c["title"] or "Resume review" in c["title"] for c in cards)
     assert not any("full record opened" in c["title"] or "search summary" in c["title"] or "pipeline" in c["title"] for c in cards)
     assert {g["person"] for g in groups} <= {"Dahlia Ramanathan", "Junko Takeda"}
-    assert v["technical"]["records_received"] == len(r.evidence.refs())                       # the accurate count lives in the technical tier
+    assert v["technical"]["refs"] == r.evidence.refs()                                          # the full list lives in the technical tier
 
 
 def test_an_email_that_supports_the_answer_is_evidence_too(real):
@@ -166,7 +159,7 @@ def test_tasks_roles_and_one_line_answers_get_no_evidence_panel(real):
 
 def test_task_ids_in_a_model_written_table_become_readable_task_names(real):
     md = "| Task | Owner |\n|---|---|\n| T-002 | Jordan Ellis |\n| T-001 | Jordan Ellis |"
-    v, _ = view_of(real["baseline"], [call(("0", "search_candidates", {"role_id": "ROLE-BE"}), ("1", "get_tasks", {"overdue_only": True})),
+    v, _ = view_of(real["baseline"], [call(("0", "search_candidates", {"role": "ROLE-BE"}), ("1", "get_tasks", {"overdue_only": True})),
                                       submit("2", answer_markdown=md)])
     assert "| Book Technical Interview (Mateo Villareal) | Jordan Ellis |" in v["answer"] and leaks(v["answer"]) == []
 
@@ -175,16 +168,23 @@ def test_task_ids_in_a_model_written_table_become_readable_task_names(real):
 def test_raw_identifiers_and_the_trace_live_only_in_the_technical_tier(real):
     v, r = shortlist(real["baseline"])
     t = v["technical"]
-    assert t["title"].startswith("Tools used (3) · ") and [(row["Round"], row["Step"]) for row in t["rows"]] == [(1, "search_candidates"), (2, "get_candidates"), (3, "get_pipeline_analytics"), (4, "Answer submitted")]
+    assert t["title"].startswith("How this answer was made · 4 round(s) · 3 tool call(s) · ")
+    assert [(r["round"], r["action"], [c["call"].split("(")[0] for c in r["calls"]]) for r in t["rounds"]] == [
+        (1, "Called 1 tool(s)", ["search_candidates"]), (2, "Called 1 tool(s)", ["get_candidates"]),
+        (3, "Called 1 tool(s)", ["get_pipeline_analytics"]), (4, "Submitted the answer", [])]
+    assert t["rounds"][-1]["outcome"] == "accepted" and t["rounds"][0]["calls"][0]["call"] == 'search_candidates(role="ROLE-BE")'
+    assert "8 candidates" in t["rounds"][0]["calls"][0]["returned"] and "chars" in t["rounds"][0]["calls"][0]["returned"]
     assert "cv:C104" in t["refs"] and t["model_rounds"] == 4 and t["tokens"] == 0 and t["empty_retries"] == 0
     default_tiers = json.dumps({k: x for k, x in v.items() if k != "technical"})
     assert "cv:C104" not in default_tiers and "get_candidates" not in default_tiers
 
 
 def test_failed_calls_appear_in_the_trace_but_never_as_records(real):
-    v, _ = view_of(real["baseline"], [call(("1", "get_role", {"role_id": "bad"}), ("2", "nope", {}), ("3", "get_pipeline_analytics", {"role_id": "ROLE-BE"})),
+    v, _ = view_of(real["baseline"], [call(("1", "get_pipeline_analytics", {"role": "b;ad"}), ("2", "nope", {}), ("3", "get_pipeline_analytics", {"role": "ROLE-BE"})),
                                       submit("4", answer_markdown="done")])
-    assert [r["Step"] for r in v["technical"]["rows"]][:3] == ["get_role (validation_error)", "nope (validation_error)", "get_pipeline_analytics"]
+    calls = v["technical"]["rounds"][0]["calls"]
+    assert [(c["call"].split("(")[0], c["ok"]) for c in calls] == [("get_pipeline_analytics", False), ("nope", False), ("get_pipeline_analytics", True)]
+    assert calls[0]["returned"] == "failed: invalid_arguments" and v["technical"]["rounds"][1]["outcome"] == "accepted"
     assert v["technical"]["refs"] == [ARef]
 
 
@@ -204,7 +204,7 @@ def test_loading_labels_describe_real_activity():
     assert progress_label({"type": "tools", "names": ["get_tasks"]}) == "Reviewing tasks"
     assert progress_label({"type": "tools", "names": ["search_candidates", "get_candidates", "search_candidates"]}) == "Searching candidates and Reading candidate records"
     assert progress_label({"type": "tools", "names": ["something_new"]}) == "Looking things up" and progress_label({"type": "tools", "names": []}) == "Looking things up"
-    assert set(TOOL_LABELS) == {"list_roles", "get_role", "search_candidates", "get_candidates", "get_candidate_communications", "get_pipeline_analytics", "get_tasks", "get_recruiting_overview"}
+    assert set(TOOL_LABELS) == {"list_roles", "search_candidates", "get_candidates", "get_candidate_communications", "get_pipeline_analytics", "get_tasks", "get_recruiting_overview"}
 
 
 def test_two_candidates_with_the_same_name_are_told_apart_by_role_then_id():

@@ -1,7 +1,8 @@
 # Simplification proposal: fewer rules, better-shaped tools
 
-Status: proposal, nothing implemented. Written 2026-11-08 after a full read of the codebase, the manual-testing notes in
-`interesting-conversations.md`, and an instrumented live run (numbers below are measured, not estimated, unless marked).
+Status: **implemented on branch `simplify-agent` (2026-11-08)**; see section 8 for what changed from the plan and the measured results.
+Written after a full read of the codebase, the manual-testing notes in `interesting-conversations.md`, and an instrumented live run
+(numbers below are measured, not estimated, unless marked).
 
 ## 1. Verdict
 
@@ -171,3 +172,40 @@ The injection fixture surfaces through #6: C117 is ranked on merit, and the bann
 - **`get_role` folded into `list_roles`.** The spec's own cut list allows this. The tool count stays at 7 because
   `get_recruiting_overview` remains.
 - **Truncation-recovery evals (14 to 16) dropped.** Truncation keeps its warning, but it no longer occurs in this dataset.
+
+## 8. Outcome (2026-11-08)
+
+Implemented as planned, with these changes found while testing against the live model:
+- **The cap is 32,000 characters, not 24,000.** A role's comparison view still overflowed 24k for People Operations (12 active people,
+  about 25k after interview notes). The cap exists to stop runaway results, not a deliberate whole-role read of about 7k tokens.
+  `get_candidates(role=...)` leaves out stage history and tasks (the dated status sentence covers where a person is now).
+- **People can be named, not only roles.** `get_candidates(names=[...])` and `get_tasks(candidate=<ID or name>)`. Without them the model
+  either sent a name where an ID was expected (one wasted round) or guessed an ID such as C001 and concluded wrongly.
+- **The figure check forgives labels, not numbers.** Most correction rounds were correct numbers cited to the wrong record (an overview
+  count cited to a person's row), which made the model fetch more data just to support a figure. The checker now finds the field
+  where the cited source does not have it. A number whose cited source holds a different value is still rejected (that is what catches the
+  original cross-role error), and the repair message says not to call tools just to support a figure.
+- **Presentation hints moved next to the data.** "Show the roles as one table" and "show tasks as one table, overdue first" live in
+  those tools' descriptions; "correct a wrong premise first" lives in the `answer_markdown` field. The system prompt keeps general rules
+  only (now 7k characters).
+- **Two analysis rules came back** after the first live run without them: a stage is a problem only if a number is over its own target,
+  and recorded reasons are given as counts. Without them, Manufacturing's within-target Technical Interview was called "the bottleneck".
+- **`conversion_denominator` hidden from the model.** It read "19" (people who finished Resume Review) as "19 reached" (really 20).
+- Spec demo 4 (C123 against peers) stays multi-tool: the record and the analytics descriptions now say which number to compare
+  (`days_in_current_stage`, never `waiting_days`). It went from 0 of 3 to 3 of 3 correct comparisons.
+
+Measured on the demo set (12 conversations, 20 turns, 3 runs each; details in `docs/demo_questions.md`):
+
+| | Before | After |
+|---|---|---|
+| Top three Backend Engineer | 6 rounds, 57k tokens | 2 rounds, about 13.6k tokens |
+| All demo turns | median 3 rounds, shortlists 40-60k tokens | median 2 rounds (max 4), median about 10k tokens (max 26k) |
+| Invalid tool calls / correction rounds | frequent | 0 of 60 / 5 of 60 |
+| Tests | 432 | 429 (truncation-recovery tests removed; tests added for name lookup, round trace, turn log, figure checks) |
+
+**Still open (recommended next step): reasoning.** The API reports *"Function tools with reasoning_effort are not supported for
+gpt-5.4-mini in /v1/chat/completions. To use function tools, use /v1/responses or set reasoning_effort to 'none'."* The agent therefore
+runs with zero reasoning tokens. The remaining slips fit that: naming the wrong person as the longest wait of three in 1 of 3 runs,
+bullets instead of a requested table, and ranking someone higher for being further along. Moving `agent/llm.py` to the Responses API
+(about 100 lines; the orchestrator only depends on `complete()`) would allow `reasoning_effort="low"`. Measure it on this demo set before
+adopting it: it will add latency and tokens.

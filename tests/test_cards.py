@@ -23,9 +23,9 @@ def live(tmp_path_factory):
             ex = ToolExecutor(s)
             await ex.start()
             ctx = TurnContext()
-            for i, (n, a) in enumerate([("search_candidates", {"role_id": "ROLE-BE"}), ("get_candidates", {"candidate_ids": ["C104", "C117"]}),
+            for i, (n, a) in enumerate([("search_candidates", {"role": "ROLE-BE"}), ("get_candidates", {"candidate_ids": ["C104", "C117"]}),
                                         ("get_candidate_communications", {"candidate_id": "C104"}), ("get_tasks", {"overdue_only": True}),
-                                        ("get_pipeline_analytics", {"role_id": "ROLE-BE"})]):
+                                        ("get_pipeline_analytics", {"role": "ROLE-BE"})]):
                 await ex.execute(ToolCall(str(i), n, a), ctx)
             return ctx.evidence
     return asyncio.run(go())

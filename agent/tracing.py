@@ -23,8 +23,20 @@ class TraceEvent(BaseModel):
     started_ms: int                   # offsets from turn start; parallel calls keep dispatch order
     completed_ms: int
     result_summary: dict = Field(default_factory=dict)
+    result_chars: int = 0             # size of what the model received (its main context cost)
     evidence_refs: list[str] = Field(default_factory=list)
     error_code: str | None = None
+
+
+class RoundRecord(BaseModel):
+    """One model call: what it cost and what the model did with it. The model's reasoning is never recorded, only its actions."""
+    round: int
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
+    duration_ms: int = 0
+    action: Literal["tools", "submit", "plain_text", "empty", "wrap_up"] = "tools"
+    outcome: str = ""                 # e.g. "accepted", "sent back", "deferred: call submit_answer alone"
+    problems: list[str] = Field(default_factory=list)   # why an answer was sent back (IDs and numbers only)
 
 
 def safe_tool_name(name: object) -> str:
@@ -51,6 +63,7 @@ class Trace:
         self._t0 = clock()
         self._seq = 0
         self.events: list[TraceEvent] = []
+        self.rounds: list[RoundRecord] = []
         self.model_rounds = 0
 
     def now_ms(self) -> int:
@@ -61,17 +74,30 @@ class Trace:
         return self._seq
 
     def record(self, *, call_id, sequence, tool_name, safe_arguments, status, started_ms,
-               result_summary=None, evidence_refs=None, error_code=None) -> TraceEvent:
+               result_summary=None, evidence_refs=None, error_code=None, result_chars=0) -> TraceEvent:
         done = self.now_ms()
         ev = TraceEvent(trace_id=self.trace_id, call_id=str(call_id)[:64], sequence=sequence, round=self.model_rounds,
                         tool_name=safe_tool_name(tool_name), safe_arguments=safe_arguments, status=status,
                         duration_ms=max(0, done - started_ms), started_ms=started_ms, completed_ms=done,
-                        result_summary=result_summary or {}, evidence_refs=evidence_refs or [], error_code=error_code)
+                        result_summary=result_summary or {}, evidence_refs=evidence_refs or [], error_code=error_code,
+                        result_chars=result_chars)
         self.events.append(ev)
         return ev
+
+    def begin_round(self) -> RoundRecord:
+        self.model_rounds += 1
+        rec = RoundRecord(round=self.model_rounds)
+        self.rounds.append(rec)
+        return rec
 
     def ordered(self) -> list[TraceEvent]:
         return sorted(self.events, key=lambda e: e.sequence)
 
     def totals(self) -> dict:
-        return {"tool_calls": len(self.events), "total_ms": self.now_ms(), "model_rounds": self.model_rounds}
+        return {"tool_calls": len(self.events), "total_ms": self.now_ms(), "model_rounds": self.model_rounds,
+                "prompt_tokens": sum(r.prompt_tokens for r in self.rounds), "completion_tokens": sum(r.completion_tokens for r in self.rounds)}
+
+    def to_log(self) -> dict:
+        """The whole trace as plain data, for the per-turn JSONL log (same safety rules: IDs, counts, sizes, no record text)."""
+        return {"trace_id": self.trace_id, **self.totals(), "rounds": [r.model_dump() for r in self.rounds],
+                "calls": [e.model_dump(exclude={"trace_id"}) for e in self.ordered()]}

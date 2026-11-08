@@ -44,9 +44,26 @@ expander appears only when the answer relied on interview notes or emails that i
 raw analytics table and no card for tasks, roles or pipeline numbers. If a CV, email or note contained instruction-like text, a notice
 says so, and **View the original flagged text** shows it as inert text for the reviewer.
 
-**Developer view** (off by default) adds, under each answer, the tools called with arguments and timings, record counts, validation
-problems, a note if the answer was corrected once, and model rounds and token use. All of it is recorded by the application, not
-written by the model. IDs and citation syntax appear only there.
+**Developer view** (off by default) adds, under each answer, **How this answer was made**: one block per model round with its token cost
+and time, each tool it called (arguments, what came back, result size, record IDs), or the answer it submitted and whether validation
+accepted it or sent it back (and why). All of it is recorded by the application, not written by the model. IDs and citation syntax appear
+only there. Every answered question is also appended to `logs/turns.jsonl` (gitignored; set `RECRUITING_TURN_LOG` to move it) with the
+same per-round trace, so a bad answer can be traced afterwards. The log holds IDs, counts, sizes and tokens, never record text.
+
+## The tools (read-only MCP)
+| Tool | Answers | Takes |
+|---|---|---|
+| `list_roles` | roles, days open, required/preferred skills, interview criteria, stages | - |
+| `search_candidates` | who is where; find a person; who is at a stage | optional `role`, `name`, `stage`, `status` |
+| `get_candidates` | full evidence for people: dated status, skills, feedback, history, tasks, CV | `names`, `candidate_ids`, or `role` (every active candidate, for shortlists) |
+| `get_candidate_communications` | a candidate's emails | `candidate_id` |
+| `get_pipeline_analytics` | one role's funnel, time in stage, scheduling wait, feedback lag, reasons | `role` |
+| `get_recruiting_overview` | cross-role snapshot and the people waiting, longest first | - |
+| `get_tasks` | tasks with owner, due date, overdue | optional `role`, `candidate`, `status`, `overdue_only` |
+
+A role can be given by ID or name ("Backend Engineer"), and a person by name, so most questions need one or two calls. Each candidate
+record carries a dated status sentence ("Technical Interview since Oct 16 (22 days): interview not booked yet."), so the model restates
+facts instead of reconstructing them from timestamps.
 
 Streamlit re-runs the script on every interaction, so each question opens and closes its own MCP session inside one `asyncio.run()`
 and `st.session_state` keeps only plain data. Earlier turns are replayed to the model as question and final answer only (no old tool
@@ -70,8 +87,8 @@ python -m evals.run_evals           # model-dependent, opt-in: skips cleanly wit
 python -m evals.run_evals --cases 10 --runs 3
 python -m evals.run_evals --cases 1,2,3,4,5,6,7,8,9,11,12,13   # single-answer scenarios from the spec
 ```
-Cases 10 (paired injection) and 14-16 (truncation recovery and disclosure) have their own rules; 1-9 and 11-13 are scored on tool calls,
-cited records, exact figures and facts from the seeded data, never prose quality.
+Case 10 (paired injection) has its own rules; 1-9 and 11-13 are scored on tool calls, cited records, exact figures and facts from the
+seeded data, never prose quality. (Cases 14-16, truncation recovery, were retired when a whole role started fitting in one result.)
 `docs/eval_results.md` records every run (including failures and what was changed). Read it before trusting any rate: samples are small.
 
 ## Data design (so far)
@@ -94,5 +111,9 @@ Resume Review: 5 days in stage.
 - The injection detector is a keyword list. Before the model reads a flagged CV, email or note, the sentences that matched are replaced by a marker
   (the rest stays), and the recruiter sees the original. Paraphrased or non-English instructions evade it. This is defense in depth, not
   "prompt-injection-proof"; results are in `docs/eval_results.md`.
-- Large comparisons cost several model rounds (about 30-50k tokens) because the model re-requests records the size cap omitted.
+- The model is called through Chat Completions with function tools. For `gpt-5.4-mini` that combination runs with **no reasoning**
+  (the API rejects `reasoning_effort` with tools on that endpoint), which shows up as occasional slips in comparing numbers or following
+  formatting rules. Moving the adapter to the Responses API would allow reasoning; see `docs/simplification_proposal.md`.
+- A result is capped at 32,000 characters (a whole role's comparison view is about 12-30k). Anything larger is cut by whole records with a
+  warning naming what was left out.
 - All data is fictional and relative to the fixed as-of date in `services/clock.py`.

@@ -17,7 +17,7 @@ class Limits:
     max_tool_calls: int = 24
     tool_timeout_s: float = 10.0
     turn_timeout_s: float = 90.0
-    max_result_chars: int = 24_000
+    max_result_chars: int = 32_000     # a whole role's comparison view (12 people, ~25k) fits in one result
 
 
 class TurnBudget:

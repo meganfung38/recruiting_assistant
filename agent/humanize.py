@@ -5,7 +5,7 @@ never reaches the recruiter. Deterministic and pure; the original text is still 
 """
 import re
 
-TOOLS = "list_roles|get_roles?|search_candidates|get_candidates|get_candidate_communications|get_pipeline_analytics|get_tasks"
+TOOLS = "list_roles|search_candidates|get_candidates|get_candidate_communications|get_pipeline_analytics|get_tasks|get_recruiting_overview"
 CITATION = re.compile(r"[ \t]*\[(?:(?:" + TOOLS.replace("_", "[_ ]") + r")\]|(?:cv|search|feedback|stage|email|task|role|analytics):[^\]]*\])")
 NAME_ID = re.compile(r"\s*\((?:C\d{3}|ROLE-[A-Z]{2,3})\)")        # "Name (C104)" and "Backend Engineer (ROLE-BE)": the title already says it
 CAND_ID = re.compile(r"\bC\d{3}\b")

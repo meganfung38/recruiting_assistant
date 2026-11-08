@@ -40,15 +40,29 @@ def stage_of(role, stage, conn, **kw):
 
 
 # ------------------------------------------------------------------ roles
-def test_list_and_get_role(conn):
+def test_list_roles_carries_what_a_role_requires(conn):
     roles = {r["role_id"]: r for r in candidates.list_roles(conn=conn)}
     assert {k: v["role_age_days"] for k, v in roles.items()} == EXPECT["role_age_days"]
-    r = candidates.get_role("ROLE-BE", conn=conn)
-    assert r["stage_order"] == ["Resume Review", "Recruiter Screen", "Technical Interview", "Final Interview"]
-    assert r["stage_targets"][TI] == {"duration_days": 14, "scheduling_days": 7, "feedback_days": 2}
-    assert [s["name"] for s in r["requirements"]["required_skills"]][0] == "Python"
-    with pytest.raises(NotFound):
-        candidates.get_role("ROLE-XX", conn=conn)
+    be = roles["ROLE-BE"]
+    assert be["title"] == "Backend Engineer" and be["stage_order"] == ["Resume Review", "Recruiter Screen", "Technical Interview", "Final Interview"]
+    assert be["required_skills"][0] == "Python" and be["interview_criteria"]
+    assert all(set(r) >= {"required_skills", "preferred_skills", "interview_criteria"} for r in roles.values())
+
+
+@pytest.mark.parametrize("ref, want", [("ROLE-BE", "ROLE-BE"), ("role-mse", "ROLE-MSE"), ("Backend Engineer", "ROLE-BE"),
+                                       ("people operations", "ROLE-PO"), ("  Manufacturing  ", "ROLE-MSE")])
+def test_a_role_can_be_named_by_id_or_title(conn, ref, want):
+    from services.db import resolve_role_id
+    assert resolve_role_id(conn, ref) == want
+    assert analytics.get_pipeline_analytics(ref, conn=conn)["role_id"] == want
+
+
+@pytest.mark.parametrize("ref", ["Sales", "Engineer", "ROLE-XX", ""])
+def test_an_unknown_or_ambiguous_role_names_the_known_roles(conn, ref):
+    from services.db import resolve_role_id
+    with pytest.raises(NotFound) as exc:
+        resolve_role_id(conn, ref)
+    assert "ROLE-BE (Backend Engineer)" in str(exc.value)                      # tells the model how to retry
 
 
 # ------------------------------------------------------------------ analytics vs independent recomputation
@@ -236,6 +250,23 @@ def test_search_defaults_and_shape(conn):
         candidates.search_candidates("ROLE-XX", conn=conn)
 
 
+def test_search_finds_a_person_by_name_in_any_role_and_status(conn):
+    (h,) = candidates.search_candidates(name="hannelore", conn=conn)["candidates"]
+    assert (h["candidate_id"], h["role_title"]) == ("C108", "Backend Engineer")
+    assert [r["candidate_id"] for r in candidates.search_candidates(name="Hannelore Voss", conn=conn)["candidates"]] == ["C108"]
+    withdrawn = conn.execute("SELECT name, candidate_id FROM candidates WHERE application_status = 'withdrawn' ORDER BY candidate_id").fetchone()
+    found = candidates.search_candidates(name=withdrawn["name"], conn=conn)["candidates"]
+    assert withdrawn["candidate_id"] in [r["candidate_id"] for r in found]   # a name search is not limited to active people
+    assert candidates.search_candidates(name="Nobody Atall", conn=conn)["total_matching"] == 0
+
+
+def test_search_without_a_role_covers_every_role(conn):
+    finals = candidates.search_candidates(stage="final interview", conn=conn)["candidates"]   # stage name is case-insensitive
+    want = [r[0] for r in conn.execute("SELECT candidate_id FROM candidates WHERE application_status = 'active' "
+                                       "AND current_stage = 'Final Interview' ORDER BY candidate_id")]
+    assert [r["candidate_id"] for r in finals] == want and len({r["role_id"] for r in finals}) > 1
+
+
 @pytest.mark.parametrize("role", ROLES)
 def test_waiting_state_for_every_active_candidate_matches_independent(role, conn):
     for row in candidates.search_candidates(role, conn=conn)["candidates"]:
@@ -296,7 +327,27 @@ def test_get_candidates_known_unknown_and_limits(conn):
     with pytest.raises(ValueError):
         candidates.get_candidates([], conn=conn)
     with pytest.raises(ValueError):
-        candidates.get_candidates([f"C{n}" for n in range(101, 108)], conn=conn)
+        candidates.get_candidates([f"C{n}" for n in range(101, 122)], conn=conn)       # 21 IDs
+    assert len(candidates.get_candidates([f"C{n}" for n in range(101, 121)], conn=conn)) == 20
+
+
+def test_get_candidates_by_role_returns_every_active_candidate_as_a_comparison_view(conn):
+    out = candidates.get_candidates(role="Backend Engineer", conn=conn)
+    active = [r["candidate_id"] for r in candidates.search_candidates("ROLE-BE", conn=conn)["candidates"]]
+    assert [c["candidate_id"] for c in out] == active
+    assert all("stage_history" not in c and "pending_tasks" not in c and c["feedback_received"] == len(c["feedback"]) for c in out)
+    by_id = candidates.get_candidates(active[:1], conn=conn)[0]
+    assert {k: v for k, v in by_id.items() if k not in ("stage_history", "pending_tasks")} == out[0]
+    for bad in (dict(), dict(candidate_ids=["C104"], role="ROLE-BE")):
+        with pytest.raises(ValueError):
+            candidates.get_candidates(conn=conn, **bad)
+
+
+def test_get_candidates_skills_match_the_search_signals(conn):
+    for c in candidates.get_candidates(role="ROLE-MSE", conn=conn):
+        sig = next(r for r in candidates.search_candidates("ROLE-MSE", conn=conn)["candidates"] if r["candidate_id"] == c["candidate_id"])["fit_signals"]
+        assert c["required_skills_missing"] == sig["required_skills_missing"]
+        assert len(c["preferred_skills_matched"]) == sig["preferred_skills_matched_count"]
 
 
 def test_c123_supports_demo_4(conn):
@@ -381,25 +432,25 @@ def test_task_completed_and_cancelled_are_never_overdue(conn):
 
 
 def test_task_filters_and_limits(conn):
-    assert {t["role_id"] for t in tasks.get_tasks(role_id="ROLE-PO", conn=conn)["tasks"]} == {"ROLE-PO"}
-    assert [t["task_id"] for t in tasks.get_tasks(candidate_id="C113", conn=conn)["tasks"]] == ["T-002", "T-005"] \
-        or {t["task_id"] for t in tasks.get_tasks(candidate_id="C113", conn=conn)["tasks"]} == {"T-002", "T-005"}
+    assert {t["role_id"] for t in tasks.get_tasks(role="ROLE-PO", conn=conn)["tasks"]} == {"ROLE-PO"}
+    assert [t["task_id"] for t in tasks.get_tasks(candidate="C113", conn=conn)["tasks"]] == ["T-002", "T-005"] \
+        or {t["task_id"] for t in tasks.get_tasks(candidate="C113", conn=conn)["tasks"]} == {"T-002", "T-005"}
     r = tasks.get_tasks(limit=5, conn=conn)
     assert r["returned"] == 5 and r["total_matching"] == 28
-    po_overdue = tasks.get_tasks(role_id="ROLE-PO", overdue_only=True, conn=conn)
+    po_overdue = tasks.get_tasks(role="ROLE-PO", overdue_only=True, conn=conn)
     assert {t["task_id"] for t in po_overdue["tasks"]} == {"T-017", "T-018", "T-019", "T-021", "T-022"}
     for bad in (dict(limit=0), dict(limit=51), dict(status="done")):
         with pytest.raises(ValueError):
             tasks.get_tasks(conn=conn, **bad)
     with pytest.raises(NotFound):
-        tasks.get_tasks(role_id="ROLE-XX", conn=conn)
+        tasks.get_tasks(role="ROLE-XX", conn=conn)
     with pytest.raises(NotFound):
-        tasks.get_tasks(candidate_id="C999", conn=conn)
+        tasks.get_tasks(candidate="C999", conn=conn)
 
 
 # ------------------------------------------------------------------ clock discipline
 def test_every_service_function_takes_as_of_defaulting_to_the_fixed_clock():
-    for fn in (candidates.list_roles, candidates.get_role, candidates.search_candidates, candidates.get_candidates,
+    for fn in (candidates.list_roles, candidates.search_candidates, candidates.get_candidates,
                analytics.get_pipeline_analytics, tasks.get_tasks):
         assert inspect.signature(fn).parameters["as_of"].default == AS_OF, fn.__name__
 
@@ -408,7 +459,7 @@ def test_sql_is_parameterised(conn):
     """A role id containing SQL must be treated as data, not interpreted."""
     with pytest.raises(NotFound):
         analytics.get_pipeline_analytics("ROLE-BE' OR '1'='1", conn=conn)
-    assert tasks.get_tasks(candidate_id=None, conn=conn)["total_matching"] == 28
+    assert tasks.get_tasks(candidate=None, conn=conn)["total_matching"] == 28
 
 
 def test_missing_database_is_an_error_not_an_empty_db(tmp_path):
@@ -521,14 +572,16 @@ def _expected_status(conn, cid):
     subs = [r[0] for r in conn.execute("SELECT submitted_at FROM interview_feedback WHERE candidate_id = ? AND stage = ?", (cid, e["stage"]))]
     if status != "active":
         return f"{status.capitalize()} at {e['stage']}" + (f" on {day(e['exited_at'])}." if e["exited_at"] else ".")
-    fb = f"Feedback received {day(max(subs))}." if subs else "No feedback yet."
+    entered = datetime.strptime(e["entered_at"], "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=ZoneInfo("UTC"))
+    n = round((AS_OF - entered).total_seconds() / 86400)
+    head = f"{e['stage']} since {day(e['entered_at'])} (" + ("under a day" if n < 1 else f"{n} day{'s' if n != 1 else ''}") + ")"
     if e["stage"] == "Resume Review":
-        return f"Resume Review: in review since {day(e['entered_at'])}, " + ("review note on file." if subs else "no review note yet.")
+        return f"{head}: " + ("review note on file." if subs else "no review note yet.")
     if not e["scheduled_at"]:
-        return f"{e['stage']}: interview not booked yet. {fb}"
+        return f"{head}: interview not booked yet."
     if not e["interview_at"] or e["interview_at"] > now:
-        return f"{e['stage']}: interview booked {day(e['scheduled_at'])}, not held yet. {fb}"
-    return f"{e['stage']}: interview held {day(e['interview_at'])}. {fb}"
+        return f"{head}: interview booked on {day(e['scheduled_at'])} but not held yet (no interview date is recorded)."
+    return f"{head}: interview held {day(e['interview_at'])}; " + (f"feedback received {day(max(subs))}." if subs else "feedback not received yet.")
 
 
 def test_stage_status_matches_independent_recompute_for_every_candidate(conn):
@@ -546,7 +599,19 @@ def test_stage_status_matches_independent_recompute_for_every_candidate(conn):
 
 def test_hannelore_final_interview_is_booked_not_held(conn):
     s = candidates.get_candidates(["C108"], conn=conn)[0]["stage_status"]
-    assert s == "Final Interview: interview booked Nov 3, not held yet. No feedback yet."
+    assert s.startswith("Final Interview since ") and s.endswith(": interview booked on Nov 3 but not held yet (no interview date is recorded).")
+
+
+def test_mateo_status_says_where_his_22_days_come_from(conn):
+    s = candidates.get_candidates(["C113"], conn=conn)[0]["stage_status"]
+    assert s == "Technical Interview since Oct 16 (22 days): interview not booked yet."
+
+
+def test_stage_history_summaries_are_dated_sentences(conn):
+    hist = candidates.get_candidates(["C113"], conn=conn)[0]["stage_history"]
+    assert [h["summary"] for h in hist] == ["Resume Review, Oct 10 to Oct 12: advanced.",
+                                            "Recruiter Screen, Oct 12 to Oct 16: interview held Oct 14; advanced.",
+                                            "Technical Interview, Oct 16 to now: interview not booked yet."]
 
 
 def test_recruiting_overview_matches_independent_counts(conn):
@@ -571,6 +636,26 @@ def test_recruiting_overview_matches_independent_counts(conn):
         assert days == sorted(days, reverse=True)
     assert sched[0]["name"] == "Mateo Villareal" and round(sched[0]["waiting_days"]) == 22
     assert sorted(w["name"] for w in feedback) == ["Lena Sorensen", "Valentina Roos", "Wyatt Nakamura", "Xiomara Lindholm", "Yara Eklund"]
-    everyone = sched + o["interview_booked_not_held"] + feedback + o["other_active"]
-    assert len(everyone) == len({w["candidate_id"] for w in everyone}) == sum(r["active_candidates"] for r in o["roles"])
+    everyone = sched + o["interview_booked_not_held"] + feedback
+    assert len(everyone) == len({w["candidate_id"] for w in everyone})
+    assert all(sum(r["active_by_stage"].values()) == r["active_candidates"] for r in o["roles"])
+    assert "other_active" not in o                     # everyone else is only counted; search_candidates lists them
     assert [len(g) for g in (sched, o["interview_booked_not_held"], feedback)] == [sum(r[k] for r in o["roles"]) for k in ("waiting_to_be_scheduled", "interview_booked_not_held", "waiting_for_feedback")]
+
+
+def test_get_candidates_by_name_returns_full_records_and_reports_unknown_names(conn):
+    out = candidates.get_candidates(names=["Hannelore Voss", "dahlia", "Nobody Atall"], conn=conn)
+    assert [c.get("candidate_id") for c in out] == ["C108", "C104", None]
+    assert out[0]["stage_history"] and "pending_tasks" in out[0]                       # by name, the record is complete
+    assert out[2] == {"name": "Nobody Atall", "not_found": True}
+    for bad in (dict(names=[]), dict(names=["x"] * 11), dict(names=["Dahlia"], role="ROLE-BE")):
+        with pytest.raises(ValueError):
+            candidates.get_candidates(conn=conn, **bad)
+
+
+def test_tasks_for_a_person_can_be_asked_by_name(conn):
+    by_name = tasks.get_tasks(candidate="Mateo Villareal", conn=conn)["tasks"]
+    assert {t["task_id"] for t in by_name} == {t["task_id"] for t in tasks.get_tasks(candidate="C113", conn=conn)["tasks"]}
+    assert {t["candidate_id"] for t in tasks.get_tasks(candidate="mateo", conn=conn)["tasks"]} == {"C113"}
+    with pytest.raises(NotFound, match="no candidate named"):
+        tasks.get_tasks(candidate="Nobody Atall", conn=conn)

@@ -56,7 +56,7 @@ def assistant_default_text(at):
     return "\n".join(v for t, v in visible_by_default(at.chat_message[-1]) if t not in ("Status",))
 
 
-DEMO = lambda: [call(("0", "search_candidates", {"role_id": "ROLE-BE"})), call(("1", "get_candidates", {"candidate_ids": ["C104", "C110"]})),
+DEMO = lambda: [call(("0", "search_candidates", {"role": "ROLE-BE"})), call(("1", "get_candidates", {"candidate_ids": ["C104", "C110"]})),
                 submit("3", answer_markdown="Top two:\n\n- **Dahlia Ramanathan (C104)** [cv:C104] [feedback:FB-016]\n- **Junko Takeda (C110)** [cv:C110]",
                        candidates=[cand_arg("C104"), cand_arg("C110")])]
 
@@ -111,14 +111,16 @@ def test_evidence_panel_shows_readable_notes_grouped_by_person_not_identifiers(m
 def test_technical_details_appear_only_when_switched_on(monkeypatch, dbs):
     at = start(monkeypatch, orchestrator(dbs["baseline"], DEMO))
     at.sidebar.button(key="example-1").click().run()
-    assert not any(lbl.startswith("Tools used") for _, t, lbl in walk(at.chat_message[-1]) if t == "Expander")
+    assert not any(lbl.startswith("How this answer was made") for _, t, lbl in walk(at.chat_message[-1]) if t == "Expander")
     at.sidebar.toggle[0].set_value(True).run()
     labels = [lbl for _, t, lbl in walk(at.chat_message[-1]) if t == "Expander"]
-    assert any(lbl.startswith("Tools used (2) · ") for lbl in labels)
-    tech = "\n".join(v for _, v in inside_expander(at.chat_message[-1], "Tools used"))
-    assert "get_candidates" in tech and "cv:C104" in tech and "tokens" in tech                  # the raw detail IS there, for those who ask
+    assert any(lbl.startswith("How this answer was made · 3 round(s) · 2 tool call(s)") for lbl in labels)
+    tech = "\n".join(v for _, v in inside_expander(at.chat_message[-1], "How this answer was made"))
+    assert "**Round 1** · Called 1 tool(s)" in tech and "`search_candidates(role=\"ROLE-BE\")`" in tech      # one block per round
+    assert "**Round 3** · Submitted the answer → accepted" in tech and "tokens in" in tech and "cv:C104" in tech
+    assert not any(t == "Dataframe" for _, t, _ in walk(at.chat_message[-1]))                  # no wide table (and no Arrow warnings)
     at.sidebar.toggle[0].set_value(False).run()
-    assert not any(lbl.startswith("Tools used") for _, t, lbl in walk(at.chat_message[-1]) if t == "Expander")
+    assert not any(lbl.startswith("How this answer was made") for _, t, lbl in walk(at.chat_message[-1]) if t == "Expander")
 
 
 def test_new_conversation_clears_messages_and_history_and_brings_back_the_examples(monkeypatch, dbs):
@@ -158,12 +160,10 @@ def test_a_relevant_flag_shows_a_plain_notice_and_the_original_text_only_in_the_
     assert outside == []                                                                     # the payload text exists only inside the inert code block
 
 
-def test_an_unrelated_flag_is_a_footnote_but_the_text_is_still_reviewable(monkeypatch, dbs):
+def test_an_unrelated_flag_adds_no_notice_but_the_text_is_still_reviewable(monkeypatch, dbs):
     at = start(monkeypatch, orchestrator(dbs["injected"], flagged_steps("Dahlia Ramanathan has the strongest interview record.", listed=("C104",))))
     at.chat_input[0].set_value("who is strongest").run()
-    assert not any(t == "Markdown" and "manipulative" in v for _, t, v in walk(at.chat_message[-1]))   # not a lead note
-    foot = [c.value for c in at.caption if "came across potentially manipulative instructions" in c.value]
-    assert len(foot) == 1 and "did not affect this answer" in foot[0]
+    assert not any("manipulative" in v for _, t, v in walk(at.chat_message[-1]))              # no notice under an unrelated answer
     assert ("Code", PAYLOAD) in inside_expander(at.chat_message[-1], "View the original flagged text")
 
 
@@ -194,7 +194,7 @@ def test_markup_inside_flagged_text_is_displayed_as_text_not_interpreted(monkeyp
 # ------------------------------------------------------------------ honesty about what could not be checked
 def test_unverified_claims_do_not_get_a_trust_line_and_are_explained_in_plain_words(monkeypatch, dbs):
     bad = lambda sid: submit(sid, answer_markdown="Lag 9.5 [feedback:FB-999] [analytics:ROLE-BE@2026-11-07].", figures=[fig_arg(9.5, label="Median wait")])
-    at = start(monkeypatch, orchestrator(dbs["baseline"], lambda: [call(("1", "get_pipeline_analytics", {"role_id": "ROLE-BE"})), bad("a"), bad("b")]))
+    at = start(monkeypatch, orchestrator(dbs["baseline"], lambda: [call(("1", "get_pipeline_analytics", {"role": "ROLE-BE"})), bad("a"), bad("b")]))
     at.chat_input[0].set_value("lag?").run()
     default = assistant_default_text(at)
     assert "Some details in this answer could not be verified against the records." in default and "Checked against the source records." not in default
@@ -306,7 +306,7 @@ def assert_page_is_clean(at, where):
 
 def test_no_streamlit_internals_render_on_any_path_across_several_turns(monkeypatch, dbs):
     """The bug appeared when history was re-rendered, i.e. from the second turn on, so check every turn, the toggle and the reset path."""
-    steps = lambda: [call(("1", "search_candidates", {"role_id": "ROLE-BE"})), call(("2", "get_candidates", {"candidate_ids": ["C104", "C117"]})),
+    steps = lambda: [call(("1", "search_candidates", {"role": "ROLE-BE"})), call(("2", "get_candidates", {"candidate_ids": ["C104", "C117"]})),
                      submit("3", answer_markdown="Top: Dahlia Ramanathan [cv:C104].", candidates=[cand_arg("C104")])]
     at = start(monkeypatch, orchestrator(dbs["injected"], steps))
     assert_page_is_clean(at, "first load")

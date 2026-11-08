@@ -1,54 +1,53 @@
 # Demo questions
 
-Twelve questions covering the five things a recruiter asks. Each was run three times against the seeded data (as of Nov 7, 2026) and checked
-against the database, not against the model's own explanation. "Expected" is what the data says; every run below matched it unless noted.
+Twelve conversations (20 turns with follow-ups) covering what a recruiter asks: roles, pipeline bottlenecks, shortlists and
+comparisons, where a person stands, tasks, and what needs attention. Each was run 3 times against the seeded data (as of
+Nov 7, 2026), through the real orchestrator and the recruiter-facing view, on 2026-11-08 after the simplification
+(`docs/simplification_proposal.md`). "Facts" means automated checks of the visible answer against the database (for example
+"Oct 23", "180", the right names). Prose quality was read by hand; it is not scored here.
 
-| # | Ask | Expected (from the data) |
+| # | Question | Tools the model chose | Rounds (median) | Tokens (median) | Facts |
+|---|---|---|---|---|---|
+| 1 | What open roles do we have? | list_roles | 2 | 8.0k | 3/3 |
+|   | → How long has each been open? | list_roles | 2 | 8.2k | 3/3 |
+| 2 | Which role needs the most attention? | get_recruiting_overview | 2 | 9.8k | 1/3 * |
+|   | → Show me the pipeline for Manufacturing Systems Engineer | get_pipeline_analytics | 2 | 9.6k | 3/3 |
+| 3 | (Backend selected) This role has been open for four months. Where is our process losing candidates? | get_pipeline_analytics | 2 | 9.6k | 3/3 |
+|   | → How did you calculate that? | get_pipeline_analytics (fetched again) | 2 | 9.8k | 3/3 |
+| 4 | (Manufacturing selected) This role has been open for four months. What is going on? | get_pipeline_analytics, get_recruiting_overview | 3 | 16.7k | 3/3 |
+| 5 | Why is People Operations hiring slow? | get_pipeline_analytics, get_recruiting_overview | 3 | 17.2k | 3/3 |
+|   | → Who is waiting on feedback? | get_recruiting_overview | 2 | 10.5k | 3/3 |
+| 6 | Who are the top three Backend Engineer candidates, and why? | get_candidates(role) | 2 | 13.7k | 3/3 |
+|   | → Of those three, who has been waiting longest? | get_candidates(names) | 2 | 11.3k | 3/3 ** |
+| 7 | Compare Dahlia Ramanathan and Junko Takeda. | get_candidates(names) | 2 | 10.2k | 3/3 |
+| 8 | Where does Hannelore Voss stand in the process? | get_candidates(names) | 2 | 8.7k | 3/3 |
+|   | → When is her interview? | get_candidates(names) | 2 | 8.9k | 2/3 |
+| 9 | What stage is C123 in, what was their latest interview feedback, and how long have they been waiting compared with others at that stage? | get_candidates, get_pipeline_analytics | 3 | 15.2k | 3/3 |
+| 10 | Which recruiting tasks are pending or overdue? | get_tasks | 2 | 11.1k | 3/3 |
+|   | → When was Mateo Villareal's interview booking due? | get_tasks(candidate name) | 2 | 8.9k | 3/3 |
+| 11 | What needs my attention today? | get_recruiting_overview | 2 | 10.3k | 2/3 |
+|   | → Why has Mateo waited 22 days? | get_candidates(names) | 3 | 15.7k | 3/3 |
+| 12 | Mark T-011 done and email C101. | (declines; may look the task up) | 3 | 11.6k | 3/3 |
+
+Across all 60 turns: median 2 model rounds (max 4), median about 10k tokens (max 26k), median 4 seconds (max 9), no failed turns, no IDs or
+field names in the recruiter's view, 5 turns needed a correction round, and the model made no invalid tool call.
+
+\* The facts are right, but in 2 of 3 runs the per-role numbers came as bullets without days open instead of a table.
+\*\* The check only confirms an answer was given. Reading them: the right person (Junko Takeda, 5 days waiting for a decision) was named in
+2 of 3 runs.
+
+## Before and after (same questions)
+| | Before (2026-11-08 morning) | After |
 |---|---|---|
-| **Candidate status** | | |
-| 1 | Where does Hannelore Voss stand in the process? | Final Interview, interview booked on Nov 3, not held yet, no feedback yet |
-| 2 | Who is at the final interview stage for Backend Engineer? | Dahlia Ramanathan (interview held Nov 3, feedback in Nov 4) and Hannelore Voss (booked, not held) |
-| **Pipeline bottlenecks** | | |
-| 3 | Where are we losing candidates for the Backend Engineer role? | Technical Interview: 17 reached, 5 moved on, 2 rejected, 5 withdrew; 3 people still unscheduled for 22, 16 and 12 days |
-| 4 | What is going on with Manufacturing Systems Engineer hiring? | Open 180 days; 6 Resume Review rejections for a missing required skill (a sourcing signal); 2 people in Final Interview already past the 7-day target |
-| **Interview feedback delays** | | |
-| 5 | Which interviews are still waiting on feedback? | Five people: Xiomara Lindholm (9 days), Wyatt Nakamura (6), Valentina Roos (4), Lena Sorensen (3), Yara Eklund (1.5) |
-| 6 | Why is People Operations hiring slow? | Hiring Manager Interview feedback: median 3 days against a 2-day target, 7 of 8 over; 4 people waiting on feedback; 5 overdue tasks |
-| **Comparisons** | | |
-| 7 | Who are the top three Backend Engineer candidates? | Dahlia Ramanathan, Junko Takeda, Hannelore Voss (same three in every run) |
-| 8 | Compare Dahlia Ramanathan and Junko Takeda. | Both match all required skills; Dahlia has more interview evidence (4 reviews, 3 interviews) than Junko (3 reviews, 2 interviews) |
-| **Actions that need attention** | | |
-| 9 | What needs my attention today? | Book Mateo Villareal (22 days), Kofi Adeyemi (16) and Quentin Abara (12); chase feedback for Xiomara Lindholm, Wyatt Nakamura and others |
-| 10 | Which tasks are overdue? | 10 tasks, 15 days to under a day overdue, in one table |
-| 11 | Who has been waiting longest for an interview? | Mateo Villareal, 22 days, not yet booked; then Kofi Adeyemi 16 and Quentin Abara 12 |
-| 12 | Which role needs the most attention? | Table: Backend Engineer 123 days open, 3 to schedule, 1 on feedback, 4 overdue tasks; Manufacturing 180, 1, 0, 1; People Operations 82, 1, 4, 5 |
-
-Follow-ups worth showing in the same conversation: "How many are at the final stage?" then "Give me those candidates and their status";
-"Which role needs attention?" then "Give me the pipeline for Manufacturing Systems Engineer".
-
-## What changed because of this pass
-Fixes made after a first run of these questions and the notes in `interesting-conversations.md`:
-- **Invented numbers.** "82.35%, 14 over-target" were Backend Engineer's numbers (14 of 17) attached to Manufacturing, whose real figure is 0 of 11.
-  The assistant no longer receives precomputed rates, is told never to quote percentages (it says "14 of 17"), and must keep each role's numbers apart.
-- **Wrong people under the wrong role.** Search rows now carry their role.
-- **One overview instead of arithmetic.** A new read-only tool, `get_recruiting_overview`, gives per-role counts and groups every active person by what
-  they are waiting for. "What needs attention", "which role", "who is waiting longest", "how many at the final stage" and "where is X" read from it,
-  so the model no longer counts across several results. A test recomputes it from the raw tables.
-- **Tasks and pipeline are tables; answers end with next steps** (person, action, why) for attention, delay and bottleneck questions.
-- **Plain words.** "Reached" and "currently at" instead of "entered" and "in stage".
-- **No mid-answer self-corrections;** a stage is called a problem only when a number is over target.
-- **Developer view is a timeline:** each model round, the tool it called with arguments and what came back (including records the size cap left out),
-  and which round submitted the answer.
-- **Why top three read 6 of 8 candidates:** a single record lookup is capped at 6. The assistant now reads the six with the most feedback and
-  says how many it did not rank.
-
-## Observed across 54 turns (18 questions/turns x 3 runs)
-No percentages, no identifiers or tool names in the default view, no failed turns, median 115 words, 3 model rounds, about 5 seconds (slowest 11 s).
-Shortlists take 5 to 6 rounds and 40-60k tokens.
+| Top three Backend Engineer | 6 rounds, 57k tokens, 6 of 8 candidates read first | 2 rounds, about 13.6k tokens, all 8 read in one call |
+| Where does Hannelore Voss stand | up to 11 tool calls (searched every role) | 1 call, 2 rounds |
+| Which role needs attention | 3-4 rounds, 17-24k tokens, once mixed two roles' numbers | 2 rounds, about 10k tokens, one cross-role result |
+| System prompt | 16.5k characters | 7k characters |
 
 ## Known weak spots (not fixed, not hidden)
-- Looking up one named person can take about ten search calls. The answer is right, but slow.
-- The model occasionally submits a count as a figure, which triggers a silent correction round (13 of 54 turns had some correction); the final answer was
-  still checked.
-- Role-priority questions are a judgment call: People Operations and Backend Engineer both defend as "most attention" and the answer can vary between them.
-- Answers to "what needs my attention" sometimes include the role table although the instructions say not to.
+- The model runs with **no reasoning**: with function tools on the Chat Completions endpoint, `gpt-5.4-mini` rejects any
+  `reasoning_effort` other than none. Remaining slips look like that: naming the wrong person as "longest of three" in 1 of 3 runs,
+  and bullets where a table was asked for. Moving the adapter to the Responses API is the recommended next step.
+- In comparisons the model sometimes still mentions that one person is "further along", although the prompt says that is not a reason to
+  rank them higher.
+- Declining a write request ("mark T-011 done") is correct but wordy: it describes the task instead of just declining.

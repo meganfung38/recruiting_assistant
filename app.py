@@ -71,17 +71,23 @@ def render_flagged(v: dict) -> None:
 
 
 def render_technical(v: dict) -> None:
+    """One block per model round: its cost, the tools it called and what came back, or the answer it submitted and the verdict."""
     t = v["technical"]
     with st.expander(t["title"]):
-        if t["rows"]:
-            st.dataframe(t["rows"], hide_index=True, width="stretch")
-        st.caption(f"{t['model_rounds']} model round(s) · {t['tokens']:,} tokens · {t['empty_retries']} empty reply retried. "
-                   "Recorded by the application, not written by the model.")
-        if t["corrected"]:
-            st.caption("Corrected once after validation: " + "; ".join(t["corrected"]) + ".")
-        for p in t["validation"]:
-            st.caption(f"Validation: {p}")
-        st.caption(f"Received {t['records_received']} records across {t['candidates_seen']} candidates. Cited: " + (", ".join(t["refs"]) or "none"))
+        for r in t["rounds"]:
+            with st.container(border=True):
+                head = f"**Round {r['round']}** · {r['action']}" + (f" → {r['outcome']}" if r["outcome"] else "")
+                st.markdown(head)
+                st.caption(f"{r['tokens_in']:,} tokens in · {r['tokens_out']:,} out · {r['seconds']:.1f}s")
+                for c in r["calls"]:
+                    st.markdown(f"{'' if c['ok'] else '⚠ '}`{c['call']}` → {c['returned']}")
+                    for line in ([f"Records: {c['records']}"] if c["records"] else []) + c["notes"]:
+                        st.caption(line)
+                for p in r["problems"]:
+                    st.caption(f"Sent back because: {p}")
+        if t["validation"]:
+            st.caption("Still unverified in the final answer: " + "; ".join(t["validation"]))
+        st.caption(f"Cited: {', '.join(t['refs']) or 'none'}. Recorded by the application, not written by the model.")
 
 
 def notice(n: dict) -> None:

@@ -4,8 +4,11 @@ and closed in a finally (see README: Streamlit reruns the script, so nothing is 
 """
 import asyncio
 import json
+import time
 from contextlib import AsyncExitStack
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from pathlib import Path
 
 from agent.answer_schema import SubmittedAnswer, submit_answer_definition
 from agent.evidence import EvidenceRegistry, ValidationReport, render_markdown, validate_plain
@@ -60,10 +63,6 @@ class TurnResult:
     flag_sources: list = field(default_factory=list)   # raw flagged candidate text for the human reviewer; never sent anywhere else
     usage: dict = field(default_factory=lambda: {"prompt_tokens": 0, "completion_tokens": 0})
 
-    @property
-    def unresolved_candidates(self) -> list[str]:
-        return sorted(self.evidence.unresolved_candidates())
-
 
 def _notify(callback, event: dict) -> None:
     """Progress is a convenience for the UI: a failing callback must never affect the turn."""
@@ -83,9 +82,11 @@ def user_message(question: str, role_context: str | None) -> dict:
 
 
 class Orchestrator:
-    def __init__(self, llm, db_path=None, limits: Limits = Limits(), session_factory=None, system_prompt: str = SYSTEM_PROMPT):
+    def __init__(self, llm, db_path=None, limits: Limits = Limits(), session_factory=None, system_prompt: str = SYSTEM_PROMPT,
+                 log_path: str | Path | None = None):
         self.llm, self.limits, self.system_prompt = llm, limits, system_prompt
         self.session_factory = session_factory or (lambda: McpSession(db_path))
+        self.log_path = Path(log_path) if log_path else None      # one JSON line per turn, for tracing a bad answer afterwards
 
     def run_turn(self, question: str, state: ConversationState | None = None, role_context: str | None = None,
                  on_progress=None) -> TurnResult:
@@ -95,7 +96,23 @@ class Orchestrator:
         result = asyncio.run(self._run(question, state, role_context, on_progress))
         if result.status != "error":
             state.turns.append(result.messages)
+        self._log(question, result)
         return result
+
+    def _log(self, question: str, result: TurnResult) -> None:
+        """Append the turn to the JSONL log: question, answer, status, validation problems, and the sanitized trace (IDs, counts,
+        sizes, tokens; never record text). A logging failure never affects the turn."""
+        if not self.log_path:
+            return
+        try:
+            self.log_path.parent.mkdir(parents=True, exist_ok=True)
+            entry = {"at": datetime.now(timezone.utc).isoformat(timespec="seconds"), "question": question, "status": result.status,
+                     "answer": result.answer, "repaired": result.repaired, "problems": result.report.problems() if result.report else [],
+                     **result.trace.to_log()}
+            with self.log_path.open("a", encoding="utf-8") as f:
+                f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+        except Exception:
+            pass
 
     async def _run(self, question, state, role_context, on_progress=None) -> TurnResult:
         ctx = TurnContext(budget=TurnBudget(self.limits), trace=Trace())
@@ -118,24 +135,25 @@ class Orchestrator:
         return TurnResult(UNAVAILABLE[code], "error", ctx.trace, ctx.evidence, error_code=code, messages=turn_msgs,
                           usage=usage or {"prompt_tokens": 0, "completion_tokens": 0})
 
-    async def _ask(self, messages, tools, ctx, timeout: float):
-        ctx.trace.model_rounds += 1
-        return await asyncio.wait_for(self.llm.complete(messages, tools), max(0.1, timeout))
+    async def _ask(self, messages, tools, ctx, timeout: float, usage: dict):
+        """One model call, recorded as a round (tokens and time) whatever happens next."""
+        rec, t0 = ctx.trace.begin_round(), time.monotonic()
+        try:
+            resp = await asyncio.wait_for(self.llm.complete(messages, tools), max(0.1, timeout))
+        finally:
+            rec.duration_ms = int((time.monotonic() - t0) * 1000)
+        rec.prompt_tokens, rec.completion_tokens = resp.usage.get("prompt_tokens", 0), resp.usage.get("completion_tokens", 0)
+        for k in usage:
+            usage[k] += resp.usage.get(k, 0)
+        return resp, rec
 
     async def _loop(self, executor, ctx, state, user, on_progress=None) -> TurnResult:
         messages = [{"role": "system", "content": self.system_prompt}, *state.context_messages(), user]
         turn_msgs, flags = [user], []
         tools = executor.tool_definitions() + [submit_answer_definition()]   # submit_answer is local, never sent to MCP
         usage = {"prompt_tokens": 0, "completion_tokens": 0}
-        def can_retrieve() -> bool:     # a rejected answer costs a fetch round plus a resubmit round, so both must still fit
-            lim = ctx.budget.limits
-            return ctx.budget.calls < lim.max_tool_calls and ctx.budget.rounds <= lim.max_rounds - 2 and ctx.budget.remaining_s() > 15
-        fin, accepted, answer_text, limit = Finalizer(ctx.evidence, can_retrieve), None, None, None
+        fin, accepted, answer_text, limit = Finalizer(ctx.evidence), None, None, None
         empty = 0
-
-        def tally(resp):
-            for k in usage:
-                usage[k] += resp.usage.get(k, 0)
 
         while accepted is None and answer_text is None and limit is None:
             try:
@@ -143,7 +161,7 @@ class Orchestrator:
                 if ctx.budget.remaining_s() <= 0:
                     raise LimitExceeded("turn_timeout")
                 _notify(on_progress, {"type": "model"})
-                resp = await self._ask(messages, tools, ctx, ctx.budget.remaining_s())
+                resp, rec = await self._ask(messages, tools, ctx, ctx.budget.remaining_s(), usage)
             except LimitExceeded as exc:
                 limit = exc.code
                 break
@@ -152,11 +170,11 @@ class Orchestrator:
                 break
             except LLMUnavailable as exc:
                 return self._failed(exc.code, ctx, turn_msgs, usage)
-            tally(resp)
             if not resp.tool_calls and not (resp.content or "").strip():
                 # An empty completion (no text, no tool call) is a model hiccup, not an answer. It is NOT added to the
                 # conversation (an empty assistant message is invalid to replay); nudge and try again, within bounds.
                 empty += 1
+                rec.action, rec.outcome = "empty", "empty reply, nudged"
                 if empty > MAX_EMPTY_RETRIES:
                     failed = self._failed("empty_answer", ctx, turn_msgs, usage)
                     failed.empty_retries = empty - 1
@@ -167,9 +185,12 @@ class Orchestrator:
             turn_msgs.append(resp.message)
             if not resp.tool_calls:                                   # plain-text answer: validated by regex only
                 decision, nudge = fin.plain_text(resp.content)
+                rec.action = "plain_text"
                 if nudge:
+                    rec.outcome, rec.problems = "sent back", decision.content.get("problems", [])
                     messages.append({"role": "system", "content": nudge})
                     continue
+                rec.outcome = "accepted"
                 accepted, answer_text = decision, decision.rendered
                 break
             submits = [tc for tc in resp.tool_calls if tc.name == "submit_answer"]
@@ -186,6 +207,12 @@ class Orchestrator:
             for i, tc in enumerate(submits):
                 d = fin.submit(tc, mixed=bool(data_calls), duplicate=i > 0)
                 results[tc.id] = d.content
+                if i == 0:
+                    rec.action = "submit" if not data_calls else "tools"
+                    rec.outcome = ("accepted" if d.content.get("status") == "accepted" else
+                                   "sent back" if d.content.get("reason") in ("validation_failed", "invalid_arguments") else
+                                   f"deferred: {d.content.get('reason', '')}")
+                    rec.problems = list(d.content.get("problems", []))
                 if d.answer is not None and accepted is None:
                     accepted = d
             for tc in resp.tool_calls:
@@ -216,19 +243,13 @@ class Orchestrator:
 
     async def _wrap_up(self, messages, ctx, limit: str, usage: dict) -> str:
         """After a limit: one last model call with tools disabled, so the recruiter still gets what was found."""
-        missing_ids = sorted(ctx.evidence.unresolved_candidates())
-        static = (f"{LIMIT_MESSAGES[limit]} The evidence gathered so far is listed below, but this answer is incomplete."
-                  + (f" These candidates were not reviewed: {', '.join(missing_ids)}." if missing_ids else ""))
+        static = f"{LIMIT_MESSAGES[limit]} This answer is incomplete."
         if limit == "turn_timeout":
             return static                                            # no time left to ask again
-        missing = missing_ids
-        unreviewed = (f" Their records were requested but never retrieved, so you must name every one of them as not reviewed: "
-                      f"{', '.join(missing)}.") if missing else ""
-        notice = {"role": "system", "content": WRAP_UP_NOTICE.format(reason=LIMIT_MESSAGES[limit].rstrip("."), unreviewed=unreviewed)}
+        notice = {"role": "system", "content": WRAP_UP_NOTICE.format(reason=LIMIT_MESSAGES[limit].rstrip("."))}
         try:
-            resp = await self._ask([*messages, notice], None, ctx, WRAP_UP_GRACE_S)
+            resp, rec = await self._ask([*messages, notice], None, ctx, WRAP_UP_GRACE_S, usage)
         except (LLMUnavailable, asyncio.TimeoutError):
             return static
-        for k in usage:
-            usage[k] += resp.usage.get(k, 0)
+        rec.action, rec.outcome = "wrap_up", "answered without tools after a limit"
         return (resp.content or "").strip() or static

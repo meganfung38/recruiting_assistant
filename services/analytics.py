@@ -109,9 +109,11 @@ def _feedback(evs, fb_by, target, as_of):
             "over_target_or_overdue_share": _r((over + overdue) / denom) if denom else None}
 
 
-def get_pipeline_analytics(role_id: str, as_of: datetime = AS_OF, conn=None) -> dict:
+def get_pipeline_analytics(role: str, as_of: datetime = AS_OF, conn=None) -> dict:
+    """`role` is a role ID or title (see services.db.resolve_role_id)."""
     with use(conn) as c:
-        role = load_role(c, role_id)
+        role = load_role(c, role)
+        role_id = role["role_id"]
         events = rows(c, "SELECT e.* FROM stage_events e JOIN candidates c USING (candidate_id) "
                          "WHERE c.role_id = ? ORDER BY e.event_id", role_id)
         fb_by = {(f["candidate_id"], f["stage"]): f for f in rows(

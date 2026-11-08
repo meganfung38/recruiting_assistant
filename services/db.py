@@ -44,11 +44,23 @@ def rows(conn: sqlite3.Connection, sql: str, *args) -> list[dict]:
     return [dict(r) for r in conn.execute(sql, args).fetchall()]
 
 
-def load_role(conn: sqlite3.Connection, role_id: str) -> dict:
-    r = rows(conn, "SELECT * FROM roles WHERE role_id = ?", role_id)
-    if not r:
-        raise NotFound(f"role {role_id}")
-    r = r[0]
+def resolve_role_id(conn: sqlite3.Connection, role: str) -> str:
+    """A role reference -> its role_id. Accepts the ID ("ROLE-BE") or the title, in full or as an unambiguous part of it
+    ("Backend Engineer", "backend"), so the model can pass the words the recruiter used. Unknown or ambiguous -> NotFound
+    naming the known roles, which tells the model how to retry."""
+    known = rows(conn, "SELECT role_id, title FROM roles ORDER BY role_id")
+    ref = " ".join(str(role).split()).lower()
+    exact = [r["role_id"] for r in known if ref in (r["role_id"].lower(), r["title"].lower())]
+    partial = [r["role_id"] for r in known if ref and ref in r["title"].lower()]
+    hits = exact or partial
+    if len(hits) != 1:
+        listing = ", ".join(f"{r['role_id']} ({r['title']})" for r in known)
+        raise NotFound(f"role '{role}'" + (" is ambiguous" if hits else "") + f". Known roles: {listing}")
+    return hits[0]
+
+
+def load_role(conn: sqlite3.Connection, role: str) -> dict:
+    r = rows(conn, "SELECT * FROM roles WHERE role_id = ?", resolve_role_id(conn, role))[0]
     return {"role_id": r["role_id"], "title": r["title"], "department": r["department"],
             "opened_at": r["opened_at"], "status": r["status"],
             "requirements": json.loads(r["requirements_json"]),

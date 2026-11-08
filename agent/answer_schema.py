@@ -29,9 +29,15 @@ class Figure(_Strict):
 
 
 class SubmittedAnswer(_Strict):
-    answer_markdown: Annotated[str, Field(min_length=1, max_length=8000, description="Narrative with inline citations like [feedback:FB-018]")]
-    candidates: Annotated[list[CandidateEntry], Field(max_length=10)] = []
-    figures: Annotated[list[Figure], Field(max_length=20)] = []
+    answer_markdown: Annotated[str, Field(min_length=1, max_length=8000, description=(
+        "The answer the recruiter reads, in markdown, with inline citations like [feedback:FB-018]. First sentence: the answer, "
+        "correcting any wrong premise in the question (e.g. how long a role has been open). Three or more roles, tasks, people or "
+        "stages: ONE markdown table with a header row, not bullets. Names, never IDs."))]
+    candidates: Annotated[list[CandidateEntry], Field(max_length=10, description=(
+        "Only for a ranking or a comparison of candidates (e.g. a top three). Leave empty for status lookups, lists of people, "
+        "tasks and pipeline answers."))] = []
+    figures: Annotated[list[Figure], Field(max_length=20, description=(
+        "Optional. Only numbers copied from a single field of a tool result. Never counts you made yourself."))] = []
     uncertainties: Annotated[list[Annotated[str, Field(max_length=400)]], Field(max_length=10)] = []
     content_warnings: Annotated[list[Annotated[str, Field(max_length=400)]], Field(max_length=10, description="Unused: leave empty. The application reports flagged content itself.")] = []
 

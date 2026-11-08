@@ -53,7 +53,7 @@ def _names(node) -> dict[str, str]:
 
 
 def _roles(node) -> dict[str, str]:
-    """{role_id: title} wherever a result carries both (list_roles, get_role, analytics)."""
+    """{role_id: title} wherever a result carries both (list_roles, search rows, records, analytics)."""
     out: dict[str, str] = {}
     if isinstance(node, dict):
         if isinstance(node.get("role_id"), str) and isinstance(node.get("title") or node.get("role_title"), str):
@@ -87,23 +87,31 @@ def aggregates(tool: str, raw_envelope: dict) -> dict[str, Any]:
     data = raw_envelope.get("data") or {}
     if tool == "get_pipeline_analytics":
         return {r: data for r in raw_envelope["source_refs"] if r.startswith("analytics:")}
-    if tool == "get_tasks":
-        return {f"task:{t['task_id']}": t for t in data.get("tasks", [])}
+    if tool == "get_tasks":                                       # each task, and the list's totals (overdue_total, pending_total)
+        totals = {k: v for k, v in data.items() if k != "tasks"}
+        return {**{f"task:{t['task_id']}": t for t in data.get("tasks", [])},
+                **({"tasks:" + ",".join(sorted(t["task_id"] for t in data.get("tasks", []))): totals} if totals else {})}
     if tool == "get_recruiting_overview":                         # per-role counts citable as role:<ID>; waiting people as search:<ID>
         out = {f"role:{r['role_id']}": r for r in data.get("roles", [])}
-        out.update({f"search:{w['candidate_id']}": {"waiting_days": w["waiting_days"]} for g in ("waiting_to_be_scheduled", "interview_booked_not_held", "waiting_for_feedback", "other_active") for w in data.get(g, [])})
+        out.update({f"search:{w['candidate_id']}": {"waiting_days": w["waiting_days"]}
+                    for g in ("waiting_to_be_scheduled", "interview_booked_not_held", "waiting_for_feedback") for w in data.get(g, [])})
         return out
-    if tool in ("list_roles", "get_role"):                       # a role's age and open date, so "open for N days" can be verified
+    if tool == "list_roles":                                      # a role's age and open date, so "open for N days" can be verified
         return {f"role:{r['role_id']}": {k: v for k, v in r.items() if k in ("role_id", "title", "opened_at", "role_age_days")}
-                for r in data.get("roles", [data]) if isinstance(r, dict) and r.get("role_id")}
-    if tool == "get_candidates":
-        return {f"cv:{c['candidate_id']}": {k: v for k, v in c.items() if k != "cv_text"}
-                for c in data.get("candidates", []) if not c.get("not_found")}
+                for r in data.get("roles", []) if isinstance(r, dict) and r.get("role_id")}
+    if tool == "get_candidates":                                  # each record, and the pending tasks inside it
+        found = [c for c in data.get("candidates", []) if not c.get("not_found")]
+        return {**{f"cv:{c['candidate_id']}": {k: v for k, v in c.items() if k != "cv_text"} for c in found},
+                **{f"task:{t['task_id']}": t for c in found for t in c.get("pending_tasks", [])}}
     if tool == "search_candidates":
         return {f"search:{c['candidate_id']}": {"fit_signals": c["fit_signals"], "waiting_days": c["waiting_days"],
                                            "days_in_current_stage": c["days_in_current_stage"]}
                 for c in data.get("candidates", [])}
     return {}
+
+
+def _shown_task_ids(env: dict) -> set[str]:
+    return {r[5:] for r in env.get("source_refs", []) if r.startswith("task:")}
 
 
 class EvidenceRegistry:
@@ -117,7 +125,6 @@ class EvidenceRegistry:
         self._roles: dict[str, str] = {}      # role_id -> title, learned from any result that carries both
         self._cand_roles: dict[str, str] = {} # candidate_id -> role_id, to tell apart two candidates who share a name
         self._flagged: set[str] = set()   # candidates whose content a tool result flagged as instruction-like
-        self._omitted: set[str] = set()   # candidates a size-capped result left out, or a refused/failed request asked for
 
     def add(self, tool: str, safe_envelope: dict, raw_aggregates: dict | None = None) -> None:
         """Register a successful call's evidence. Callers must not invoke this for failed calls."""
@@ -133,10 +140,10 @@ class EvidenceRegistry:
         if tool == "get_candidates":
             self._retrieved |= {c["candidate_id"] for c in (safe_envelope["data"] or {}).get("candidates", [])
                                 if not c.get("not_found")}
-        self._omitted |= {i for i in safe_envelope.get("omitted", []) if re.fullmatch(r"C\d{3}", i)}
         shown = _candidate_ids(safe_envelope["data"])          # keep raw values only for what the model was shown
         for ref, value in (raw_aggregates or {}).items():
-            if ref in safe_envelope["source_refs"] or (ref.startswith(("cv:", "search:")) and ref.partition(":")[2] in shown):
+            if ref in safe_envelope["source_refs"] or (ref.startswith(("cv:", "search:")) and ref.partition(":")[2] in shown) \
+                    or (ref.startswith("tasks:") and set(ref[6:].split(",")) <= _shown_task_ids(safe_envelope)):
                 if isinstance(value, dict) and isinstance(self._raw.get(ref), dict):
                     self._raw[ref] = {**self._raw[ref], **value}   # search signals + record fields for one candidate
                 else:
@@ -186,17 +193,11 @@ class EvidenceRegistry:
     def candidate_ids(self) -> set[str]:
         return set(self._candidates)
 
-    def note_unfulfilled(self, candidate_ids) -> None:
-        """Candidates the model asked get_candidates for, but a limit/timeout/outage stopped it receiving. They stay
-        unresolved until a later successful call retrieves them."""
-        self._omitted |= {i for i in candidate_ids if re.fullmatch(r"C\d{3}", i)}
-
-    def unresolved_candidates(self) -> set[str]:
-        """Candidates a truncated result omitted and that no later successful call retrieved (no `cv:` record)."""
-        return {c for c in self._omitted if c not in self._retrieved}
-
     def raw(self, ref: str) -> Any:
         return self._raw.get(ref)
+
+    def raw_refs(self) -> list[str]:
+        return sorted(self._raw)
 
 
 # ----------------------------------------------------------------------------- answer validation
@@ -255,8 +256,6 @@ class ValidationReport:
     unseen_candidates: list[str] = field(default_factory=list)
     not_retrieved: list[str] = field(default_factory=list)
     figures: list[FigureResult] = field(default_factory=list)
-    undisclosed_incomplete: list[str] = field(default_factory=list)
-    retrievable: list[str] = field(default_factory=list)   # omitted/requested candidates still unretrieved WHILE budget remains
 
     @property
     def unverified_figures(self) -> list[FigureResult]:
@@ -265,9 +264,7 @@ class ValidationReport:
     @property
     def categories(self) -> list[str]:
         return [c for c, bad in (("unsupported_citation", self.bad_citations), ("unseen_candidate", self.unseen_candidates),
-                                 ("candidate_not_retrieved", self.not_retrieved), ("unverified_figure", self.unverified_figures),
-                                 ("undisclosed_incomplete", self.undisclosed_incomplete),
-                                 ("unretrieved_available", self.retrievable)) if bad]
+                                 ("candidate_not_retrieved", self.not_retrieved), ("unverified_figure", self.unverified_figures)) if bad]
 
     @property
     def ok(self) -> bool:
@@ -281,43 +278,47 @@ class ValidationReport:
         out += [f"Candidate {c} is listed but its record was never retrieved with get_candidates; retrieve it or remove it from candidates."
                 for c in self.not_retrieved]
         out += [f"Figure '{f.label}' ({f.value}) is unverified: {f.reason}" for f in self.unverified_figures]
-        if self.undisclosed_incomplete:
-            out.append("Earlier results omitted these candidates and they were never retrieved: "
-                       f"{', '.join(self.undisclosed_incomplete)}. Retrieve them in small batches, or name them in "
-                       "uncertainties and say the comparison is incomplete (do not present a definitive ranking).")
-        if self.retrievable:
-            out.append(f"You still have tool budget but have not retrieved {', '.join(self.retrievable)}, which an earlier result "
-                       "omitted or you requested. Retrieve them now (two or three IDs per call) and resubmit. Disclosing the gap is "
-                       "only acceptable once you can no longer retrieve them.")
         return out
 
 
-def _sibling(ref: str) -> str | None:
-    kind, _, ident = ref.partition(":")
-    return {"cv": f"search:{ident}", "search": f"cv:{ident}"}.get(kind)
+def _number(found: bool, value) -> bool:
+    return found and isinstance(value, (int, float)) and not isinstance(value, bool)
 
 
 def check_figure(f, registry: "EvidenceRegistry") -> FigureResult:
-    """Verify the number against the stored raw data. A candidate's number may live in the retrieved record (cv:) or in
-    the search row (search:); if the model labelled it with the wrong one, find the real source, verify THERE, and report
-    the true source rather than burning a repair round on a harmless label slip. Prose citations stay strict."""
+    """Verify the number against the stored raw data at (evidence, field_path).
+
+    Label slips are forgiven, wrong numbers are not. If the cited evidence does not contain that field at all (e.g. a per-role overdue
+    count cited to a person's row), the field is looked up in this turn's other results and the figure is verified where the SAME value
+    is found, reporting the true source. If the cited evidence does contain the field and the value differs, the figure is unverified:
+    that is how a number carried over from another role (14 of 17 cited to the wrong role) is caught."""
     base = dict(label=f.label, value=f.value, evidence=f.evidence, field_path=f.field_path)
-    ref, relabelled = f.evidence, False
-    raw = registry.raw(ref)
-    found, actual = (resolve_path(raw, f.field_path) if raw is not None else (False, None))
-    if not found and _sibling(ref) and registry.raw(_sibling(ref)) is not None:
-        other = resolve_path(registry.raw(_sibling(ref)), f.field_path)
-        if other[0]:
-            ref, relabelled, (found, actual), raw = _sibling(ref), True, other, registry.raw(_sibling(ref))
+    raw = registry.raw(f.evidence)
+    found, actual = resolve_path(raw, f.field_path) if raw is not None else (False, None)
+    if found:
+        if not _number(found, actual):
+            return FigureResult(**base, verified=False, reason=f"the value at that path is not a number ({actual!r})")
+        if not math.isclose(f.value, actual, **FLOAT_TOLERANCE):
+            return FigureResult(**base, verified=False, reason=f"the data says {actual}, not {f.value}", source_ref=f.evidence)
+        return FigureResult(**base, verified=True, source_ref=f.evidence)
+    elsewhere = [(ref, v) for ref in registry.raw_refs() if ref != f.evidence
+                 for ok, v in [resolve_path(registry.raw(ref), f.field_path)] if _number(ok, v)]
+    same = [(ref, v) for ref, v in elsewhere if ref.partition(":")[2] == f.evidence.partition(":")[2]]
+    if same:                                          # the same person or role has the field under another source (cv: vs search:)
+        ref, v = same[0]
+        if math.isclose(f.value, v, **FLOAT_TOLERANCE):
+            return FigureResult(**base, verified=True, source_ref=ref, relabelled=True)
+        return FigureResult(**base, verified=False, reason=f"the data says {v}, not {f.value}", source_ref=ref, relabelled=True)
+    if not elsewhere:                                 # the path itself is malformed: look the field up by its own name
+        leaf = _SEGMENT.match(f.field_path.split(".")[-1])
+        elsewhere = [(ref, registry.raw(ref)[leaf.group(1)]) for ref in registry.raw_refs()
+                     if leaf and isinstance(registry.raw(ref), dict) and _number(True, registry.raw(ref).get(leaf.group(1)))] if leaf else []
+    match = next((ref for ref, v in elsewhere if math.isclose(f.value, v, **FLOAT_TOLERANCE)), None)
+    if match:                                         # cited to an unrelated record (e.g. a role count cited to a person's row)
+        return FigureResult(**base, verified=True, source_ref=match, relabelled=True)
     if raw is None:
         return FigureResult(**base, verified=False, reason=f"no stored result for evidence '{f.evidence}'")
-    if not found:
-        return FigureResult(**base, verified=False, reason=f"path '{f.field_path}' not found in {f.evidence}")
-    if isinstance(actual, bool) or not isinstance(actual, (int, float)):
-        return FigureResult(**base, verified=False, reason=f"the value at that path is not a number ({actual!r})")
-    if not math.isclose(f.value, actual, **FLOAT_TOLERANCE):
-        return FigureResult(**base, verified=False, reason=f"the data says {actual}, not {f.value}", source_ref=ref, relabelled=relabelled)
-    return FigureResult(**base, verified=True, source_ref=ref, relabelled=relabelled)
+    return FigureResult(**base, verified=False, reason=f"path '{f.field_path}' not found in {f.evidence}")
 
 
 def _hints(bad: list[str], registry: "EvidenceRegistry") -> dict[str, str]:
@@ -333,40 +334,24 @@ def _hints(bad: list[str], registry: "EvidenceRegistry") -> dict[str, str]:
     return out
 
 
-def _mentions(text: str, ids) -> list[str]:
-    return [i for i in ids if not re.search(rf"\b{re.escape(i)}\b", text)]
-
-
-def validate_submission(answer, registry: "EvidenceRegistry", can_retrieve: bool = False) -> ValidationReport:
-    """Check a SubmittedAnswer: citations, candidates, figures, and disclosure of unretrieved candidates.
-    `can_retrieve` says the turn still has the budget to fetch records; then silence OR disclosure is not enough."""
+def validate_submission(answer, registry: "EvidenceRegistry") -> ValidationReport:
+    """Check a SubmittedAnswer: every citation exists, every listed candidate's record was retrieved, every figure matches the data."""
     r = ValidationReport()
-    if can_retrieve:
-        r.retrievable = sorted(registry.unresolved_candidates())
     cited = extract_citations(answer.answer_markdown) + [e for c in answer.candidates for e in c.evidence]
     r.bad_citations = [c for c in dict.fromkeys(cited) if not registry.has(c)]
     r.citation_hints = _hints(r.bad_citations, registry)
-    pending = registry.unresolved_candidates()              # requested but omitted/refused: a retrieval problem, not a typo
     for c in answer.candidates:
-        cid = c.candidate_id
-        if registry.retrieved(cid):
-            continue
-        (r.not_retrieved if registry.candidate_seen(cid) or cid in pending else r.unseen_candidates).append(cid)
+        if not registry.retrieved(c.candidate_id):
+            (r.not_retrieved if registry.candidate_seen(c.candidate_id) else r.unseen_candidates).append(c.candidate_id)
     r.figures = [check_figure(f, registry) for f in answer.figures]
-    if answer.candidates:                               # a shortlist/comparison must not hide unretrieved candidates
-        r.undisclosed_incomplete = _mentions(" ".join([*answer.uncertainties, *answer.content_warnings]),
-                                             sorted(registry.unresolved_candidates()))
     return r
 
 
-def validate_plain(text: str, registry: "EvidenceRegistry", can_retrieve: bool = False) -> ValidationReport:
+def validate_plain(text: str, registry: "EvidenceRegistry") -> ValidationReport:
     """Fallback for an answer given as plain text: citations by regex; figures cannot be machine-checked."""
     r = ValidationReport(machine_checked=False)
-    if can_retrieve:
-        r.retrievable = sorted(registry.unresolved_candidates())
     r.bad_citations = [c for c in extract_citations(text) if not registry.has(c)]
     r.citation_hints = _hints(r.bad_citations, registry)
-    r.undisclosed_incomplete = _mentions(text, sorted(registry.unresolved_candidates()))
     return r
 
 

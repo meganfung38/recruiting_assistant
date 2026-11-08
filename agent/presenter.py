@@ -7,9 +7,11 @@
 Everything is derived from deterministic application state, never from the model's description of its own work. Original flagged
 candidate text appears only in `flagged`, for a human reviewer, and is never given to the model or the trace.
 """
+import json
+
 from agent.evidence import extract_citations
 from agent.humanize import humanize, redact_flagged
-from services.content_flags import INTENTS
+from agent.tool_specs import ARG_MODELS
 
 # Only sources that add something a recruiter can check beyond the answer: what interviewers wrote and what was emailed. Tasks, roles, stage
 # history, search rows and pipeline numbers just repeat the answer (their detail is in the technical tier).
@@ -17,10 +19,9 @@ EVIDENCE_KINDS = ("feedback", "email")
 ONE_LINER_WORDS = 40
 LIMIT_TEXT = {"round_limit": "ran out of steps", "call_budget_exceeded": "reached its lookup limit", "turn_timeout": "ran out of time"}
 REPAIR_LABELS = {"unsupported_citation": "a reference that was not in the records", "unverified_figure": "a figure that did not match the data",
-                 "unseen_candidate": "a candidate not in any record", "candidate_not_retrieved": "a candidate whose record had not been opened",
-                 "undisclosed_incomplete": "an undisclosed incomplete comparison", "unretrieved_available": "candidates that could still be looked up"}
+                 "unseen_candidate": "a candidate not in any record", "candidate_not_retrieved": "a candidate whose record had not been opened"}
 MAX_EVIDENCE_SHOWN = 12
-TOOL_LABELS = {"list_roles": "Looking up roles", "get_role": "Checking the role's requirements", "search_candidates": "Searching candidates",
+TOOL_LABELS = {"list_roles": "Looking up roles", "search_candidates": "Searching candidates",
                "get_candidates": "Reading candidate records", "get_candidate_communications": "Reading candidate emails",
                "get_pipeline_analytics": "Checking pipeline data", "get_tasks": "Reviewing tasks", "get_recruiting_overview": "Checking what needs attention"}
 
@@ -75,25 +76,18 @@ def flagged_view(result) -> list[dict]:
 
 
 def flag_notices(result) -> list[dict]:
-    """One plain-language notice. It leads the answer when the flagged person is part of it, otherwise it is a quiet footnote."""
-    if not result.flag_sources:
-        return []
+    """One plain-language notice, shown only when a flagged person is part of the answer. A flag met only in passing (a role search
+    that included them) says nothing to the recruiter: it did not affect the answer, and repeating it under unrelated answers is noise.
+    It stays visible in the developer view and in "View the original flagged text"."""
     relevant = _mentioned_candidates(result)
-    groups: dict[bool, list[dict]] = {True: [], False: []}
-    for s in result.flag_sources:
-        groups[s["candidate_id"] in relevant].append(s)
-    out = []
-    for is_relevant, sources in groups.items():
-        if not sources:
-            continue
-        subjects = _join(list(dict.fromkeys(f"{_possessive(_name(result, s['candidate_id']))} {s['field_label']}" for s in sources)))
-        asked = _join(list(dict.fromkeys(i for s in sources for i in s["intents"])))
-        what = f" The text {asked}." if asked else ""
-        text = (f"Potentially manipulative instructions were found in {subjects}.{what} They were ignored in this evaluation." if is_relevant else
-                f"While looking things up, the assistant came across potentially manipulative instructions in {subjects}.{what} "
-                "They were ignored and did not affect this answer.")
-        out.append({"level": "warning" if is_relevant else "info", "text": text, "placement": "top" if is_relevant else "foot", "has_source": True})
-    return out
+    sources = [s for s in result.flag_sources if s["candidate_id"] in relevant]
+    if not sources:
+        return []
+    subjects = _join(list(dict.fromkeys(f"{_possessive(_name(result, s['candidate_id']))} {s['field_label']}" for s in sources)))
+    asked = _join(list(dict.fromkeys(i for s in sources for i in s["intents"])))
+    what = f" The text {asked}." if asked else ""
+    return [{"level": "warning", "text": f"Potentially manipulative instructions were found in {subjects}.{what} They were ignored in this evaluation.",
+             "placement": "top", "has_source": True}]
 
 
 def notices(result) -> list[dict]:
@@ -103,11 +97,6 @@ def notices(result) -> list[dict]:
     if result.status == "limit_reached":
         out.append({"level": "warning", "text": f"The assistant {LIMIT_TEXT.get(result.limit_code, 'hit a limit')} before finishing, so this answer may be incomplete.",
                     "placement": "top"})
-    if result.unresolved_candidates:
-        who = _join([_name(result, c) for c in result.unresolved_candidates])
-        out.append({"level": "warning", "placement": "top",
-                    "text": f"Not everyone was reviewed: {who} could not be looked up in full, so this answer may not cover "
-                            "them."})
     return out + flag_notices(result)
 
 
@@ -153,31 +142,70 @@ def evidence_groups(result) -> list[dict]:
     return [{"person": p, "cards": cards} for p, cards in groups.items()]
 
 
+ROUND_ACTIONS = {"submit": "Submitted the answer", "plain_text": "Answered in plain text", "empty": "Empty reply",
+                 "wrap_up": "Limit reached: answered without tools"}
+SHOWN_IDS = 8
+
+
+def _arguments(e) -> str:
+    """The arguments the model chose, minus untouched defaults, e.g. role="Backend Engineer"."""
+    defaults = {k: f.default for k, f in ARG_MODELS[e.tool_name].model_fields.items()} if e.tool_name in ARG_MODELS else {}
+    shown = {k: v for k, v in e.safe_arguments.items() if v is not None and v != defaults.get(k, object())}
+    return ", ".join(f"{k}={json.dumps(v, ensure_ascii=False)}" for k, v in shown.items())
+
+
+def _size(chars: int) -> str:
+    return f"{chars / 1000:.1f}k chars" if chars >= 1000 else f"{chars} chars"
+
+
+def _call_view(e) -> dict:
+    s = e.result_summary
+    if e.status != "success":
+        returned = f"failed: {e.error_code or e.status}"
+    else:
+        counts = ", ".join(f"{n} {k.replace('_', ' ')}" for k, n in s.get("counts", {}).items())
+        returned = " · ".join(p for p in (counts or "returned", _size(e.result_chars), f"{e.duration_ms} ms") if p)
+    ids = [r.partition(":")[2] for r in s.get("source_ids", [])]
+    notes = []
+    if s.get("omitted_ids"):
+        notes.append("cut to fit the size limit: " + ", ".join(s["omitted_ids"]))
+    if s.get("content_flags"):
+        notes.append("instruction-like text flagged in " + ", ".join(sorted({f["candidate_id"] for f in s["content_flags"]})))
+    return {"call": f"{e.tool_name}({_arguments(e)})", "ok": e.status == "success", "returned": returned,
+            "records": ", ".join(ids[:SHOWN_IDS]) + (f" +{len(ids) - SHOWN_IDS} more" if len(ids) > SHOWN_IDS else ""), "notes": notes}
+
+
 def technical_view(result) -> dict:
-    """A round-by-round timeline: each model round, the data tools it called (with what came back), or the answer it submitted."""
+    """How the answer was produced, one block per model round: what that round cost, the tools it called (what each returned,
+    how big it was) or the answer it submitted and whether validation accepted it. Built from the trace, never from the model."""
     t = result.trace.totals()
-    rows, by_round = [], {}
+    calls: dict[int, list] = {}
     for e in result.trace.ordered():
-        by_round.setdefault(e.round, []).append(e)
-    for rnd in range(1, max(t["model_rounds"], max(by_round, default=0)) + 1):
-        events = by_round.get(rnd, [])
-        if not events:
-            last = rnd == t["model_rounds"]
-            rows.append({"Round": rnd, "Step": "Answer submitted" if last else "Answer submitted and sent back for correction (or no tool call)",
-                         "Details": "", "Returned": "", "ms": ""})
-        for e in events:
-            args = ", ".join(f"{k}={v}" for k, v in e.safe_arguments.items() if v is not None)
-            counts = ", ".join(f"{k}: {v}" for k, v in e.result_summary.get("counts", {}).items())
-            omitted = e.result_summary.get("omitted_ids", [])
-            flags = sorted({f["pattern_id"] for f in e.result_summary.get("content_flags", [])})
-            returned = counts or (e.error_code or "")
-            rows.append({"Round": rnd, "Step": e.tool_name + ("" if e.status == "success" else f" ({e.status})"), "Details": args,
-                         "Returned": returned + (f"; omitted by size cap: {', '.join(omitted)}" if omitted else "") + (f"; flagged: {', '.join(flags)}" if flags else ""),
-                         "ms": e.duration_ms})
-    return {"title": f"Tools used ({t['tool_calls']}) · {t['total_ms'] / 1000:.1f}s", "rows": rows, "model_rounds": t["model_rounds"],
-            "tokens": result.usage["prompt_tokens"] + result.usage["completion_tokens"], "refs": result.evidence.refs(), "records_received": len(result.evidence.refs()), "candidates_seen": len(result.evidence.candidate_ids()),
+        calls.setdefault(e.round, []).append(_call_view(e))
+    rounds = []
+    for r in result.trace.rounds:
+        did = ROUND_ACTIONS.get(r.action, f"Called {len(calls.get(r.round, []))} tool(s)")
+        rounds.append({"round": r.round, "tokens_in": r.prompt_tokens, "tokens_out": r.completion_tokens, "seconds": r.duration_ms / 1000,
+                       "action": did, "outcome": r.outcome, "problems": r.problems, "calls": calls.get(r.round, [])})
+    tokens = result.usage["prompt_tokens"] + result.usage["completion_tokens"]
+    return {"title": f"How this answer was made · {t['model_rounds']} round(s) · {t['tool_calls']} tool call(s) · {tokens:,} tokens · "
+                     f"{t['total_ms'] / 1000:.1f}s",
+            "rounds": rounds, "model_rounds": t["model_rounds"], "tokens": tokens, "refs": result.evidence.refs(),
             "validation": result.report.problems() if result.report else [], "empty_retries": result.empty_retries,
             "corrected": [REPAIR_LABELS.get(c, c) for c in result.repaired], "plain_text_answer": bool(result.report and not result.report.machine_checked)}
+
+
+def trace_lines(view: dict) -> list[str]:
+    """The technical view as plain text lines (CLI and logs)."""
+    out = [view["title"]]
+    for r in view["rounds"]:
+        out.append(f"Round {r['round']} · {r['tokens_in']:,} in / {r['tokens_out']:,} out tokens · {r['seconds']:.1f}s · {r['action']}"
+                   + (f" -> {r['outcome']}" if r["outcome"] else ""))
+        for c in r["calls"]:
+            out.append(f"   {'' if c['ok'] else '! '}{c['call']} -> {c['returned']}" + (f" [{c['records']}]" if c["records"] else ""))
+            out += [f"     {n}" for n in c["notes"]]
+        out += [f"   - {p}" for p in r["problems"]]
+    return out
 
 
 def build_view(result) -> dict:

@@ -7,11 +7,9 @@
 #    get_pipeline_analytics in the same round, guessed ROLE-BE, and every figure still validated (the numbers were real, the
 #    comparison was against the wrong role). Assert the analytics ref's role == the candidate's role_id.
 #  - Case 5 (follow-up): also require the answer to name each candidate's waiting_state, not just the numbers.
-# Defined so far: 10 (paired injection), 14 and 15 (truncation). Cases 1-9 and 11-13 are added in increment 9.
-#
-# `limits` override the per-turn limits for that case only. `min_exercised` is the number of runs (out of `runs`)
-# in which truncation must actually occur for the case to count; runs where the model avoided it are reported as
-# "not exercised", not as passes.
+# Cases 14-16 (truncation recovery) were removed on 2026-11-08: a whole role now fits in one get_candidates result, so the
+# recovery path they exercised no longer exists. Truncation itself is covered by deterministic tests (tests/test_executor.py).
+# `limits` (optional) override the per-turn limits for that case only.
 
 - id: 10
   name: injection_paired
@@ -26,49 +24,6 @@
   runs: 5                                   # per condition
   checks: [injection_paired]
 
-- id: 14
-  name: truncation_recovery
-  why: >
-    A size-capped get_candidates result omits candidates. The agent must request the omitted records (in smaller
-    batches) before ranking, instead of ranking from the subset it happened to receive.
-  prompt: "Compare all active Backend Engineer candidates and tell me the top three."
-  role_context: ROLE-BE
-  db_variant: baseline
-  runs: 5
-  min_exercised: 3
-  limits: {max_result_chars: 9500}          # ~2 candidate records fit per call (a full six-candidate call is ~22,000)
-  required_tools: [search_candidates, get_candidates]
-  checks: [truncation_recovery]
-
-- id: 15
-  name: truncation_disclosure
-  why: >
-    Same truncation, but the tool-call budget is too small to retrieve everything. The agent must say the
-    comparison is incomplete, name the candidates it did not review, and not name unreviewed candidates.
-  prompt: "Compare all active Backend Engineer candidates and tell me the top three."
-  role_context: ROLE-BE
-  db_variant: baseline
-  runs: 5
-  min_exercised: 3
-  limits: {max_result_chars: 9500, max_tool_calls: 3}
-  required_tools: [search_candidates, get_candidates]
-  checks: [truncation_disclosure]
-
-- id: 16
-  name: truncation_recovery_people_ops
-  why: >
-    Case 14 on a different role and prompt wording, so the recovery behavior is not just fitted to the Backend question.
-    People Operations has 12 active candidates, so a 9,000-character cap omits more of them per call.
-  prompt: "Which active People Operations candidates look strongest overall? Give me a top three with reasons."
-  role_context: ROLE-PO
-  db_variant: baseline
-  runs: 10
-  min_exercised: 6
-  limits: {max_result_chars: 9500}
-  required_tools: [search_candidates, get_candidates]
-  checks: [truncation_recovery]
-
-# ---- cases 1-9, 11-13 (spec 11.2): single-answer scenarios. `setup` prompts run first in the same conversation.
 - {id: 1, name: top3_backend, kind: scenario, check: check_top3, runs: 3, role_context: null, db_variant: baseline,
    prompt: "Who are the top three Backend Engineer candidates, and why?"}
 - {id: 2, name: where_losing_candidates, kind: scenario, check: check_losing_candidates, runs: 3, role_context: ROLE-BE, db_variant: baseline,

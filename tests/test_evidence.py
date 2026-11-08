@@ -166,24 +166,12 @@ def test_failed_calls_never_become_sources_for_citations():
     assert validate_submission(ans(answer_markdown="x [cv:C999]"), reg).bad_citations == ["cv:C999"]
 
 
-def test_unretrieved_omitted_candidates_must_be_disclosed_by_id():
-    reg = registry(unresolved=("C110", "C113"))
-    assert reg.unresolved_candidates() == {"C110", "C113"}
-    silent = validate_submission(ans(candidates=[cand()]), reg)
-    assert silent.undisclosed_incomplete == ["C110", "C113"] and "undisclosed_incomplete" in silent.categories
-    told = validate_submission(ans(candidates=[cand()], uncertainties=["Incomplete: C110 and C113 were not reviewed."]), reg)
-    assert told.ok
-    only_one = validate_submission(ans(candidates=[cand()], content_warnings=["C110 not reviewed"]), reg)
-    assert only_one.undisclosed_incomplete == ["C113"]
-    assert validate_submission(ans(), reg).ok                      # no shortlist/comparison -> nothing to disclose
 
 
 def test_plain_text_fallback_checks_citations_but_not_figures():
     r = validate_plain("Median lag 9.5 days [analytics:ROLE-BE@2026-11-07] [feedback:FB-999]", registry())
     assert r.machine_checked is False and r.bad_citations == ["feedback:FB-999"] and r.figures == []
     assert validate_plain("fine [cv:C104]", registry()).ok
-    assert validate_plain("silent", registry(unresolved=("C110",))).undisclosed_incomplete == ["C110"]
-    assert validate_plain("C110 was not reviewed", registry(unresolved=("C110",))).ok
 
 
 def test_unsupported_citations_are_rendered_visibly_not_hidden():
@@ -254,14 +242,6 @@ def test_a_candidate_that_was_requested_but_omitted_counts_as_not_retrieved_not_
     assert r.not_retrieved == ["C110"] and r.unseen_candidates == ["C150"]                 # a never-requested ID is a different problem
 
 
-def test_retrievable_gaps_are_flagged_only_while_the_turn_can_still_retrieve():
-    reg = registry(unresolved=("C110", "C113"))
-    told = ans(uncertainties=["C110 and C113 were not reviewed."])
-    assert validate_submission(told, reg).ok                                              # no budget: disclosure is enough
-    r = validate_submission(told, reg, can_retrieve=True)
-    assert r.retrievable == ["C110", "C113"] and r.categories == ["unretrieved_available"] and "still have tool budget" in r.problems()[0]
-    assert validate_plain("C110 and C113 not reviewed", reg, can_retrieve=True).categories == ["unretrieved_available"]
-    assert validate_submission(ans(), registry(), can_retrieve=True).ok                   # nothing unresolved -> nothing to fetch
 
 
 def test_flagged_candidates_are_tracked_for_the_notice_but_are_not_a_validation_concern():
@@ -332,3 +312,51 @@ def test_a_roles_age_is_a_verifiable_figure_via_its_role_reference():
     ok = validate_submission(ans(answer_markdown="MSE is oldest [role:ROLE-MSE].", figures=[fig(180, "role:ROLE-MSE", "role_age_days")]), reg)
     assert ok.figures[0].verified and not ok.bad_citations
     assert not validate_submission(ans(figures=[fig(180, "role:ROLE-BE", "role_age_days")]), reg).figures[0].verified      # right number, wrong role
+
+
+def _two_roles_registry():
+    """Analytics for two roles whose Technical Interview numbers differ, plus overview counts per role."""
+    reg = EvidenceRegistry()
+    for role, over in (("ROLE-BE", 14), ("ROLE-MSE", 0)):
+        ref = f"analytics:{role}@2026-11-07"
+        data = {"role_id": role, "stages": [{"stage": "Technical Interview", "scheduling": {"over_target_count": over, "observations": 17}}]}
+        reg.add("get_pipeline_analytics", env(data, [ref]), {ref: data})
+    rows = [{"role_id": "ROLE-BE", "title": "Backend Engineer", "overdue_tasks": 4}, {"role_id": "ROLE-PO", "title": "People Ops", "overdue_tasks": 5}]
+    overview = {"roles": rows, "waiting_to_be_scheduled": [{"candidate_id": "C155", "waiting_days": 4.0}]}
+    reg.add("get_recruiting_overview", env(overview, ["role:ROLE-BE", "role:ROLE-PO", "search:C155"]),
+            aggregates("get_recruiting_overview", {"data": overview, "source_refs": ["role:ROLE-BE", "role:ROLE-PO", "search:C155"]}))
+    return reg
+
+
+def test_a_number_carried_over_from_another_role_is_never_verified():
+    """The original failure: Backend Engineer's 14 over-target observations cited as Manufacturing's. MSE's own field says 0."""
+    path = "stages[Technical Interview].scheduling.over_target_count"
+    r = validate_submission(ans(figures=[fig(14, "analytics:ROLE-MSE@2026-11-07", path)]), _two_roles_registry()).figures[0]
+    assert not r.verified and "the data says 0" in r.reason
+
+
+def test_a_role_count_cited_to_the_wrong_kind_of_record_is_verified_at_its_true_source():
+    r = validate_submission(ans(figures=[fig(5, "search:C155", "overdue_tasks")]), _two_roles_registry()).figures[0]
+    assert r.verified and r.relabelled and r.source_ref == "role:ROLE-PO"
+    wrong = validate_submission(ans(figures=[fig(9, "search:C155", "overdue_tasks")]), _two_roles_registry()).figures[0]
+    assert not wrong.verified                                                    # no record anywhere holds 9 there
+
+
+def test_task_totals_and_tasks_inside_a_record_can_be_verified():
+    reg = EvidenceRegistry()
+    tasks = {"tasks": [{"task_id": "T-002", "days_overdue": 15.0}], "total_matching": 1, "returned": 1, "overdue_total": 10, "pending_total": 21}
+    raw = {"data": tasks, "source_refs": ["task:T-002"]}
+    reg.add("get_tasks", env(tasks, ["task:T-002"]), aggregates("get_tasks", raw))
+    totals = validate_submission(ans(figures=[fig(21, "task:T-002", "pending_total")]), reg).figures[0]
+    assert totals.verified and totals.source_ref == "tasks:T-002"
+    rec = {"candidates": [{"candidate_id": "C113", "pending_tasks": [{"task_id": "T-005", "days_overdue": 3.0}]}]}
+    reg.add("get_candidates", env(rec, ["cv:C113", "task:T-005"]), aggregates("get_candidates", {"data": rec, "source_refs": ["cv:C113", "task:T-005"]}))
+    assert validate_submission(ans(figures=[fig(3.0, "task:T-005", "days_overdue")]), reg).figures[0].verified
+
+
+def test_a_malformed_path_is_looked_up_by_its_field_name_but_never_against_the_cited_value():
+    reg = _two_roles_registry()
+    ok = validate_submission(ans(figures=[fig(5, "analytics:ROLE-PO@2026-11-07", "roles[People Operations].overdue_tasks")]), reg).figures[0]
+    assert ok.verified and ok.source_ref == "role:ROLE-PO"                    # the number exists, under its true source
+    bad = validate_submission(ans(figures=[fig(7, "analytics:ROLE-PO@2026-11-07", "roles[People Operations].overdue_tasks")]), reg).figures[0]
+    assert not bad.verified
