@@ -15,6 +15,7 @@ ROLE_ID = re.compile(r"\bROLE-[A-Z]{2,3}\b")
 RECORD_ID = re.compile(r"\b(?:T|FB|EV|EM)-\d{3}\b[,;:]?[ \t]*")    # a record ID and the separator that followed it
 SNAKE = re.compile(r"\b[a-z]+(?:_[a-z]+)+\b")
 DOT_ZERO = re.compile(r"(\d)\.0\b(?!\d)")
+ABOUT_LINE = re.compile(r"\s*\[(?:About|Context)[^\]]*\]\s*")
 LEAD = re.compile(r"^(\s*(?:[-*+]|\d+[.)])\s+|\s*)(.*)$")              # (list marker or indent, rest of the line)
 PHRASES = {"strong_yes": "strong yes", "strong_no": "strong no", "awaiting_scheduling": "waiting to be scheduled",
            "awaiting_interview": "interview booked", "awaiting_feedback": "waiting on interview feedback",
@@ -47,7 +48,8 @@ def humanize(text: str, registry) -> str:
     """Names for IDs, readable words for field names, no citation syntax; markdown structure is kept exactly."""
     if not text:
         return text
-    return "\n".join(_line(line, registry) for line in text.split("\n")).strip()
+    lines = [line for line in text.split("\n") if not ABOUT_LINE.fullmatch(line)]   # a copied history note, never for the recruiter
+    return "\n".join(_line(line, registry) for line in lines).strip()
 
 
 def leaks(text: str) -> list[str]:

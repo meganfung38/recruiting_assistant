@@ -89,7 +89,7 @@ def render_technical(v: dict) -> None:
                 st.caption(f"{r['tokens_in']:,} tokens in · {r['tokens_out']:,} out ({r['reasoning']:,} reasoning) · {r['seconds']:.1f}s")
                 for c in r["calls"]:
                     st.markdown(f"{'' if c['ok'] else '⚠ '}`{c['call']}` → {c['returned']}")
-                    for line in ([f"Records: {c['records']}"] if c["records"] else []) + c["notes"]:
+                    for line in c["records"] + c["notes"]:
                         st.caption(line)
                 for p in r["problems"]:
                     st.caption(f"Sent back because: {p}")

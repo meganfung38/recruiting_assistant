@@ -117,21 +117,41 @@ def _size(chars: int) -> str:
     return f"{chars / 1000:.1f}k chars" if chars >= 1000 else f"{chars} chars"
 
 
+RECORD_KINDS = {"cv": ("candidate record", "candidate records"), "search": ("candidate row", "candidate rows"),
+                "feedback": ("feedback entry", "feedback entries"), "stage": ("stage event", "stage events"), "task": ("task", "tasks"),
+                "email": ("email", "emails"), "role": ("role", "roles"), "analytics": ("pipeline snapshot", "pipeline snapshots")}
+
+
+def _records(refs: list[str]) -> list[str]:
+    """Record IDs grouped by kind, e.g. "8 candidate records: C104, C108, ..." then "18 feedback entries: FB-013, ...". """
+    groups: dict[str, list[str]] = {}
+    for r in refs:
+        kind, _, ident = r.partition(":")
+        groups.setdefault(kind, []).append(ident)
+    out = []
+    for kind in [k for k in RECORD_KINDS if k in groups] + [k for k in groups if k not in RECORD_KINDS]:
+        ids = groups[kind]
+        one, many = RECORD_KINDS.get(kind, (kind, kind))
+        out.append(f"{len(ids)} {one if len(ids) == 1 else many}: " + ", ".join(ids[:SHOWN_IDS]) + (f" +{len(ids) - SHOWN_IDS} more" if len(ids) > SHOWN_IDS else ""))
+    return out
+
+
 def _call_view(e) -> dict:
     s = e.result_summary
     if e.status != "success":
         returned = f"failed: {e.error_code or e.status}"
     else:
-        counts = ", ".join(f"{n} {k.replace('_', ' ')}" for k, n in s.get("counts", {}).items())
+        whole_role = e.tool_name == "get_candidates" and e.safe_arguments.get("role")
+        counts = ", ".join(f"{n} {'active candidates' if whole_role and k == 'candidates' else k.replace('_', ' ')}"
+                           for k, n in s.get("counts", {}).items())
         returned = " · ".join(p for p in (counts or "returned", _size(e.result_chars), f"{e.duration_ms} ms") if p)
-    ids = [r.partition(":")[2] for r in s.get("source_ids", [])]
     notes = []
     if s.get("omitted_ids"):
         notes.append("cut to fit the size limit: " + ", ".join(s["omitted_ids"]))
     if s.get("content_flags"):
         notes.append("instruction-like text flagged in " + ", ".join(sorted({f["candidate_id"] for f in s["content_flags"]})))
     return {"call": f"{e.tool_name}({_arguments(e)})", "ok": e.status == "success", "returned": returned,
-            "records": ", ".join(ids[:SHOWN_IDS]) + (f" +{len(ids) - SHOWN_IDS} more" if len(ids) > SHOWN_IDS else ""), "notes": notes}
+            "records": _records(e.evidence_refs), "notes": notes}
 
 
 def technical_view(result) -> dict:
@@ -165,8 +185,8 @@ def trace_lines(view: dict) -> list[str]:
         out.append(f"Round {r['round']} · {r['tokens_in']:,} in / {r['tokens_out']:,} out ({r['reasoning']:,} reasoning) tokens · {r['seconds']:.1f}s · {r['action']}"
                    + (f" -> {r['outcome']}" if r["outcome"] else ""))
         for c in r["calls"]:
-            out.append(f"   {'' if c['ok'] else '! '}{c['call']} -> {c['returned']}" + (f" [{c['records']}]" if c["records"] else ""))
-            out += [f"     {n}" for n in c["notes"]]
+            out.append(f"   {'' if c['ok'] else '! '}{c['call']} -> {c['returned']}")
+            out += [f"     {n}" for n in c["records"] + c["notes"]]
         out += [f"   - {p}" for p in r["problems"]]
     return out
 

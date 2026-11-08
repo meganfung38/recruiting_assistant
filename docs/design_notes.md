@@ -61,6 +61,13 @@ paths (repair rounds; a path named `days_open` for a field called `role_age_days
   reliably than the same advice in a tool description: role tables went from 0-3 of 3 runs to 3 of 3.
 - **Reasoning** via the Responses API at low effort; the adapter converts the stored chat-shaped history on each call.
 - **Distinct evidence.** Interview notes were regenerated from each record's own facts (`data/compose_feedback.py`).
+- **History notes are separate messages.** Who an answer was about is kept for follow-ups as its own system message, not appended to
+  the answer: when it was part of the answer text, the model copied "[About: ...]" into its next reply and the recruiter saw it.
+- **Two medians, always labelled.** A stage has a median for people who left it and one for people still there (13.5 vs 16 days for
+  Backend Technical Interview). An unlabelled "median days vs target" column made them look contradictory, so the table hint and the
+  prompt name both, and reason codes reach the model in words ("withdrew: waited too long to be scheduled").
+- **Developer view counts say what they count**: "8 active candidates" for a whole-role read, and record IDs grouped by kind
+  ("8 candidate records", "18 feedback entries").
 
 ## What would change with a real ATS
 Verified identity and role-based access; requisition and field-level authorization; opaque candidate references and PII redaction before model calls;

@@ -339,9 +339,11 @@ def test_accepted_submission_ends_the_turn_and_never_reaches_mcp():
     assert [c[0] for c in client.calls] == ["get_candidates"]                           # submit_answer was handled locally
     assert [e.tool_name for e in r.trace.events] == ["get_candidates"] and len(llm.calls) == 2
     assert json.loads(tool_messages(r)[-1]["content"])["status"] == "accepted" and paired(r.messages)
-    # history keeps the visible answer plus, for the model only, who it was about (a follow-up can fetch them again)
-    assert r.messages[-1] == {"role": "assistant", "content": "N N is the strongest.\n\n[About: N N (C101)]"}
-    assert state.context_messages()[-1]["content"] == r.messages[-1]["content"]
+    # history keeps the visible answer unchanged, and separately, for the model only, who it was about (a follow-up can fetch them
+    # again). Kept out of the answer: when it was appended to the answer text the model copied it into its next reply.
+    assert r.messages[-2] == {"role": "assistant", "content": "N N is the strongest."}
+    assert r.messages[-1]["role"] == "system" and r.messages[-1]["content"].endswith("was about N N (C101).")
+    assert [m["role"] for m in state.context_messages()] == ["user", "assistant", "system"]
 
 
 def test_a_wrong_number_is_sent_back_once_with_the_line_it_appeared_in():
@@ -423,7 +425,8 @@ def test_history_with_a_structured_answer_stays_valid_and_carries_the_answer_for
     o.run_turn("q1", state)
     o.run_turn("q2", state)
     second_turn_messages = llm.calls[2]["messages"]
-    assert paired(second_turn_messages) and second_turn_messages[-2] == {"role": "assistant", "content": "Pick N N.\n\n[About: N N (C101)]"}
+    assert paired(second_turn_messages) and second_turn_messages[-3] == {"role": "assistant", "content": "Pick N N."}
+    assert second_turn_messages[-2]["role"] == "system" and "(C101)" in second_turn_messages[-2]["content"]
 
 
 # --- real server: truncation disclosure and flags -----------------------------------------------------------
@@ -632,3 +635,10 @@ def test_a_broken_log_location_never_breaks_the_turn(tmp_path):
     blocker.write_text("x")                                          # a file where the log directory should be
     o, _, _ = orch([say("fine")], log_path=blocker / "turns.jsonl")
     assert o.run_turn("q").status == "ok"
+
+
+def test_a_copied_history_note_never_reaches_the_recruiter():
+    """Manual test: the model imitated the note and ended its answer with "[About: Yara Eklund (C151)]"."""
+    from agent.presenter import build_view
+    o, _, _ = sorch([say("Yara Eklund is interviewing for People Operations.\n\n[About: Yara Eklund (C151)]")])
+    assert build_view(o.run_turn("q"))["answer"] == "Yara Eklund is interviewing for People Operations."

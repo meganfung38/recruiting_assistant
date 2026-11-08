@@ -40,7 +40,12 @@ class ConversationState:
     turns: list[list[dict]] = field(default_factory=list)
 
     def context_messages(self) -> list[dict]:
-        return [m for msgs in self.turns for m in (msgs[0], msgs[-1])]
+        """Each earlier turn as: the question, the visible answer, and (if any) the separate note of who it was about."""
+        out = []
+        for msgs in self.turns:
+            tail = [msgs[-2], msgs[-1]] if _is_about_note(msgs[-1]) and len(msgs) > 2 else [msgs[-1]]
+            out += [msgs[0], *tail]
+        return out
 
     def reset(self) -> None:
         self.turns.clear()
@@ -73,14 +78,22 @@ def _notify(callback, event: dict) -> None:
             pass
 
 
-def _about_note(report, evidence) -> str:
+ABOUT_PREFIX = "Context for follow-up questions (not part of the answer, never repeat it): the previous answer was about "
+
+
+def _about_note(report, evidence) -> dict | None:
     """For the model's history only: who the answer was about, with IDs, so a follow-up ("of those three") can fetch them again.
-    The recruiter never sees it (the view is built from TurnResult.answer)."""
+    It is a separate system message, not part of the assistant's answer: when it was appended to the answer text, the model copied
+    the format into its next reply and the recruiter saw it."""
     if report is None or not (report.candidates or report.roles):
-        return ""
+        return None
     people = [f"{evidence.candidate_name(c) or c} ({c})" for c in report.candidates[:12]]
     roles = [f"{evidence.role_title(r) or r} ({r})" for r in report.roles]
-    return "\n\n[About: " + "; ".join(people + roles) + "]"
+    return {"role": "system", "content": ABOUT_PREFIX + "; ".join(people + roles) + "."}
+
+
+def _is_about_note(m: dict) -> bool:
+    return m.get("role") == "system" and str(m.get("content", "")).startswith(ABOUT_PREFIX)
 
 
 def user_message(question: str, role_context: str | None) -> dict:
@@ -236,11 +249,12 @@ class Orchestrator:
         status, report, submitted = "ok", None, None
         if accepted is not None:
             report, submitted = accepted.report, accepted.answer
-            memo = _about_note(report, ctx.evidence)
             if submitted is None:        # plain text: the model's own message is already last
-                turn_msgs[-1] = {"role": "assistant", "content": answer_text + memo}
+                turn_msgs[-1] = {"role": "assistant", "content": answer_text}
             else:                        # structured: history ends in the visible answer text, after the tool result
-                turn_msgs.append({"role": "assistant", "content": answer_text + memo})
+                turn_msgs.append({"role": "assistant", "content": answer_text})
+            if (note := _about_note(report, ctx.evidence)):
+                turn_msgs.append(note)
         elif limit is not None:
             status = "limit_reached"
             raw = await self._wrap_up(messages, ctx, limit, usage)

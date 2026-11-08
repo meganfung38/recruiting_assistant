@@ -86,6 +86,11 @@ RENAME = {"role_age_days": "days_open", "waiting_state": "waiting_for", "waiting
           "completed_over_target": "left_after_target", "active_n": "people_there_now",
           "active_median_age_days": "median_days_there_now", "active_max_age_days": "max_days_there_now",
           "active_over_target": "over_target_now"}
+# Recorded reason codes, in words a recruiter reads (the analytics "reasons" counts).
+REASON_WORDS = {"missing_required_skill": "rejected: missing a required skill", "lower_interview_signal": "rejected: interview feedback below the bar",
+                "compensation_mismatch": "compensation mismatch", "accepted_other_offer": "withdrew: accepted another offer",
+                "withdrew_scheduling_delay": "withdrew: waited too long to be scheduled", "withdrew_personal": "withdrew: personal reasons",
+                "withdrew_no_reason": "withdrew: no reason given", "no_response": "stopped responding"}
 WAITING_FOR = {"in_review": "resume review", "awaiting_scheduling": "interview to be booked",
                "awaiting_interview": "booked interview to be held", "awaiting_feedback": "interview feedback",
                "awaiting_decision": "a decision"}
@@ -96,9 +101,11 @@ HOW_TO_SHOW = {
                                 "Waiting on feedback | Overdue tasks. About people waiting: name them with their days waiting and stage."),
     "get_tasks": "Three or more tasks: ONE markdown table, overdue first: Person | Task | Owner | Due | Status (overdue by N days).",
     "get_pipeline_analytics": ("Stages: ONE markdown table: Stage | Reached | Moved on | Rejected | Withdrew | There now | "
-                               "Median days vs target | Recorded reasons."),
+                               "Median days in stage: people who left / people there now (target) | Why people left (counts). "
+                               "There are two medians: never quote one without saying whose it is."),
     "get_candidates": ("Ranking: best first, on skills and interview feedback; someone with only screening notes is not ranked above "
-                       "someone with positive interviews. Three or more people: ONE markdown table."),
+                       "someone with positive interviews. Comparing waits or days: list the people from the largest number to the "
+                       "smallest first, then name the first one as the longest. Three or more people: ONE markdown table."),
 }
 ID_KEYS = ("candidate_id", "feedback_id", "event_id", "email_id", "task_id")
 ID_RE = re.compile(r"C\d{3}|EM-\d{3}|T-\d{3}|ROLE-[A-Z]{2,3}")
@@ -115,7 +122,8 @@ def _apply(value, spec, flags: list, cand: str = "n/a", field: str = ""):
         cand = value["candidate_id"] if isinstance(value.get("candidate_id"), str) and re.fullmatch(
             r"C\d{3}", value["candidate_id"]) else cand
         if "*" in spec:
-            return {k: _apply(v, spec["*"], flags, cand, k) for k, v in value.items()
+            words = REASON_WORDS if field == "reasons" else {}
+            return {words.get(k, k): _apply(v, spec["*"], flags, cand, k) for k, v in value.items()
                     if isinstance(k, str) and SAFE_KEY.fullmatch(k) and not scan(k)}  # keys can carry text too
         return {RENAME.get(k, k): _apply(WAITING_FOR.get(value[k], value[k]) if k == "waiting_state" else value[k], sub, flags, cand, k)
                 for k, sub in spec.items()

@@ -129,7 +129,9 @@ def test_the_technical_view_is_one_block_per_round(real):
     assert t["title"].startswith("How this answer was made · 2 round(s) · 1 tool call(s) · ")
     assert [(r["round"], r["action"], [c["call"] for c in r["calls"]]) for r in t["rounds"]] == [
         (1, "Called 1 tool(s)", ['get_candidates(role="Backend Engineer")']), (2, "Submitted the answer", [])]
-    assert t["rounds"][-1]["outcome"] == "accepted" and "8 candidates" in t["rounds"][0]["calls"][0]["returned"]
+    call = t["rounds"][0]["calls"][0]
+    assert t["rounds"][-1]["outcome"] == "accepted" and call["returned"].startswith("8 active candidates · ")
+    assert call["records"][0].startswith("8 candidate records: C104, C108, C110") and call["records"][1].startswith("18 feedback entries: FB-")
     assert t["about"][:3] == ["Dahlia Ramanathan", "Junko Takeda", "Hannelore Voss"]
 
 
