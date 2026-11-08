@@ -5,8 +5,6 @@ comparisons, where a person stands, tasks, and what needs attention. Run 3 times
 Nov 7, 2026), through the real orchestrator and the recruiter-facing view (the same path as the app). "Facts" are automated checks of
 the visible answer against the database (for example the right names, "180", "Oct 23"); prose quality was read by hand.
 
-Conversations 3 and 4 were run with the role passed as context (as the CLI's `--role` does); in the app, name the role in the question
-(see `docs/demo_walkthrough.md`).
 
 | # | Question | Rounds (median) | Tokens (median) | Time (median) | Facts |
 |---|---|---|---|---|---|

@@ -129,8 +129,7 @@ in the service, so the model restates facts instead of reconstructing them from 
 7. **Follow-ups are cheap and re-query.** Earlier turns are replayed as question, answer, and a separate note of who the answer was
    about, never their old tool results, so "of those three…" fetches fresh facts.
 
-Longer rationale and the failures that led to each decision: `docs/design_notes.md`. A step-by-step demo script:
-`docs/demo_walkthrough.md`.
+Longer rationale and the failures that led to each decision: `docs/design_notes.md`.
 
 ## How correctness was verified
 - **389 deterministic tests** (`python -m pytest`): every analytics number and status sentence is recomputed independently from the raw
@@ -177,6 +176,6 @@ services/              queries, analytics, tasks, overview (deterministic, take 
 data/                  scenarios, seed, frozen prose, consistency checker, expectations, note composer
 evals/                 model-dependent cases and checkers
 tests/                 deterministic tests
-docs/                  design notes, demo walkthrough, demo questions, eval results, AI use, manual testing notes
+docs/                  design notes, demo questions, eval results, AI use, manual testing notes
 project-spec.md        the original implementation plan (its first lines list where the build deviates)
 ```
