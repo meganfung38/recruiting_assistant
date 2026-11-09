@@ -1,14 +1,5 @@
 # Recruiting Assistant: Implementation Specification (v3, as built)
 
-> **Status:** this document describes the system as it is built in this repository. It replaces the v2.1 plan; section 15 lists
-> every place the build departs from v2.1 and why. Rationale and the failures behind each decision are in `docs/design_notes.md`;
-> recorded model results are in `docs/eval_results.md` and `docs/demo_questions.md`.
-
-> **Audience:** the author, who must be able to explain every module in a live review, and any coding agent changing this
-> repository. Treat it as the source of truth for scope, architecture, behavior, tests, and completion criteria. Keep the system the
-> smallest reliable one that meets it. Do not add speculative infrastructure and do not replace the MCP boundary with direct
-> database access from the agent.
-
 ## 1. Product and scope
 
 A recruiter-facing conversational assistant over a **fully fictional, reproducible recruiting dataset**. A recruiter asks open-ended
@@ -767,21 +758,3 @@ before model calls; provider data-handling terms (zero retention) and region; re
 every tool call and answer; fairness and adverse-impact review of any ranking assistance, with the hiring decision left to a person;
 read-only scoped credentials and human approval for any write; ATS API realities (pagination, rate limits, eventual consistency, messy
 and missing data, free-text stages, a live clock); rate limiting and cost controls; monitoring and eval drift tracking.
-
-## 15. Changes from the v2.1 plan
-
-| v2.1 | As built | Why |
-|---|---|---|
-| Tools `list_roles` + `get_role`; IDs only | `get_role` folded into `list_roles`; `get_recruiting_overview` added; roles and people accepted by name | Cross-role questions were answered by adding up several analytics results (and numbers were moved between roles); "where is Hannelore" took 11 calls without name lookup |
-| `get_candidates` 1-6 IDs | 1-20 IDs, 1-10 names, or a whole role's active candidates | A shortlist read 6 of 8 candidates in 6 rounds and 57k tokens; now 2 rounds and about 13k |
-| 24,000-character result cap | 32,000 | A whole role's comparison view must fit |
-| `search_candidates(role_id)` required | `role` optional; name search across statuses | Find a person without knowing their role or status |
-| Raw field names to the model | Recruiter vocabulary; counting fields left out; `how_to_show` hints; dated status and history sentences | The model misread section-dependent keys, narrated counts, and reconstructed facts from timestamps |
-| Inline citations, figures with `field_path`, `content_warnings` | Prose plus declared people, roles and ranking; numbers and clock targets checked in the prose; flags reported by the application | The model's citation and path bookkeeping caused most repair rounds and display bugs; the injection notice must not depend on the model |
-| Evidence list of IDs | Uniform evidence cards per person | Evidence built from the model's citations was uneven between candidates |
-| Untrusted text wrapped and flagged | Also redacted (instruction sentences replaced) before the model reads it; original kept for the reviewer only | Defense in depth; the reviewer still sees exactly what was there |
-| Chat Completions | Responses API with reasoning effort low | Chat Completions allows no reasoning with tools for the chosen model; without it comparisons were wrong |
-| Role selector in the sidebar; trace expander always shown | No role selector (the question names the role; CLI `--role` and evals pass context); trace behind a "Developer view" switch | Recruiters do not need the trace; a selector added a step without helping |
-| History of messages | Question, answer and a separate "who it was about" note | Follow-ups stay small and re-query; the note in the answer was copied by the model |
-| Eval case 1 subset of the credible pool; case 7 a missing-feedback candidate | Case 1: three active Backend candidates whose records were read; case 7: Tamsin Okoye (no review note yet) | Checkers assert structure the application can verify; ordering never asserted |
-| Truncation-recovery eval cases 14-16 | Retired | A whole role now fits in one result; truncation is covered by deterministic tests |
