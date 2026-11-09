@@ -13,7 +13,6 @@ the visible answer against the database (for example the right names, "180", "Oc
 | 2 | Which role needs the most attention? | 2 | 9.7k | 4.1s | 3/3 |
 |   | → Show me the pipeline for Manufacturing Systems Engineer | 2 | 9.7k | 3.8s | 3/3 |
 | 3 | (Backend Engineer) This role has been open for four months. Where is our process losing candidates? | 2 | 9.6k | 5.2s | 3/3 |
-|   | → How did you calculate that? | 2 | 10.3k | 4.0s | 3/3 |
 | 4 | (Manufacturing Systems Engineer) This role has been open for four months. What is going on? | 2 | 9.6k | 5.0s | 3/3 |
 | 5 | Why is People Operations hiring slow? | 2 | 9.5k | 4.6s | 3/3 |
 |   | → Who is waiting on feedback? | 2 | 11.0k | 4.5s | 3/3 |
