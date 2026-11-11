@@ -49,6 +49,7 @@ tool call with its arguments and what came back (counts, size, record IDs groupe
 accepted or sent back, and why. Each turn is also appended to `logs/turns.jsonl` (IDs, counts, sizes and tokens; never record text).
 
 ## Architecture
+**/docs/system-architecture.png** contains excalidraw diagram
 ```
 Streamlit UI / CLI
   -> Orchestrator          model loop: rounds of tool calls, then one submit_answer (agent/orchestrator.py)
