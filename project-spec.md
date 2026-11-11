@@ -247,17 +247,17 @@ event. Final Interview exits are only `rejected` or `withdrawn`. The first event
 2. `data/check_consistency.py` (`python -m data.check_consistency [--db PATH]`, exit 1 on problems) checks: frozen prose covers
 
    exactly the scenario IDs; whole-word skill matches in each CV equal the declared facts (missing skills, preferred count); no
-           instruction-like text outside the declared payload and no other candidate's name in a candidate's prose; emails agree with the
-           structure (rescheduling emails fall inside the stage window, withdrawal threads mention their reason, a
-           `withdrew_scheduling_delay` thread mentions waiting to be scheduled); feedback text names the stage, the interview date and
-           "Recommendation: ."; exit reasons agree with reason codes.
+             instruction-like text outside the declared payload and no other candidate's name in a candidate's prose; emails agree with the
+             structure (rescheduling emails fall inside the stage window, withdrawal threads mention their reason, a
+             `withdrew_scheduling_delay` thread mentions waiting to be scheduled); feedback text names the stage, the interview date and
+             "Recommendation: ."; exit reasons agree with reason codes.
 3. `data/seed_expectations.json` is hand-authored from the scenario design, never produced by running the services. Keys:
 
    `as_of_utc`, `role_age_days`, `funnel` (per role and stage), `headline` (BE and MSE Technical Interview, PO Hiring Manager
-           Interview), `reasons`, `mse_resume_review_missing_skills`, `scheduling_delay_withdrawals_be`, `tasks` (pending IDs, overdue IDs,
-           boundary tasks), `missing_feedback`, `waiting` (state and days per active candidate), `credible_pool`, `demo4_c123`. Tests
-           recompute every value independently in plain Python from scenario rows (`tests/scenario_facts.py`) and compare both that and the
-           service output with this file.
+             Interview), `reasons`, `mse_resume_review_missing_skills`, `scheduling_delay_withdrawals_be`, `tasks` (pending IDs, overdue IDs,
+             boundary tasks), `missing_feedback`, `waiting` (state and days per active candidate), `credible_pool`, `demo4_c123`. Tests
+             recompute every value independently in plain Python from scenario rows (`tests/scenario_facts.py`) and compare both that and the
+             service output with this file.
 
 ### 4.6 Dataset content (as seeded)
 
@@ -437,12 +437,12 @@ flag capture -> projection -> size cap -> evidence + trace. It never raises for 
 2. **Argument models** (`agent/tool_specs.py`): Pydantic with `extra="forbid"`, ID regexes, enums, bounded lists; `get_candidates`
 
    enforces exactly one selector. These models are the **single source** of the tool schemas shown to the model (titles stripped). A
-           parity test checks them against the server's input schemas. Validation errors name the fields but **never echo or trace values**
-           (only argument names are traced); a bad candidate ID adds a hint to use `names=[...]`.
+             parity test checks them against the server's input schemas. Validation errors name the fields but **never echo or trace values**
+             (only argument names are traced); a bad candidate ID adds a hint to use `names=[...]`.
 3. **Limits** (`agent/limits.py`, configurable `Limits`): 8 model rounds, 24 tool calls per turn, 10 s per call (shortened to the time
 
    left in the turn), 90 s per turn, 32,000 characters per model-visible result. Codes: `round_limit`, `call_budget_exceeded`,
-           `turn_timeout`, `tool_timeout`, `upstream_error`, `invalid_arguments`, `tool_not_allowed`.
+             `turn_timeout`, `tool_timeout`, `upstream_error`, `invalid_arguments`, `tool_not_allowed`.
 4. **MCP client** (`agent/mcp_client.py`): subprocess `python -m mcp_server.server` with a minimal environment (`PATH` and the DB path
 
    only; no API keys), stderr to `RECRUITING_MCP_LOG` or discarded; protocol-level failures raise `McpCallError` -> `upstream_error`.
@@ -678,7 +678,7 @@ answer"), never invented narration.
 Single page, `streamlit run app.py`.
 
 - **Sidebar:** title, **New conversation**, seven suggested questions (buttons that queue the question), **Developer view** toggle,
-"Sample data as of Nov 7, 2026. Everyone in it is fictional.", "Decision support only. Hiring decisions stay with you."
+"Sample data as of Nov 7, 2026. Everyone in it is fictional."
 - **Main:** empty-state heading, chat history, chat input. Per answer: notices, flag blocks (original text in a collapsed expander,
 rendered with `st.code` so it is never interpreted), the answer, the trust line, an "Evidence" / "Evidence for this ranking" expander
 with cards, and the developer view when switched on. A status line shows progress while tools run.
@@ -764,16 +764,10 @@ Last recorded (`gpt-5.4-mini`, 2026-11-08): every case PASS. Sample sizes are sm
 
 ### 12.3 Demo set
 
-`docs/demo_questions.md`: 13 conversations (22 turns with follow-ups) run 3 times through the real orchestrator and presenter. On the
-final code: 66 of 66 turns correct on the automated fact checks, no IDs or field names in the recruiter's view, median 2 rounds, about
-10k tokens and 4 s per answer. Known weak spots are listed there (ranking at the margin varies; "further along" sometimes used as a
+`docs/demo_questions.md`: 13 conversations (22 turns with follow-ups) run 3 times through the real orchestrator and presenter. On the  
+final code: 66 of 66 turns correct on the automated fact checks, no IDs or field names in the recruiter's view, median 2 rounds, about  
+10k tokens and 4 s per answer. Known weak spots are listed there (ranking at the margin varies; "further along" sometimes used as a  
 reason).
-
-### 12.4 Definition of done
-
-Clean checkout starts with the README commands in a fresh venv; all deterministic tests pass; demos 1-6 work live; the developer view
-shows real tool activity that matches the trace; evals run with recorded results including failures; no secrets or real data; README
-states limitations, verification and AI use.
 
 ## 13. Known limitations
 

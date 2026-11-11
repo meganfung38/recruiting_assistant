@@ -157,7 +157,6 @@ with st.sidebar:
     st.toggle("Developer view", key="show_technical",
               help="Adds the tools called, record counts, validation results and token use under each answer. For debugging and demos; recruiters don't need it.")
     st.caption(f"Sample data as of {as_of:%b} {as_of.day}, {as_of.year}. Everyone in it is fictional.")
-    st.caption("Decision support only. Hiring decisions stay with you.")
 
 if problem:
     st.error(problem)
