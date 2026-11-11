@@ -742,7 +742,7 @@ Opt-in: without `OPENAI_API_KEY` it prints a notice and exits 0. Options select 
 case runs on a freshly built database (baseline unless stated), 3 workers in parallel. Assertions are on tool calls, declared people
 and ranking, retrieved records, whether numbers matched, and seeded facts, **never prose quality**. Every case also fails if the turn
 did not end `ok` or any number was unmatched. Writes generated sections of `docs/eval_results.md` between `<!-- case:N -->` markers
-(hand-written notes preserved) and raw records to `docs/eval_runs/<timestamp>.json`.
+(hand-written notes preserved) and raw records to `docs/eval_runs/<timestamp>_<cases>.json` (e.g. `20261108-200514_cases-1-13.json`; `+` separates groups, so `cases-2+4+11-13` is cases 2, 4 and 11 to 13).
 
 | # | Prompt (role context) | Checks |
 |---|---|---|

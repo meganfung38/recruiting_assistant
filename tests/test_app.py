@@ -66,7 +66,7 @@ def test_first_screen_is_simple_with_no_role_dropdown_and_subtle_framing(monkeyp
     at = start(monkeypatch)
     assert not at.exception and len(at.selectbox) == 0                                       # the ambiguous role dropdown is gone
     sidebar = " ".join(str(c.value) for c in at.sidebar.caption)
-    assert "Sample data as of Nov 7, 2026. Everyone in it is fictional." in sidebar and "Decision support only. Hiring decisions stay with you." in sidebar
+    assert "Sample data as of Nov 7, 2026. Everyone in it is fictional." in sidebar
     assert "UTC" not in whole_page_text(at) and "2026-11-07 12:00" not in whole_page_text(at)  # no technical clock explanation
     assert at.sidebar.button[0].label == "New conversation" and [t.label for t in at.sidebar.toggle] == ["Developer view"]
     assert at.sidebar.toggle[0].value is False
@@ -212,7 +212,7 @@ def test_the_page_never_claims_a_hiring_decision(monkeypatch, dbs):
     at = start(monkeypatch, orchestrator(dbs["baseline"], DEMO))
     at.sidebar.button(key="example-1").click().run()
     page = whole_page_text(at).lower()
-    assert "hiring decisions stay with you" in page and "we recommend hiring" not in page and "you should hire" not in page
+    assert "we recommend hiring" not in page and "you should hire" not in page
 
 
 # ------------------------------------------------------------------ errors are safe

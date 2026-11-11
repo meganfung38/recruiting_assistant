@@ -7,3 +7,4 @@ data/*.db
 .DS_Store
 logs/
 docs/demo_walkthrough.md
+docs/eval_demo_script.md

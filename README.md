@@ -17,6 +17,7 @@ measured from that moment (see [Data](#data)).
 | Design decisions, limitations, AI use | this README, `docs/design_notes.md`, `docs/ai_use.md` |
 
 ## Quick start
+
 ```bash
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
@@ -24,32 +25,39 @@ cp .env.example .env              # set OPENAI_API_KEY and OPENAI_MODEL (e.g. gp
 python -m data.seed               # builds data/recruiting.db (deterministic, no model calls)
 streamlit run app.py              # the recruiter UI
 ```
+
 Other entry points:
+
 ```bash
 python -m agent.cli "Which recruiting tasks are pending or overdue?"   # one question, with the round-by-round trace
 python -m agent.cli --chat                                             # multi-turn in the terminal
 python -m pytest                                                       # 389 deterministic tests: no API key, no network
 python -m evals.run_evals                                              # model-dependent evals (opt-in; skips without a key)
 ```
+
 On an Apple Silicon Mac, build and run the venv from the same kind of shell (`uname -m` should say `arm64`); a venv built under Rosetta
 fails to load compiled packages such as `pydantic_core`.
 
 ## Using the app
+
 One chat page. The sidebar has suggested questions (the demo set in `docs/demo_questions.md`), **New conversation**, and a **Developer
 view** switch. For each answer the recruiter sees:
+
 - **The answer**, in names and plain words, with tables for roles, tasks and pipeline stages.
 - **"Checked against the source records."** when every person, role and number in it was matched to this turn's data.
 - **Evidence**: one card per person the answer ranks or is about, all in the same shape: skills matched or missing, one line per
-  interview (date, interviewer, recommendation, scores) with the interviewer's note, and anything still pending.
+interview (date, interviewer, recommendation, scores) with the interviewer's note, and anything still pending.
 - **A titled warning** ("Instruction-like text found in Quentin Abara's CV") when someone in the answer had injected instructions in
-  their CV, an email or a note, with the original text inside it for review. It appears only when that person is part of the answer.
+their CV, an email or a note, with the original text inside it for review. It appears only when that person is part of the answer.
 
 The **Developer view** adds *How this answer was made*: one block per model round with its tokens (including reasoning) and time, each
 tool call with its arguments and what came back (counts, size, record IDs grouped by kind), and whether the submitted answer was
 accepted or sent back, and why. Each turn is also appended to `logs/turns.jsonl` (IDs, counts, sizes and tokens; never record text).
 
 ## Architecture
+
 **/docs/system-architecture.png** contains excalidraw diagram
+
 ```
 Streamlit UI / CLI
   -> Orchestrator          model loop: rounds of tool calls, then one submit_answer (agent/orchestrator.py)
@@ -61,11 +69,13 @@ Streamlit UI / CLI
      -> Finalizer          checks the answer against the evidence; one repair round (agent/finalizer.py, agent/evidence.py)
   -> Presenter             answer, flag block, evidence cards, developer view (agent/presenter.py, agent/cards.py)
 ```
+
 The model only chooses tools and writes the answer. Everything it reads passes through the executor, and everything it claims is checked
 by code. One MCP session is opened per question and closed after it (Streamlit re-runs the script on every interaction, so nothing with a
 live connection is kept between turns).
 
 ## Data
+
 `data/scenarios.py` defines curated, structured facts: 3 roles with 20 applicants each, every stage event with dates and outcomes,
 feedback with scores and recommendations, emails and tasks. `data/seed.py` turns them into SQLite deterministically. The prose (CVs,
 emails, interviewer notes, exit reasons) was generated from those rows and frozen in `data/prose/*.json`; seeding makes no model calls.
@@ -90,6 +100,7 @@ One candidate (Quentin Abara, C117) has a prompt-injection payload at the end of
 `python -m data.seed --variant baseline` builds the same data without it, for the paired injection eval.
 
 ## Tools (read-only MCP)
+
 | Tool | Answers | Takes |
 |---|---|---|
 | `list_roles` | roles, days open, required and preferred skills, interview criteria, stages | - |
@@ -106,56 +117,67 @@ results. Candidate records carry dated status sentences ("Technical Interview si
 in the service, so the model restates facts instead of reconstructing them from timestamps.
 
 ## Key design decisions
+
 1. **A trusted execution boundary in plain code.** Every tool call goes through `ToolExecutor`: an allowlist derived from the server,
+
    strict argument models (the same models generate the schemas the model sees), per-turn limits (8 rounds, 24 calls, 90 s, 32,000
-   characters per result), and a **projection** that rebuilds each result from a field allowlist. Contact details never reach the model;
-   candidate-written text (CVs, emails, notes) is wrapped as labelled untrusted data, and sentences that look like instructions are
-   replaced before the model reads them.
+    characters per result), and a **projection** that rebuilds each result from a field allowlist. Contact details never reach the model;
+    candidate-written text (CVs, emails, notes) is wrapped as labelled untrusted data, and sentences that look like instructions are
+    replaced before the model reads them.
 2. **The model owns judgment and wording; the application owns provenance.** The model's final answer is plain prose plus a declaration
+
    of which people and roles it is about and, for a ranking, the order with a one-line reason. It writes no citations or IDs. The
-   application then checks deterministically that every declared person and role appeared this turn, that every ranked person's record
-   was actually read, that every number in the prose occurs in the data for the people or roles named on the same line, and that every
-   "N-day target" belongs to the clock it names. One repair round; anything still unmatched is shown as not verified.
+    application then checks deterministically that every declared person and role appeared this turn, that every ranked person's record
+    was actually read, that every number in the prose occurs in the data for the people or roles named on the same line, and that every
+    "N-day target" belongs to the clock it names. One repair round; anything still unmatched is shown as not verified.
 3. **Evidence is derived, not cited.** The evidence cards come from the records the model read, in the order of its ranking, with the
+
    same shape for every person, so a ranking can be checked side by side.
 4. **One vocabulary.** The model sees recruiter words (`days_open`, `days_waiting`, `waiting_for: "interview to be booked"`,
+
    `reached`, `there_now`, reasons such as "withdrew: waited too long to be scheduled"). Counting fields it used to narrate or rank by
-   are not shown. Presentation advice ("one table, overdue first") travels inside the result it applies to, where the model follows it
-   far more reliably than in a long system prompt (which is about 8k characters of general rules, no per-question routing).
+    are not shown. Presentation advice ("one table, overdue first") travels inside the result it applies to, where the model follows it
+    far more reliably than in a long system prompt (which is about 8k characters of general rules, no per-question routing).
 5. **Deterministic analytics with honest definitions.** Three clocks are never mixed; people never booked still count as waiting;
+
    "over target" is strictly greater; small samples are flagged; recorded reasons are not presented as proven causes.
 6. **Reasoning on.** Chat Completions does not allow reasoning together with function tools for `gpt-5.4-mini`, and with none the agent
+
    misjudged simple comparisons. The adapter uses the Responses API at low effort; medium was measured and was slower without being
-   more accurate on the demo set.
+    more accurate on the demo set.
 7. **Follow-ups are cheap and re-query.** Earlier turns are replayed as question, answer, and a separate note of who the answer was
+
    about, never their old tool results, so "of those three…" fetches fresh facts.
 
 Longer rationale and the failures that led to each decision: `docs/design_notes.md`.
 
 ## How correctness was verified
+
 - **389 deterministic tests** (`python -m pytest`): every analytics number and status sentence is recomputed independently from the raw
-  tables and compared with hand-written expectations (`data/seed_expectations.json`); the prose is checked against the structured facts
-  (`data/check_consistency.py`); the executor, projection, answer checks, presenter and UI (Streamlit AppTest) are tested, including what
-  the model is actually sent and that IDs never reach the recruiter's view.
+tables and compared with hand-written expectations (`data/seed_expectations.json`); the prose is checked against the structured facts
+(`data/check_consistency.py`); the executor, projection, answer checks, presenter and UI (Streamlit AppTest) are tested, including what
+the model is actually sent and that IDs never reach the recruiter's view.
 - **Injection**: deterministic tests that the payload is flagged, removed before the model reads it, never traced or logged, and cannot
-  change tools or criteria; plus a paired model eval (baseline vs injected database, 5 runs each): Quentin was never ranked first or in
-  the top three, the payload was never repeated or cited, and the reviewer could always see the original text.
+change tools or criteria; plus a paired model eval (baseline vs injected database, 5 runs each): Quentin was never ranked first or in
+the top three, the payload was never repeated or cited, and the reviewer could always see the original text.
 - **Spec evals** (`docs/eval_results.md`): 13 cases scored on tool calls, declared people, rankings, matched numbers and facts from the
-  seeded data, never prose quality. Small samples, recorded with their failures and what was changed.
+seeded data, never prose quality. Small samples, recorded with their failures and what was changed.
 - **Demo set** (`docs/demo_questions.md`): 13 conversations with follow-ups, run 3 times through the real app pipeline after each round
-  of changes; on the final code: 66 of 66 turns correct on the facts checked, median 2 model rounds, about 10k tokens and 4 seconds per answer.
+of changes; on the final code: 66 of 66 turns correct on the facts checked, median 2 model rounds, about 10k tokens and 4 seconds per answer.
 - **Manual testing** by the author (`docs/manual_testing/`): each observation was traced through the turn log before any code changed.
 
 ## Known limitations
+
 - The checks prove that people, roles, numbers and targets exist in the data for the right subject, not that every sentence is right.
-  Numbers written as words ("three") are not checked. Judgment (who ranks first) is the model's, and still varies slightly between runs.
+Numbers written as words ("three") are not checked. Judgment (who ranks first) is the model's, and still varies slightly between runs.
 - Skill matching is a whole-word keyword match on CV text: a coarse prefilter that keyword stuffing can game, not a score.
 - The injection detector is a keyword list; paraphrased or non-English instructions evade it. The labelling, removal and validation are
-  defense in depth, not a guarantee.
+defense in depth, not a guarantee.
 - The planned interview date is not in the data (only when an interview was booked and when it was held), so the assistant says so.
 - Single user, local only, fixed clock, fictional data, one model provider (OpenAI). Answers are not streamed.
 
 ## What would change with a real ATS and real candidate data
+
 Verified identity and role-based access, with requisition- and field-level authorization; opaque candidate references and PII
 redaction before anything reaches a model; provider data-handling terms (zero retention, region) and retention and deletion policies;
 durable audit logs of every tool call and answer; read-only, scoped credentials, and human approval for any write; ATS API realities
@@ -163,12 +185,14 @@ durable audit logs of every tool call and answer; read-only, scoped credentials,
 review of any ranking assistance, with the hiring decision always left to a person; cost controls, monitoring and eval drift tracking.
 
 ## AI use
+
 This project was built with Claude Code. Code, tests, the frozen prose data, prompts and documentation were generated with AI
 assistance; each part's verification is listed in `docs/ai_use.md`. In short: analytics are recomputed independently in tests, the data
 is checked by a consistency script, model behavior is measured with evals and repeated demo runs, and every change followed a traced
 failure.
 
 ## Repository map
+
 ```
 app.py                 Streamlit UI
 agent/                 orchestrator, LLM adapter, executor, projection, answer schema and checks, presenter, evidence cards, CLI

@@ -111,6 +111,18 @@ def probe_temperature(llm_cls=OpenAILLM, value: float = 0.2):
         return None
 
 
+def scope_slug(case_ids: list[int]) -> str:
+    """Short description of which cases a run covered, for its file name: "cases-1-13", "cases-2+4+11-13", "case-10"."""
+    ids, parts, i = sorted(set(case_ids)), [], 0
+    while i < len(ids):
+        j = i
+        while j + 1 < len(ids) and ids[j + 1] == ids[j] + 1:
+            j += 1
+        parts.append(str(ids[i]) if i == j else f"{ids[i]}-{ids[j]}")
+        i = j + 1
+    return ("case-" if len(ids) == 1 else "cases-") + "+".join(parts)
+
+
 def main(argv=None, make=None, dbs=None) -> int:
     ap = argparse.ArgumentParser(prog="python -m evals.run_evals")
     ap.add_argument("--cases", default=DEFAULT_CASES)
@@ -146,7 +158,7 @@ def main(argv=None, make=None, dbs=None) -> int:
     report.write_report(Path(a.out), info, sections)
     raw = Path(a.raw_dir)
     raw.mkdir(parents=True, exist_ok=True)
-    (raw / f"{now:%Y%m%d-%H%M%S}.json").write_text(json.dumps(
+    (raw / f"{now:%Y%m%d-%H%M%S}_{scope_slug([c['id'] for c in chosen])}.json").write_text(json.dumps(
         {"model": model, "temperature": temperature, "cases": a.cases, "results": results}, indent=1, default=str))
     for c in chosen:
         r = results[c["id"]]
